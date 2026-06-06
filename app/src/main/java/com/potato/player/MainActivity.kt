@@ -7,32 +7,20 @@ import android.os.PowerManager // [CHANGE 43]
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.material3.Button
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.media3.ui.PlayerView // [CHANGE 44]
+import com.potato.player.player.ui.HomeScreen
+import com.potato.player.files.ui.settings.SettingsScreen
 import com.potato.player.player.ui.PlayerScreen
 import com.potato.player.player.viewmodel.PlayerViewModel
 import mediaengine.ExoPlayerEngine
@@ -66,6 +54,7 @@ class MainActivity : ComponentActivity() {
                     color = Color.Black,
                 ) {
                     var mediaUri by remember { mutableStateOf(resolveMediaUri(intent)) }
+                    var showSettings by remember { mutableStateOf(false) }
                     val player = viewModel.playerViewPlayer
                     if (mediaUri != null && player != null) {
                         PlayerScreen(
@@ -76,9 +65,16 @@ class MainActivity : ComponentActivity() {
                             onPlayerViewReady = { pv -> playerViewRef = pv },
                         )
                     } else {
-                        MissingMediaScreen(onMediaPicked = { uri ->
-                            mediaUri = uri
-                        })
+                        HomeScreen(
+                            onFilePicked = { uri -> mediaUri = uri },
+                            onSettingsClick = { showSettings = true },
+                        )
+                    }
+                    if (showSettings) {
+                        SettingsScreen(
+                            onBack = { showSettings = false },
+                            onNavigate = { },
+                        )
                     }
                 }
             }
@@ -126,35 +122,3 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable
-private fun MissingMediaScreen(onMediaPicked: (Uri) -> Unit) {
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument(),
-        onResult = { uri ->
-            if (uri != null) {
-                onMediaPicked(uri)
-            }
-        }
-    )
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .padding(24.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "Open the app with a media Uri in the intent data or pick a file below.",
-                color = Color.White,
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center,
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = { launcher.launch(arrayOf("video/*", "audio/*")) }) {
-                Text("Pick Media File")
-            }
-        }
-    }
-}
