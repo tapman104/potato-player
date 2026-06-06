@@ -1,8 +1,9 @@
 package com.potato.player.player.ui.gesture
 
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
 import android.media.AudioManager
-import android.provider.Settings
 import com.potato.player.player.viewmodel.PlayerViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -179,45 +180,53 @@ class PlayerGestureHandler(
     }
 
     /**
-     * Applies a fractional brightness delta using [Settings.System.SCREEN_BRIGHTNESS] (0–255).
+     * Controls screen brightness for this window only via [WindowManager.LayoutParams].
      *
-     * Uses a step-accumulator identical to [handleVolumeDrag] so small drags
-     * are buffered until they cross a whole-integer boundary.
-     * Requires [android.Manifest.permission.WRITE_SETTINGS].
+     * Uses [android.view.WindowManager.LayoutParams.screenBrightness] (0f–1f, -1 = system
+     * default) which requires NO special permissions, unlike [Settings.System.SCREEN_BRIGHTNESS].
+     * Changes are local to the player Activity and restore automatically when the window closes.
      */
     private fun handleBrightnessDrag(fractionalDelta: Float) {
-        val resolver = context.contentResolver
-        // On some devices SCREEN_BRIGHTNESS may throw if MODE is AUTO; guard with try/catch.
-        val currentRaw = try {
-            Settings.System.getInt(resolver, Settings.System.SCREEN_BRIGHTNESS)
-        } catch (_: Settings.SettingNotFoundException) {
-            128 // fallback to mid-brightness
-        }
+        val activity = context.findActivity() ?: return
+        val window   = activity.window
+        val lp       = window.attributes
 
-        // One step = 1/255 of the full range.
+        // -1 means "use system default"; treat it as 0.5 so first drag feels natural.
+        val currentBrightness = if (lp.screenBrightness < 0f) 0.5f else lp.screenBrightness
+
+        // Use fine steps (same 1/255 granularity as before) so small drags accumulate.
         val threshold = 1f / 255f
+        val state     = _gestureState.value
+        val newAccumulator = state.brightnessAccumulator + fractionalDelta
 
-        _gestureState.update { state ->
-            val newAccumulator = state.brightnessAccumulator + fractionalDelta
+        if (kotlin.math.abs(newAccumulator) >= threshold) {
+            val stepsToApply  = (newAccumulator / threshold).toInt()
+            val remainder     = newAccumulator - (stepsToApply * threshold)
+            val newBrightness = (currentBrightness + stepsToApply * threshold).coerceIn(0.01f, 1.0f)
 
-            if (kotlin.math.abs(newAccumulator) >= threshold) {
-                val stepsToApply = (newAccumulator / threshold).toInt()
-                val remainder = newAccumulator - (stepsToApply * threshold)
+            lp.screenBrightness = newBrightness
+            window.attributes   = lp
 
-                val newRaw = (currentRaw + stepsToApply).coerceIn(0, 255)
-                Settings.System.putInt(resolver, Settings.System.SCREEN_BRIGHTNESS, newRaw)
-
-                state.copy(
-                    active = ActiveGesture.BrightnessSwipe(newRaw / 255f),
-                    brightnessAccumulator = remainder,
-                )
-            } else {
-                state.copy(
-                    active = ActiveGesture.BrightnessSwipe(currentRaw / 255f),
-                    brightnessAccumulator = newAccumulator,
-                )
-            }
+            _gestureState.value = state.copy(
+                active               = ActiveGesture.BrightnessSwipe(newBrightness),
+                brightnessAccumulator = remainder,
+            )
+        } else {
+            _gestureState.value = state.copy(
+                active               = ActiveGesture.BrightnessSwipe(currentBrightness),
+                brightnessAccumulator = newAccumulator,
+            )
         }
+    }
+
+    /** Walk up the ContextWrapper chain to find the underlying Activity. */
+    private fun Context.findActivity(): Activity? {
+        var ctx = this
+        while (ctx is ContextWrapper) {
+            if (ctx is Activity) return ctx
+            ctx = ctx.baseContext
+        }
+        return null
     }
 
     private fun currentVolumeFraction(): Float {

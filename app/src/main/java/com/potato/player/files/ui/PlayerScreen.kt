@@ -10,9 +10,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.input.pointer.changedToUp
+import androidx.compose.ui.input.pointer.PointerEvent
 import kotlin.math.abs
+import kotlin.math.hypot
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -30,8 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -40,6 +40,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+
 import androidx.media3.common.Player
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
@@ -60,6 +61,7 @@ import com.potato.player.files.ui.settings.AppearanceSettingsScreen
 import com.potato.player.files.ui.settings.GestureSettingsScreen
 import com.potato.player.files.ui.settings.SettingsScreen
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 import mediaengine.MediaEvent
 
 /**
@@ -222,8 +224,8 @@ fun PlayerScreen(
             .fillMaxSize()
             .background(Color.Black),
     ) {
-        // â”€â”€ Layer 1: Video surface â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        // PlayerView with useController=false â€” our Compose layer owns controls.
+        // ──────────────────────────────────────────────────────────────────────────
+        // PlayerView with useController=false — our Compose layer owns controls.
         AndroidView(
             factory = { ctx ->
                 PlayerView(ctx).apply {
@@ -238,102 +240,129 @@ fun PlayerScreen(
             },
             update = { pv ->
                 if (pv.player !== player) pv.player = player
-                // Change 3: RESIZE_MODE_FIT (set in factory) tells ExoPlayer to maintain
-                // the correct aspect ratio automatically. PlayerView does not expose
-                // setAspectRatio() publicly, so we rely on the mode rather than forcing
-                // a manual ratio on each composition pass.
             },
             modifier = Modifier.fillMaxSize(),
         )
 
-        // ── Layer 2: Unified gesture layer ───────────────────────────────────────
-        // Single pointerInput block to avoid tap/drag/long-press competition.
-        // Without this, detectTapGestures fires onTap before the drag slop is
-        // reached, toggling controlsVisible and closing the gesture overlay.
+        // ── Layer 2: Unified gesture state machine ──────────────────────────
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(Unit) {
+                // Exclude the full view from the system back swipe gesture so
+                // vertical brightness/volume drags starting at the left/right
+                // edge don't trigger Android's predictive-back and close the
+                // Activity.
+                .systemGestureExclusion()
+                .pointerInput(viewModel) { // key=viewModel so it resets if VM changes
+                    // Android timing constants from the system ViewConfiguration
+                    val longPressMs = viewConfiguration.longPressTimeoutMillis
+                    val doubleTapMs = viewConfiguration.doubleTapTimeoutMillis
+                    val dragSlop    = viewConfiguration.touchSlop
+
                     awaitEachGesture {
-                        val down = awaitFirstDown(requireUnconsumed = false)
-                        val downPosition = down.position
+                        // ── Phase 1: wait for finger down ────────────────────────
+                        val firstDown = awaitFirstDown(requireUnconsumed = false)
+                        val downX    = firstDown.position.x
+                        val downY    = firstDown.position.y
+                        val downTime = System.currentTimeMillis()
 
-                        var isDragging = false
-                        val dragSlop = viewConfiguration.touchSlop
-                        var lastY = downPosition.y
+                        var gestureCommitted = false
+                        var isDragging       = false
+                        var isLongPressHeld  = false
+                        var lastY            = downY
 
-                        outer@ while (true) {
-                            val event = awaitPointerEvent()
-                            val primary = event.changes.firstOrNull { it.id == down.id } ?: break
+                        // ── Phase 2: classify gesture ─────────────────────────────
+                        eventLoop@ while (true) {
+                            val elapsed   = System.currentTimeMillis() - downTime
+                            val remaining = longPressMs - elapsed
 
-                            val totalDx = primary.position.x - downPosition.x
-                            val totalDy = primary.position.y - downPosition.y
-
-                            if (!isDragging && (abs(totalDx) > dragSlop || abs(totalDy) > dragSlop)) {
-                                // Moved enough — treat as drag. Suppress tap.
-                                isDragging = true
-                                handler.onVerticalDragStart(downPosition.x, size.width.toFloat())
-                            }
-
-                            if (isDragging) {
-                                val dy = primary.position.y - lastY
-                                lastY = primary.position.y
-                                primary.consume()
-                                handler.onVerticalDrag(dy)
-                                if (primary.changedToUp()) {
-                                    handler.onVerticalDragEnd()
-                                    break@outer
-                                }
+                            val event: PointerEvent? = if (!gestureCommitted && remaining > 0) {
+                                withTimeoutOrNull(remaining) { awaitPointerEvent() }
                             } else {
-                                if (primary.changedToUp()) {
-                                    // Pointer up without drag — let detectTapGestures handle it.
-                                    break@outer
-                                }
+                                awaitPointerEvent()
                             }
-                        }
-                    }
-                }
-                // Tap + double-tap + long-press via the standard detector.
-                // This runs concurrently but detectTapGestures correctly defers
-                // onTap until it is sure no second tap is coming (DoubleTapTimeout).
-                // Since the drag block consumes events when a drag is detected,
-                // detectTapGestures receives no events during a drag and stays silent.
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onDoubleTap = { offset ->
-                            val third = size.width / 3f
+
+                            // Timeout — long-press fires
+                            if (event == null) {
+                                if (!gestureCommitted) {
+                                    gestureCommitted = true
+                                    isLongPressHeld  = true
+                                    isLongPressing   = true
+                                    handler.onLongPressStart()
+                                }
+                                continue@eventLoop
+                            }
+
+                            val primary = event.changes.firstOrNull { it.id == firstDown.id }
+                                ?: break@eventLoop
+                            val dx       = primary.position.x - downX
+                            val dy       = primary.position.y - downY
+                            val distance = hypot(dx, dy)
+
                             when {
-                                offset.x < third -> handler.onDoubleTap(isForward = false)
-                                offset.x > third * 2 -> handler.onDoubleTap(isForward = true)
-                                else -> {
-                                    handler.onTap()
-                                    controlsVisible = !controlsVisible
+                                // ── Drag committed ──────────────────────────────────
+                                !gestureCommitted && distance > dragSlop -> {
+                                    gestureCommitted = true
+                                    isDragging = true
+                                    firstDown.consume()
+                                    handler.onVerticalDragStart(downX, size.width.toFloat())
+                                    val firstDy = primary.position.y - lastY
+                                    lastY = primary.position.y
+                                    primary.consume()
+                                    handler.onVerticalDrag(firstDy)
+                                }
+                                // ── Continuing drag ─────────────────────────────────
+                                isDragging -> {
+                                    val delta = primary.position.y - lastY
+                                    lastY = primary.position.y
+                                    primary.consume()
+                                    handler.onVerticalDrag(delta)
                                 }
                             }
-                        },
-                        onTap = {
-                            handler.onTap()
-                            controlsVisible = !controlsVisible
-                        },
-                        onLongPress = { _ ->
-                            handler.onLongPressStart()
-                            isLongPressing = true
-                        },
-                    )
-                }
-                // Long-press release detection.
-                .pointerInput(isLongPressing) {
-                    if (isLongPressing) {
-                        awaitEachGesture {
-                            do {
-                                val event = awaitPointerEvent(PointerEventPass.Main)
-                                val allUp = event.changes.all { !it.pressed }
-                                if (allUp) {
-                                    isLongPressing = false
-                                    handler.onLongPressEnd()
-                                    break
+
+                            // ── Pointer lifted ──────────────────────────────────────
+                            val allUp = event.changes.all { !it.pressed }
+                            if (allUp) {
+                                when {
+                                    isDragging -> handler.onVerticalDragEnd()
+                                    isLongPressHeld -> {
+                                        isLongPressing = false
+                                        handler.onLongPressEnd()
+                                    }
+                                    else -> {
+                                        // UP before slop/long-press → could be tap or first
+                                        // half of a double-tap. Wait for a second DOWN.
+                                        var secondDown = false
+
+                                        doubleTapLoop@ while (true) {
+                                            val dtEvent = withTimeoutOrNull(doubleTapMs) {
+                                                awaitPointerEvent()
+                                            }
+                                            if (dtEvent == null) break@doubleTapLoop
+
+                                            val dtPrimary = dtEvent.changes.firstOrNull()
+                                            if (dtPrimary != null && dtPrimary.pressed) {
+                                                secondDown = true
+                                                val tapX  = dtPrimary.position.x
+                                                val third = size.width / 3f
+                                                when {
+                                                    tapX < third      -> handler.onDoubleTap(isForward = false)
+                                                    tapX > third * 2f -> handler.onDoubleTap(isForward = true)
+                                                    else              -> controlsVisible = !controlsVisible
+                                                }
+                                                withTimeoutOrNull(500L) { awaitPointerEvent() } // drain UP
+                                                break@doubleTapLoop
+                                            }
+                                        }
+
+                                        if (!secondDown) {
+                                            // No second tap — plain single tap: toggle controls
+                                            controlsVisible = !controlsVisible
+                                        }
+                                    }
                                 }
-                            } while (true)
+                                break@eventLoop
+                            }
                         }
                     }
                 }
