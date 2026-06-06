@@ -51,6 +51,10 @@ import com.potato.player.player.ui.gesture.GestureOverlay
 import com.potato.player.player.ui.gesture.PlayerGestureHandler
 import com.potato.player.player.ui.topbar.PlayerTopBar
 import com.potato.player.player.viewmodel.PlayerViewModel
+import com.potato.player.files.ui.settings.AboutScreen
+import com.potato.player.files.ui.settings.AppearanceSettingsScreen
+import com.potato.player.files.ui.settings.GestureSettingsScreen
+import com.potato.player.files.ui.settings.SettingsScreen
 import kotlinx.coroutines.delay
 import mediaengine.MediaEvent
 
@@ -118,6 +122,10 @@ fun PlayerScreen(
     var subtitleSettings by remember { mutableStateOf(SubtitleSettings()) }
     var showSubtitleSizeDialog by remember { mutableStateOf(false) }
     var playerViewRef by remember { mutableStateOf<PlayerView?>(null) }
+    var showSettings by remember { mutableStateOf(false) }
+    var showGestureSettings by remember { mutableStateOf(false) }
+    var showAppearanceSettings by remember { mutableStateOf(false) }
+    var showAboutScreen by remember { mutableStateOf(false) }
 
     // ── Gesture handler ───────────────────────────────────────────────────────────
     val density = LocalDensity.current
@@ -420,6 +428,22 @@ fun PlayerScreen(
                     showSubtitleSizeDialog = false
                 },
                 onDismiss = { showSubtitleSizeDialog = false },
+            )
+        }
+
+        // ── Settings navigation stack ─────────────────────────────────────────────
+        if (showAboutScreen) {
+            AboutScreen(onBack = { showAboutScreen = false })
+        } else if (showAppearanceSettings) {
+            AppearanceSettingsScreen(onBack = { showAppearanceSettings = false })
+        } else if (showGestureSettings) {
+            GestureSettingsScreen(onBack = { showGestureSettings = false })
+        } else if (showSettings) {
+            SettingsScreen(
+                onBack = { showSettings = false },
+                onGesturesClick = { showGestureSettings = true },
+                onAppearanceClick = { showAppearanceSettings = true },
+                onAboutClick = { showAboutScreen = true },
             )
         }
     }

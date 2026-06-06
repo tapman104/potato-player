@@ -20,6 +20,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.media3.ui.PlayerView // [CHANGE 44]
 import com.potato.player.player.ui.HomeScreen
+import com.potato.player.files.ui.settings.AboutScreen
+import com.potato.player.files.ui.settings.AppearanceSettingsScreen
+import com.potato.player.files.ui.settings.GestureSettingsScreen
 import com.potato.player.files.ui.settings.SettingsScreen
 import com.potato.player.player.ui.PlayerScreen
 import com.potato.player.player.viewmodel.PlayerViewModel
@@ -55,6 +58,9 @@ class MainActivity : ComponentActivity() {
                 ) {
                     var mediaUri by remember { mutableStateOf(resolveMediaUri(intent)) }
                     var showSettings by remember { mutableStateOf(false) }
+                    var showGestureSettings by remember { mutableStateOf(false) }
+                    var showAppearanceSettings by remember { mutableStateOf(false) }
+                    var showAboutScreen by remember { mutableStateOf(false) }
                     val player = viewModel.playerViewPlayer
                     if (mediaUri != null && player != null) {
                         PlayerScreen(
@@ -70,10 +76,18 @@ class MainActivity : ComponentActivity() {
                             onSettingsClick = { showSettings = true },
                         )
                     }
-                    if (showSettings) {
+                    if (showAboutScreen) {
+                        AboutScreen(onBack = { showAboutScreen = false })
+                    } else if (showAppearanceSettings) {
+                        AppearanceSettingsScreen(onBack = { showAppearanceSettings = false })
+                    } else if (showGestureSettings) {
+                        GestureSettingsScreen(onBack = { showGestureSettings = false })
+                    } else if (showSettings) {
                         SettingsScreen(
                             onBack = { showSettings = false },
-                            onNavigate = { },
+                            onGesturesClick = { showGestureSettings = true },
+                            onAppearanceClick = { showAppearanceSettings = true },
+                            onAboutClick = { showAboutScreen = true },
                         )
                     }
                 }
