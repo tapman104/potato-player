@@ -9,8 +9,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.changedToUp
+import kotlin.math.abs
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -244,11 +246,58 @@ fun PlayerScreen(
             modifier = Modifier.fillMaxSize(),
         )
 
-        // ── Layer 2: Gesture layer (tap + long-press + vertical drag) ────────────
+        // ── Layer 2: Unified gesture layer ───────────────────────────────────────
+        // Single pointerInput block to avoid tap/drag/long-press competition.
+        // Without this, detectTapGestures fires onTap before the drag slop is
+        // reached, toggling controlsVisible and closing the gesture overlay.
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                // Tap + long-press: separate pointerInput key so they compose independently.
+                .pointerInput(Unit) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        val downPosition = down.position
+
+                        var isDragging = false
+                        val dragSlop = viewConfiguration.touchSlop
+                        var lastY = downPosition.y
+
+                        outer@ while (true) {
+                            val event = awaitPointerEvent()
+                            val primary = event.changes.firstOrNull { it.id == down.id } ?: break
+
+                            val totalDx = primary.position.x - downPosition.x
+                            val totalDy = primary.position.y - downPosition.y
+
+                            if (!isDragging && (abs(totalDx) > dragSlop || abs(totalDy) > dragSlop)) {
+                                // Moved enough — treat as drag. Suppress tap.
+                                isDragging = true
+                                handler.onVerticalDragStart(downPosition.x, size.width.toFloat())
+                            }
+
+                            if (isDragging) {
+                                val dy = primary.position.y - lastY
+                                lastY = primary.position.y
+                                primary.consume()
+                                handler.onVerticalDrag(dy)
+                                if (primary.changedToUp()) {
+                                    handler.onVerticalDragEnd()
+                                    break@outer
+                                }
+                            } else {
+                                if (primary.changedToUp()) {
+                                    // Pointer up without drag — let detectTapGestures handle it.
+                                    break@outer
+                                }
+                            }
+                        }
+                    }
+                }
+                // Tap + double-tap + long-press via the standard detector.
+                // This runs concurrently but detectTapGestures correctly defers
+                // onTap until it is sure no second tap is coming (DoubleTapTimeout).
+                // Since the drag block consumes events when a drag is detected,
+                // detectTapGestures receives no events during a drag and stays silent.
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onDoubleTap = { offset ->
@@ -272,27 +321,10 @@ fun PlayerScreen(
                         },
                     )
                 }
-                // Vertical drag: separate pointerInput block for brightness / volume.
-                .pointerInput(Unit) {
-                    var dragStartX = 0f
-                    detectDragGestures(
-                        onDragStart = { offset ->
-                            dragStartX = offset.x
-                            handler.onVerticalDragStart(dragStartX, size.width.toFloat())
-                        },
-                        onDrag = { change, dragAmount ->
-                            change.consume()
-                            handler.onVerticalDrag(dragAmount.y)
-                        },
-                        onDragEnd = { handler.onVerticalDragEnd() },
-                        onDragCancel = { handler.onVerticalDragEnd() },
-                    )
-                }
-                // Long-press release detection: wait for all pointers up while long-pressing.
+                // Long-press release detection.
                 .pointerInput(isLongPressing) {
                     if (isLongPressing) {
                         awaitEachGesture {
-                            // Wait until no pointers remain down.
                             do {
                                 val event = awaitPointerEvent(PointerEventPass.Main)
                                 val allUp = event.changes.all { !it.pressed }

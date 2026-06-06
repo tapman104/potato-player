@@ -1,41 +1,22 @@
 package com.potato.player.player.ui.gesture
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.VolumeUp
-import androidx.compose.material.icons.outlined.BrightnessHigh
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import kotlin.math.roundToInt
 
 /**
- * Stateless overlay that renders visual feedback for active gestures.
+ * Stateless overlay that routes the active [GestureState] to the appropriate
+ * gesture-specific composable.
  *
- * Mount this above the gesture-input layer but below the top-bar so it
- * doesn't obscure navigation chrome. The composable renders nothing when
- * [gestureState.active] is [ActiveGesture.None].
+ * Each gesture type lives in its own dedicated file:
+ *  - [VolumeGestureOverlay]     — right-side swipe for media volume
+ *  - [BrightnessGestureOverlay] — left-side swipe for screen brightness
+ *  - [DoubleTapSeekOverlay]     — double-tap to seek ±10 s
+ *  - [LongPressSpeedOverlay]    — long-press hold for 2× speed
  *
- * Layout convention (mirrors the drag zones in [PlayerGestureHandler]):
- *  - Brightness (left drag)  → pill anchored to [Alignment.CenterStart]
- *  - Volume (right drag)     → pill anchored to [Alignment.CenterEnd]
+ * Renders nothing when [gestureState.active] is [ActiveGesture.None].
  *
  * @param gestureState Current gesture state from [PlayerGestureHandler.gestureState].
  * @param modifier     Applied to the root [Box].
@@ -47,123 +28,36 @@ fun GestureOverlay(
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         when (val gesture = gestureState.active) {
-            ActiveGesture.None -> Unit // render nothing
+            ActiveGesture.None -> Unit // nothing to render
 
             ActiveGesture.LongPressSpeed -> {
-                // Centered pill showing "2× Speed"
-                AnimatedVisibility(
-                    visible = true,
-                    enter = fadeIn(animationSpec = tween(150)),
+                LongPressSpeedOverlay(
                     modifier = Modifier.align(Alignment.Center),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                color = Color.Black.copy(alpha = 0.60f),
-                                shape = RoundedCornerShape(50),
-                            )
-                            .padding(horizontal = 20.dp, vertical = 10.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = "2× Speed",
-                            color = Color.White,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    }
-                }
+                )
             }
 
             is ActiveGesture.DoubleTapSeek -> {
-                AnimatedVisibility(
-                    visible = true,
-                    enter = fadeIn(animationSpec = tween(150)),
+                DoubleTapSeekOverlay(
+                    isForward = gesture.isForward,
                     modifier = Modifier.align(Alignment.Center),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                color = Color.Black.copy(alpha = 0.60f),
-                                shape = RoundedCornerShape(50),
-                            )
-                            .padding(horizontal = 20.dp, vertical = 10.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = if (gesture.isForward) "+10s ⏩" else "⏪ -10s",
-                            color = Color.White,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    }
-                }
+                )
             }
 
-            // Left-side drag → brightness pill on the LEFT edge
+            // Left-side drag → brightness indicator on the RIGHT edge
             is ActiveGesture.BrightnessSwipe -> {
-                GestureLevelPill(
-                    icon = Icons.Outlined.BrightnessHigh,
-                    contentDescription = "Brightness",
+                BrightnessGestureOverlay(
                     fraction = gesture.fraction,
-                    alignment = Alignment.CenterStart,
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
 
-            // Right-side drag → volume pill on the RIGHT edge
+            // Right-side drag → volume indicator on the LEFT edge
             is ActiveGesture.VolumeSwipe -> {
-                GestureLevelPill(
-                    icon = Icons.AutoMirrored.Outlined.VolumeUp,
-                    contentDescription = "Volume",
+                VolumeGestureOverlay(
                     fraction = gesture.fraction,
-                    alignment = Alignment.CenterEnd,
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
-        }
-    }
-}
-
-/**
- * Reusable pill composable for level-style indicators (brightness / volume).
- *
- * Rendered at [alignment] so brightness and volume stay on opposite sides.
- */
-@Composable
-private fun GestureLevelPill(
-    icon: ImageVector,
-    contentDescription: String,
-    fraction: Float,
-    alignment: Alignment,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp),
-        contentAlignment = alignment,
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier
-                .background(
-                    color = Color.Black.copy(alpha = 0.45f),
-                    shape = RoundedCornerShape(12.dp),
-                )
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = contentDescription,
-                tint = Color.White,
-                modifier = Modifier.size(24.dp),
-            )
-            Text(
-                text = "${(fraction * 100).roundToInt()}%",
-                color = Color.White,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
         }
     }
 }
