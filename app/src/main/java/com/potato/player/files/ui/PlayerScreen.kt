@@ -151,7 +151,15 @@ fun PlayerScreen(
     LaunchedEffect(uri) {
         viewModel.cacheScreenSize(screenW, screenH)
         viewModel.open(uri)
-        viewModel.applyAutoOrientation(screenW, screenH)
+    }
+
+    // Re-run whenever videoTracks changes (e.g. after the engine resolves
+    // the stream). Only apply orientation from the first valid track;
+    // once locked by the user, applyAutoOrientation no-ops internally.
+    LaunchedEffect(uiState.videoTracks) {
+        if (uiState.videoTracks.isNotEmpty()) {
+            viewModel.applyAutoOrientation(screenW, screenH)
+        }
     }
 
     LaunchedEffect(controlsState.orientationMode) {
