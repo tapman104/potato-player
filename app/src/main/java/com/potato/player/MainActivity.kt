@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.PowerManager // [CHANGE 43]
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +14,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -57,10 +59,7 @@ class MainActivity : ComponentActivity() {
                     color = Color.Black,
                 ) {
                     var mediaUri by remember { mutableStateOf(resolveMediaUri(intent)) }
-                    var showSettings by remember { mutableStateOf(false) }
-                    var showGestureSettings by remember { mutableStateOf(false) }
-                    var showAppearanceSettings by remember { mutableStateOf(false) }
-                    var showAboutScreen by remember { mutableStateOf(false) }
+                    var settingsRoute by rememberSaveable { mutableStateOf<String?>(null) }
                     val player = viewModel.playerViewPlayer
                     if (mediaUri != null && player != null) {
                         PlayerScreen(
@@ -73,21 +72,23 @@ class MainActivity : ComponentActivity() {
                     } else {
                         HomeScreen(
                             onFilePicked = { uri -> mediaUri = uri },
-                            onSettingsClick = { showSettings = true },
+                            onSettingsClick = { settingsRoute = "settings" },
                         )
                     }
-                    if (showAboutScreen) {
-                        AboutScreen(onBack = { showAboutScreen = false })
-                    } else if (showAppearanceSettings) {
-                        AppearanceSettingsScreen(onBack = { showAppearanceSettings = false })
-                    } else if (showGestureSettings) {
-                        GestureSettingsScreen(onBack = { showGestureSettings = false })
-                    } else if (showSettings) {
-                        SettingsScreen(
-                            onBack = { showSettings = false },
-                            onGesturesClick = { showGestureSettings = true },
-                            onAppearanceClick = { showAppearanceSettings = true },
-                            onAboutClick = { showAboutScreen = true },
+
+                    BackHandler(enabled = settingsRoute != null) {
+                        if (settingsRoute == "settings") settingsRoute = null else settingsRoute = "settings"
+                    }
+
+                    when (settingsRoute) {
+                        "about" -> AboutScreen(onBack = { settingsRoute = "settings" })
+                        "appearance" -> AppearanceSettingsScreen(onBack = { settingsRoute = "settings" })
+                        "gestures" -> GestureSettingsScreen(onBack = { settingsRoute = "settings" })
+                        "settings" -> SettingsScreen(
+                            onBack = { settingsRoute = null },
+                            onGesturesClick = { settingsRoute = "gestures" },
+                            onAppearanceClick = { settingsRoute = "appearance" },
+                            onAboutClick = { settingsRoute = "about" },
                         )
                     }
                 }

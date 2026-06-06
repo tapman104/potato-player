@@ -3,6 +3,7 @@ package com.potato.player.player.ui
 import android.content.Context
 import android.media.AudioManager
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -21,6 +22,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -122,10 +124,7 @@ fun PlayerScreen(
     var subtitleSettings by remember { mutableStateOf(SubtitleSettings()) }
     var showSubtitleSizeDialog by remember { mutableStateOf(false) }
     var playerViewRef by remember { mutableStateOf<PlayerView?>(null) }
-    var showSettings by remember { mutableStateOf(false) }
-    var showGestureSettings by remember { mutableStateOf(false) }
-    var showAppearanceSettings by remember { mutableStateOf(false) }
-    var showAboutScreen by remember { mutableStateOf(false) }
+    var settingsRoute by rememberSaveable { mutableStateOf<String?>(null) }
 
     // ── Gesture handler ───────────────────────────────────────────────────────────
     val density = LocalDensity.current
@@ -432,18 +431,19 @@ fun PlayerScreen(
         }
 
         // ── Settings navigation stack ─────────────────────────────────────────────
-        if (showAboutScreen) {
-            AboutScreen(onBack = { showAboutScreen = false })
-        } else if (showAppearanceSettings) {
-            AppearanceSettingsScreen(onBack = { showAppearanceSettings = false })
-        } else if (showGestureSettings) {
-            GestureSettingsScreen(onBack = { showGestureSettings = false })
-        } else if (showSettings) {
-            SettingsScreen(
-                onBack = { showSettings = false },
-                onGesturesClick = { showGestureSettings = true },
-                onAppearanceClick = { showAppearanceSettings = true },
-                onAboutClick = { showAboutScreen = true },
+        BackHandler(enabled = settingsRoute != null) {
+            if (settingsRoute == "settings") settingsRoute = null else settingsRoute = "settings"
+        }
+
+        when (settingsRoute) {
+            "about" -> AboutScreen(onBack = { settingsRoute = "settings" })
+            "appearance" -> AppearanceSettingsScreen(onBack = { settingsRoute = "settings" })
+            "gestures" -> GestureSettingsScreen(onBack = { settingsRoute = "settings" })
+            "settings" -> SettingsScreen(
+                onBack = { settingsRoute = null },
+                onGesturesClick = { settingsRoute = "gestures" },
+                onAppearanceClick = { settingsRoute = "appearance" },
+                onAboutClick = { settingsRoute = "about" },
             )
         }
     }
