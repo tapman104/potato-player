@@ -58,20 +58,21 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = Color.Black,
                 ) {
-                    var mediaUri by remember { mutableStateOf(resolveMediaUri(intent)) }
+                    var mediaUri by rememberSaveable { mutableStateOf(resolveMediaUri(intent)?.toString()) }
                     var settingsRoute by rememberSaveable { mutableStateOf<String?>(null) }
                     val player = viewModel.playerViewPlayer
-                    if (mediaUri != null && player != null) {
+                    val actualUri = mediaUri?.let(Uri::parse)
+                    if (actualUri != null && player != null) {
                         PlayerScreen(
                             viewModel = viewModel,
                             player = player,
-                            uri = mediaUri!!,
+                            uri = actualUri,
                             onBack = { finish() },
                             onPlayerViewReady = { pv -> playerViewRef = pv },
                         )
                     } else {
                         HomeScreen(
-                            onFilePicked = { uri -> mediaUri = uri },
+                            onFilePicked = { uri -> mediaUri = uri.toString() },
                             onSettingsClick = { settingsRoute = "settings" },
                         )
                     }
