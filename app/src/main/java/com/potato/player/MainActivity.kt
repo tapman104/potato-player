@@ -1,0 +1,160 @@
+package com.potato.player.player
+
+import android.content.Intent
+import android.net.Uri
+import android.os.Bundle
+import android.os.PowerManager // [CHANGE 43]
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.viewModels
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.Button
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.media3.ui.PlayerView // [CHANGE 44]
+import com.potato.player.player.ui.PlayerScreen
+import com.potato.player.player.viewmodel.PlayerViewModel
+import mediaengine.ExoPlayerEngine
+
+class MainActivity : ComponentActivity() {
+
+    private val viewModel: PlayerViewModel by viewModels {
+        PlayerViewModelFactory(applicationContext)
+    }
+
+    // Holds the last known PlayerView to forward Activity lifecycle calls
+    // (onResume / onPause) so PlayerView can re-enable rendering correctly.
+    // We do NOT use this ref for surface re-attachment — PlayerView manages
+    // its own SurfaceHolder internally.
+    private var playerViewRef: PlayerView? = null
+
+    // [CHANGE 47] WakeLock acquired while player is in foreground.
+    private val wakeLock: PowerManager.WakeLock by lazy { // [CHANGE 48]
+        @Suppress("DEPRECATION") // SCREEN_DIM_WAKE_LOCK is the least-invasive lock available // [CHANGE 49]
+        (getSystemService(POWER_SERVICE) as PowerManager) // [CHANGE 50]
+            .newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "potato:player") // [CHANGE 51]
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        setContent {
+            MaterialTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = Color.Black,
+                ) {
+                    var mediaUri by remember { mutableStateOf(resolveMediaUri(intent)) }
+                    val player = viewModel.playerViewPlayer
+                    if (mediaUri != null && player != null) {
+                        PlayerScreen(
+                            viewModel = viewModel,
+                            player = player,
+                            uri = mediaUri!!,
+                            onBack = { finish() },
+                            onPlayerViewReady = { pv -> playerViewRef = pv },
+                        )
+                    } else {
+                        MissingMediaScreen(onMediaPicked = { uri ->
+                            mediaUri = uri
+                        })
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (!wakeLock.isHeld) wakeLock.acquire(10 * 60 * 1000L) // 10-min timeout
+        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        playerViewRef?.onResume() // re-enables PlayerView rendering
+        viewModel.onForeground()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        playerViewRef?.onPause()  // disables PlayerView rendering cleanly
+        viewModel.onBackground()
+        if (wakeLock.isHeld) wakeLock.release()
+    }
+
+    private fun resolveMediaUri(intent: Intent?): Uri? {
+        val dataUri = intent?.data
+        if (dataUri != null) return dataUri
+
+        val rawExtra = intent?.getStringExtra(EXTRA_MEDIA_URI)
+        return rawExtra?.takeIf { it.isNotBlank() }?.let(Uri::parse)
+    }
+
+    private class PlayerViewModelFactory(
+        private val appContext: android.content.Context,
+    ) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(PlayerViewModel::class.java)) {
+                return PlayerViewModel(ExoPlayerEngine(appContext)) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
+        }
+    }
+
+    companion object {
+        const val EXTRA_MEDIA_URI = "media_uri"
+    }
+}
+
+@Composable
+private fun MissingMediaScreen(onMediaPicked: (Uri) -> Unit) {
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+        onResult = { uri ->
+            if (uri != null) {
+                onMediaPicked(uri)
+            }
+        }
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .padding(24.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "Open the app with a media Uri in the intent data or pick a file below.",
+                color = Color.White,
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = { launcher.launch(arrayOf("video/*", "audio/*")) }) {
+                Text("Pick Media File")
+            }
+        }
+    }
+}

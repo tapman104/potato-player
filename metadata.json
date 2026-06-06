@@ -1,0 +1,6 @@
+{
+  "name": "Vora Player",
+  "description": "A lightweight yet powerful Android video player built with Jetpack Compose and Media3 ExoPlayer.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
