@@ -1,5 +1,7 @@
 # Potato Player
 
+![Potato Player Image](https://res.cloudinary.com/dkacgp1ef/image/upload/v1780761151/Gemini_Generated_Image_cf5k3dcf5k3dcf5k_1_h5t3y5.png)
+
 A lightweight, modern, and premium Android video player built with **Jetpack Compose** and **AndroidX Media3 (ExoPlayer)**. Designed with a clean architecture, battery optimizations, and custom gesture controls.
 
 ---
