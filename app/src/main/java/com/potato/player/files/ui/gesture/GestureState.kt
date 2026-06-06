@@ -20,6 +20,13 @@ sealed interface ActiveGesture {
     data class VolumeSwipe(val fraction: Float) : ActiveGesture
 
     /**
+     * Vertical drag controlling screen brightness.
+     *
+     * @param fraction Normalised brightness in [0f, 1f].
+     */
+    data class BrightnessSwipe(val fraction: Float) : ActiveGesture
+
+    /**
      * Double tap to seek forward or backward.
      */
     data class DoubleTapSeek(val isForward: Boolean) : ActiveGesture
@@ -40,4 +47,5 @@ data class GestureState(
     val active: ActiveGesture = ActiveGesture.None,
     val speedBeforeLongPress: Float = 1f,
     val volumeAccumulator: Float = 0f,
+    val brightnessAccumulator: Float = 0f,
 )

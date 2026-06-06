@@ -13,12 +13,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.VolumeUp
+import androidx.compose.material.icons.outlined.BrightnessHigh
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,6 +32,10 @@ import kotlin.math.roundToInt
  * Mount this above the gesture-input layer but below the top-bar so it
  * doesn't obscure navigation chrome. The composable renders nothing when
  * [gestureState.active] is [ActiveGesture.None].
+ *
+ * Layout convention (mirrors the drag zones in [PlayerGestureHandler]):
+ *  - Brightness (left drag)  → pill anchored to [Alignment.CenterStart]
+ *  - Volume (right drag)     → pill anchored to [Alignment.CenterEnd]
  *
  * @param gestureState Current gesture state from [PlayerGestureHandler.gestureState].
  * @param modifier     Applied to the root [Box].
@@ -94,36 +100,70 @@ fun GestureOverlay(
                 }
             }
 
-            is ActiveGesture.VolumeSwipe -> {
-                // Centered indicator for volume
-                Box(
-                    modifier = Modifier.align(Alignment.Center),
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier = Modifier
-                            .background(
-                                color = Color.Black.copy(alpha = 0.45f),
-                                shape = RoundedCornerShape(12.dp),
-                            )
-                            .padding(horizontal = 24.dp, vertical = 16.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.VolumeUp,
-                            contentDescription = "Volume",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp),
-                        )
-                        Text(
-                            text = "${(gesture.fraction * 100).roundToInt()}%",
-                            color = Color.White,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    }
-                }
+            // Left-side drag → brightness pill on the LEFT edge
+            is ActiveGesture.BrightnessSwipe -> {
+                GestureLevelPill(
+                    icon = Icons.Outlined.BrightnessHigh,
+                    contentDescription = "Brightness",
+                    fraction = gesture.fraction,
+                    alignment = Alignment.CenterStart,
+                )
             }
+
+            // Right-side drag → volume pill on the RIGHT edge
+            is ActiveGesture.VolumeSwipe -> {
+                GestureLevelPill(
+                    icon = Icons.AutoMirrored.Outlined.VolumeUp,
+                    contentDescription = "Volume",
+                    fraction = gesture.fraction,
+                    alignment = Alignment.CenterEnd,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Reusable pill composable for level-style indicators (brightness / volume).
+ *
+ * Rendered at [alignment] so brightness and volume stay on opposite sides.
+ */
+@Composable
+private fun GestureLevelPill(
+    icon: ImageVector,
+    contentDescription: String,
+    fraction: Float,
+    alignment: Alignment,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp),
+        contentAlignment = alignment,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier
+                .background(
+                    color = Color.Black.copy(alpha = 0.45f),
+                    shape = RoundedCornerShape(12.dp),
+                )
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = Color.White,
+                modifier = Modifier.size(24.dp),
+            )
+            Text(
+                text = "${(fraction * 100).roundToInt()}%",
+                color = Color.White,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
         }
     }
 }

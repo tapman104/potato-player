@@ -131,7 +131,7 @@ fun PlayerScreen(
     val screenHeightPx = with(density) { LocalConfiguration.current.screenHeightDp.dp.toPx() }
     val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     val handler = remember(viewModel) {
-        PlayerGestureHandler(viewModel, audioManager, screenHeightPx)
+        PlayerGestureHandler(viewModel, audioManager, screenHeightPx, context)
     }
     val gestureState by handler.gestureState.collectAsState()
 
