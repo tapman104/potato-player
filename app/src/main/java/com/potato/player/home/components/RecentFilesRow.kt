@@ -57,7 +57,7 @@ fun RecentFilesRow(
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             color = Color.White,
-            modifier = Modifier.padding(horizontal = 16.dp, bottom = 8.dp)
+            modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp)
         )
         
         LazyRow(
