@@ -59,6 +59,7 @@ import com.potato.player.files.ui.settings.AboutScreen
 import com.potato.player.files.ui.settings.AppearanceSettingsScreen
 import com.potato.player.files.ui.settings.GestureSettingsScreen
 import com.potato.player.files.ui.settings.SettingsScreen
+import com.potato.player.files.preferences.AppPreferences
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 import mediaengine.MediaEvent
@@ -113,6 +114,7 @@ fun PlayerScreen(
 ) {
     val context = LocalContext.current
     val activityContext = context
+    val appPreferences = remember { AppPreferences(context.applicationContext) }
 
     // ── State collection ──────────────────────────────────────────────────────────
     val uiState by viewModel.uiState.collectAsState()
@@ -509,7 +511,10 @@ fun PlayerScreen(
 
         when (settingsRoute) {
             "about" -> AboutScreen(onBack = { settingsRoute = "settings" })
-            "appearance" -> AppearanceSettingsScreen(onBack = { settingsRoute = "settings" })
+            "appearance" -> AppearanceSettingsScreen(
+                onBack = { settingsRoute = "settings" },
+                appPreferences = appPreferences
+            )
             "gestures" -> GestureSettingsScreen(onBack = { settingsRoute = "settings" })
             "settings" -> SettingsScreen(
                 onBack = { settingsRoute = null },
