@@ -15,9 +15,28 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class HomeViewModel(
+    private val applicationContext: Context,
     private val repository: MediaFileRepository,
     private val appPreferences: AppPreferences
 ) : ViewModel() {
+
+    init {
+        checkPermissions()
+    }
+
+    fun checkPermissions() {
+        val hasPermission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            androidx.core.content.ContextCompat.checkSelfPermission(applicationContext, android.Manifest.permission.READ_MEDIA_VIDEO) == android.content.pm.PackageManager.PERMISSION_GRANTED &&
+            androidx.core.content.ContextCompat.checkSelfPermission(applicationContext, android.Manifest.permission.READ_MEDIA_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        } else {
+            androidx.core.content.ContextCompat.checkSelfPermission(applicationContext, android.Manifest.permission.READ_EXTERNAL_STORAGE) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
+        
+        _permissionGranted.value = hasPermission
+        if (hasPermission) {
+            loadFiles()
+        }
+    }
 
     private val _rawFiles = MutableStateFlow<List<MediaFile>>(emptyList())
     
@@ -101,6 +120,7 @@ class HomeViewModel(
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 return HomeViewModel(
+                    context.applicationContext,
                     MediaFileRepository(context.applicationContext),
                     AppPreferences(context.applicationContext)
                 ) as T
