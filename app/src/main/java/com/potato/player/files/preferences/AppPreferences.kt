@@ -11,6 +11,20 @@ import kotlinx.coroutines.flow.asStateFlow
 
 class AppPreferences(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+    private val positionPrefs: SharedPreferences = context.getSharedPreferences("playback_positions", Context.MODE_PRIVATE)
+
+    private val _resumePlayback = MutableStateFlow(prefs.getBoolean("resume_playback", true))
+    val resumePlayback: StateFlow<Boolean> = _resumePlayback.asStateFlow()
+
+    private val _defaultPlaybackSpeed = MutableStateFlow(prefs.getFloat("default_playback_speed", 1.0f))
+    val defaultPlaybackSpeed: StateFlow<Float> = _defaultPlaybackSpeed.asStateFlow()
+
+    private val _backgroundPlayback = MutableStateFlow(prefs.getBoolean("background_playback", false))
+    val backgroundPlayback: StateFlow<Boolean> = _backgroundPlayback.asStateFlow()
+
+    private val _autoPlayNext = MutableStateFlow(prefs.getBoolean("auto_play_next", false))
+    val autoPlayNext: StateFlow<Boolean> = _autoPlayNext.asStateFlow()
+
 
     private val _subtitleSettings = MutableStateFlow(
         SubtitleSettings(
@@ -53,5 +67,37 @@ class AppPreferences(context: Context) {
     fun setDefaultOrientation(modeName: String) {
         prefs.edit().putString("default_orientation", modeName).apply()
         _defaultOrientation.value = modeName
+    }
+
+    fun setResumePlayback(enabled: Boolean) {
+        prefs.edit().putBoolean("resume_playback", enabled).apply()
+        _resumePlayback.value = enabled
+    }
+
+    fun setDefaultPlaybackSpeed(speed: Float) {
+        prefs.edit().putFloat("default_playback_speed", speed).apply()
+        _defaultPlaybackSpeed.value = speed
+    }
+
+    fun setBackgroundPlayback(enabled: Boolean) {
+        prefs.edit().putBoolean("background_playback", enabled).apply()
+        _backgroundPlayback.value = enabled
+    }
+
+    fun setAutoPlayNext(enabled: Boolean) {
+        prefs.edit().putBoolean("auto_play_next", enabled).apply()
+        _autoPlayNext.value = enabled
+    }
+
+    fun getPlaybackPosition(uri: String): Long {
+        return positionPrefs.getLong(uri, 0L)
+    }
+
+    fun savePlaybackPosition(uri: String, position: Long) {
+        if (position > 0) {
+            positionPrefs.edit().putLong(uri, position).apply()
+        } else {
+            positionPrefs.edit().remove(uri).apply()
+        }
     }
 }

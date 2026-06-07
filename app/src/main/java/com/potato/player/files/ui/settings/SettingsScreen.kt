@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 @Composable
 fun SettingsScreen(
     onGesturesClick: () -> Unit,
+    onPlaybackClick: () -> Unit,
     onAppearanceClick: () -> Unit,
     onSubtitleAppearanceClick: () -> Unit,
     onAboutClick: () -> Unit,
@@ -64,6 +65,20 @@ fun SettingsScreen(
                             )
                         },
                         modifier = Modifier.clickable { onGesturesClick() },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                    )
+                }
+                item {
+                    ListItem(
+                        headlineContent = { Text("Playback", color = Color.White) },
+                        trailingContent = {
+                            Icon(
+                                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = null,
+                                tint = Color.White
+                            )
+                        },
+                        modifier = Modifier.clickable { onPlaybackClick() },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                     )
                 }

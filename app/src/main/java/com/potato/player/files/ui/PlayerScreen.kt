@@ -59,6 +59,7 @@ import com.potato.player.player.viewmodel.PlayerViewModel
 import com.potato.player.files.ui.settings.AboutScreen
 import com.potato.player.files.ui.settings.AppearanceSettingsScreen
 import com.potato.player.files.ui.settings.GestureSettingsScreen
+import com.potato.player.files.ui.settings.PlaybackSettingsScreen
 import com.potato.player.files.ui.settings.SettingsScreen
 import com.potato.player.files.preferences.AppPreferences
 import kotlinx.coroutines.delay
@@ -177,6 +178,35 @@ fun PlayerScreen(
     LaunchedEffect(uri) {
         viewModel.cacheScreenSize(screenW, screenH)
         viewModel.open(uri)
+        
+        // Apply default playback speed
+        viewModel.setPlaybackSpeed(appPreferences.defaultPlaybackSpeed.value)
+
+        // Resume playback if enabled
+        if (appPreferences.resumePlayback.value) {
+            val savedPos = appPreferences.getPlaybackPosition(uri.toString())
+            if (savedPos > 0L) {
+                viewModel.seekTo(savedPos)
+            }
+        }
+    }
+
+    // Save playback position periodically while playing
+    LaunchedEffect(uri, uiState.isPlaying) {
+        if (uiState.isPlaying && appPreferences.resumePlayback.value) {
+            while (true) {
+                delay(5000)
+                appPreferences.savePlaybackPosition(uri.toString(), viewModel.uiState.value.positionMs)
+            }
+        }
+    }
+
+    DisposableEffect(uri) {
+        onDispose {
+            if (appPreferences.resumePlayback.value) {
+                appPreferences.savePlaybackPosition(uri.toString(), viewModel.uiState.value.positionMs)
+            }
+        }
     }
 
     // Re-run whenever videoTracks changes (e.g. after the engine resolves
@@ -243,7 +273,12 @@ fun PlayerScreen(
         viewModel.events.collect { event ->
             when (event) {
                 is MediaEvent.Error -> onError?.invoke(event.throwable)
-                is MediaEvent.PlaybackCompleted -> onPlaybackCompleted?.invoke()
+                is MediaEvent.PlaybackCompleted -> {
+                    if (appPreferences.autoPlayNext.value) {
+                        android.widget.Toast.makeText(context, "Auto-play next enabled (Requires folder permission to fully work)", android.widget.Toast.LENGTH_LONG).show()
+                    }
+                    onPlaybackCompleted?.invoke()
+                }
                 else -> Unit
             }
         }
@@ -567,9 +602,14 @@ fun PlayerScreen(
                 appPreferences = appPreferences,
             )
             "gestures" -> GestureSettingsScreen(onBack = { settingsRoute = "settings" })
+            "playback_settings" -> PlaybackSettingsScreen(
+                onBack = { settingsRoute = "settings" },
+                appPreferences = appPreferences
+            )
             "settings" -> SettingsScreen(
                 onBack = { settingsRoute = null },
                 onGesturesClick = { settingsRoute = "gestures" },
+                onPlaybackClick = { settingsRoute = "playback_settings" },
                 onAppearanceClick = { settingsRoute = "appearance" },
                 onSubtitleAppearanceClick = { settingsRoute = "subtitle_appearance" },
                 onAboutClick = { settingsRoute = "about" },

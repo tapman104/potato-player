@@ -25,6 +25,7 @@ import com.potato.player.player.ui.HomeScreen
 import com.potato.player.files.ui.settings.AboutScreen
 import com.potato.player.files.ui.settings.AppearanceSettingsScreen
 import com.potato.player.files.ui.settings.GestureSettingsScreen
+import com.potato.player.files.ui.settings.PlaybackSettingsScreen
 import com.potato.player.files.ui.settings.SettingsScreen
 import com.potato.player.player.ui.PlayerScreen
 import com.potato.player.player.viewmodel.PlayerViewModel
@@ -126,9 +127,14 @@ class MainActivity : ComponentActivity() {
                             appPreferences = appPreferences,
                         )
                         "gestures" -> GestureSettingsScreen(onBack = { settingsRoute = "settings" })
+                        "playback_settings" -> PlaybackSettingsScreen(
+                            onBack = { settingsRoute = "settings" },
+                            appPreferences = appPreferences
+                        )
                         "settings" -> SettingsScreen(
                             onBack = { settingsRoute = null },
                             onGesturesClick = { settingsRoute = "gestures" },
+                            onPlaybackClick = { settingsRoute = "playback_settings" },
                             onAppearanceClick = { settingsRoute = "appearance" },
                             onSubtitleAppearanceClick = { settingsRoute = "subtitle_appearance" },
                             onAboutClick = { settingsRoute = "about" },
@@ -150,7 +156,19 @@ class MainActivity : ComponentActivity() {
         super.onStop()
         window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         playerViewRef?.onPause()  // disables PlayerView rendering cleanly
-        viewModelState?.onBackground()
+        
+        if (appPreferences.resumePlayback.value) {
+            val uriStr = intent?.data?.toString() ?: intent?.getStringExtra(EXTRA_MEDIA_URI)
+            if (uriStr != null) {
+                viewModelState?.uiState?.value?.positionMs?.let { pos ->
+                    appPreferences.savePlaybackPosition(uriStr, pos)
+                }
+            }
+        }
+
+        if (!appPreferences.backgroundPlayback.value) {
+            viewModelState?.onBackground()
+        }
     }
 
     override fun onDestroy() {
