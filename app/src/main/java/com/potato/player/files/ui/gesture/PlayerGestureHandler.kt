@@ -33,6 +33,7 @@ class PlayerGestureHandler(
     private val audioManager: AudioManager,
     private val screenHeightPx: Float,
     private val context: Context,
+    private val appPreferences: com.potato.player.files.preferences.AppPreferences,
 ) {
     // Internal mutable state; expose as read-only StateFlow<GestureState>
     private val _gestureState = MutableStateFlow(GestureState())
@@ -52,6 +53,7 @@ class PlayerGestureHandler(
     // GESTURE: long-press-start
     /** Called when the player surface receives a long-press event. */
     fun onLongPressStart() {
+        if (!appPreferences.longPressForSpeed.value) return
         val currentSpeed = viewModel.uiState.value.playbackSpeed
         _gestureState.update { it.copy(speedBeforeLongPress = currentSpeed) }
         viewModel.setPlaybackSpeed(2f)
@@ -61,6 +63,7 @@ class PlayerGestureHandler(
     // GESTURE: long-press-end
     /** Called when the finger lifts after a long-press. */
     fun onLongPressEnd() {
+        if (!appPreferences.longPressForSpeed.value) return
         viewModel.setPlaybackSpeed(_gestureState.value.speedBeforeLongPress)
         _gestureState.update { it.copy(active = ActiveGesture.None) }
     }
@@ -76,6 +79,7 @@ class PlayerGestureHandler(
      * @param totalWidth Total width of the gesture area in pixels.
      */
     fun onVerticalDragStart(startX: Float, totalWidth: Float) {
+        if (!appPreferences.swipeForVolume.value) return
         dragOnLeftSide = startX < totalWidth / 2f
         // Reset the appropriate accumulator so each drag starts clean.
         _gestureState.update { state ->
@@ -97,6 +101,7 @@ class PlayerGestureHandler(
      * @param deltaY Change in Y since the last call, in pixels (positive = down).
      */
     fun onVerticalDrag(deltaY: Float) {
+        if (!appPreferences.swipeForVolume.value) return
         val fractionalDelta = deltaY / screenHeightPx * -1f // drag up = positive
         if (dragOnLeftSide) {
             handleBrightnessDrag(fractionalDelta)
@@ -108,6 +113,7 @@ class PlayerGestureHandler(
     // GESTURE: vertical-drag-end
     /** Called when the vertical drag gesture ends or is cancelled. */
     fun onVerticalDragEnd() {
+        if (!appPreferences.swipeForVolume.value) return
         _gestureState.update { it.copy(active = ActiveGesture.None) }
     }
 
@@ -122,6 +128,7 @@ class PlayerGestureHandler(
     }
 
     fun onDoubleTap(isForward: Boolean) {
+        if (!appPreferences.doubleTapToSeek.value) return
         if (isForward) {
             viewModel.seekForward10()
         } else {

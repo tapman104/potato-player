@@ -15,12 +15,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
+import com.potato.player.files.preferences.AppPreferences
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GestureSettingsScreen(onBack: () -> Unit) {
-    var doubleTapToSeek by remember { mutableStateOf(true) }
-    var longPressForSpeed by remember { mutableStateOf(true) }
-    var swipeForVolume by remember { mutableStateOf(true) }
+fun GestureSettingsScreen(
+    onBack: () -> Unit,
+    appPreferences: AppPreferences
+) {
+    val doubleTapToSeek by appPreferences.doubleTapToSeek.collectAsState()
+    val longPressForSpeed by appPreferences.longPressForSpeed.collectAsState()
+    val swipeForVolume by appPreferences.swipeForVolume.collectAsState()
 
     Scaffold(
         topBar = {
@@ -78,7 +83,7 @@ fun GestureSettingsScreen(onBack: () -> Unit) {
                             )
                         },
                         trailingContent = {
-                            Switch(checked = doubleTapToSeek, onCheckedChange = { doubleTapToSeek = it })
+                            Switch(checked = doubleTapToSeek, onCheckedChange = { appPreferences.setDoubleTapToSeek(it) })
                         },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                     )
@@ -101,7 +106,7 @@ fun GestureSettingsScreen(onBack: () -> Unit) {
                             )
                         },
                         trailingContent = {
-                            Switch(checked = longPressForSpeed, onCheckedChange = { longPressForSpeed = it })
+                            Switch(checked = longPressForSpeed, onCheckedChange = { appPreferences.setLongPressForSpeed(it) })
                         },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                     )
@@ -124,7 +129,7 @@ fun GestureSettingsScreen(onBack: () -> Unit) {
                             )
                         },
                         trailingContent = {
-                            Switch(checked = swipeForVolume, onCheckedChange = { swipeForVolume = it })
+                            Switch(checked = swipeForVolume, onCheckedChange = { appPreferences.setSwipeForVolume(it) })
                         },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                     )

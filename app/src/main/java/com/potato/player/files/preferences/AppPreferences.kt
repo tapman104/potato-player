@@ -25,6 +25,15 @@ class AppPreferences(context: Context) {
     private val _autoPlayNext = MutableStateFlow(prefs.getBoolean("auto_play_next", false))
     val autoPlayNext: StateFlow<Boolean> = _autoPlayNext.asStateFlow()
 
+    private val _doubleTapToSeek = MutableStateFlow(prefs.getBoolean("double_tap_to_seek", true))
+    val doubleTapToSeek: StateFlow<Boolean> = _doubleTapToSeek.asStateFlow()
+
+    private val _longPressForSpeed = MutableStateFlow(prefs.getBoolean("long_press_for_speed", true))
+    val longPressForSpeed: StateFlow<Boolean> = _longPressForSpeed.asStateFlow()
+
+    private val _swipeForVolume = MutableStateFlow(prefs.getBoolean("swipe_for_volume", true))
+    val swipeForVolume: StateFlow<Boolean> = _swipeForVolume.asStateFlow()
+
 
     private val _subtitleSettings = MutableStateFlow(
         SubtitleSettings(
@@ -87,6 +96,21 @@ class AppPreferences(context: Context) {
     fun setAutoPlayNext(enabled: Boolean) {
         prefs.edit().putBoolean("auto_play_next", enabled).apply()
         _autoPlayNext.value = enabled
+    }
+
+    fun setDoubleTapToSeek(enabled: Boolean) {
+        prefs.edit().putBoolean("double_tap_to_seek", enabled).apply()
+        _doubleTapToSeek.value = enabled
+    }
+
+    fun setLongPressForSpeed(enabled: Boolean) {
+        prefs.edit().putBoolean("long_press_for_speed", enabled).apply()
+        _longPressForSpeed.value = enabled
+    }
+
+    fun setSwipeForVolume(enabled: Boolean) {
+        prefs.edit().putBoolean("swipe_for_volume", enabled).apply()
+        _swipeForVolume.value = enabled
     }
 
     fun getPlaybackPosition(uri: String): Long {

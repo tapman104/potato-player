@@ -152,8 +152,8 @@ fun PlayerScreen(
     val density = LocalDensity.current
     val screenHeightPx = with(density) { LocalConfiguration.current.screenHeightDp.dp.toPx() }
     val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    val handler = remember(viewModel) {
-        PlayerGestureHandler(viewModel, audioManager, screenHeightPx, context)
+    val handler = remember(viewModel, appPreferences) {
+        PlayerGestureHandler(viewModel, audioManager, screenHeightPx, context, appPreferences)
     }
     val gestureState by handler.gestureState.collectAsState()
     
@@ -601,7 +601,10 @@ fun PlayerScreen(
                 onBack = { settingsRoute = "settings" },
                 appPreferences = appPreferences,
             )
-            "gestures" -> GestureSettingsScreen(onBack = { settingsRoute = "settings" })
+            "gestures" -> GestureSettingsScreen(
+                onBack = { settingsRoute = "settings" },
+                appPreferences = appPreferences
+            )
             "playback_settings" -> PlaybackSettingsScreen(
                 onBack = { settingsRoute = "settings" },
                 appPreferences = appPreferences

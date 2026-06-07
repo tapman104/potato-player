@@ -126,7 +126,10 @@ class MainActivity : ComponentActivity() {
                             onBack = { settingsRoute = "settings" },
                             appPreferences = appPreferences,
                         )
-                        "gestures" -> GestureSettingsScreen(onBack = { settingsRoute = "settings" })
+                        "gestures" -> GestureSettingsScreen(
+                            onBack = { settingsRoute = "settings" },
+                            appPreferences = appPreferences
+                        )
                         "playback_settings" -> PlaybackSettingsScreen(
                             onBack = { settingsRoute = "settings" },
                             appPreferences = appPreferences
