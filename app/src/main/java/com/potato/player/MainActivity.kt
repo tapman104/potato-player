@@ -99,11 +99,14 @@ class MainActivity : ComponentActivity() {
                     val player = viewModel.playerViewPlayer
                     val actualUri = mediaUri?.let(Uri::parse)
                     if (actualUri != null && player != null) {
+                        BackHandler(enabled = settingsRoute == null) {
+                            moveTaskToBack(true)
+                        }
                         PlayerScreen(
                             viewModel = viewModel,
                             player = player,
                             uri = actualUri,
-                            onBack = { finish() },
+                            onBack = { moveTaskToBack(true) },
                             onPlayerViewReady = { pv -> playerViewRef = pv },
                         )
                     } else {
@@ -153,7 +156,7 @@ class MainActivity : ComponentActivity() {
         super.onStop()
         window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         playerViewRef?.onPause()  // disables PlayerView rendering cleanly
-        // Intentionally skipping viewModelState?.onBackground() to allow background audio
+        viewModelState?.onBackground()
         if (wakeLock.isHeld) wakeLock.release()
     }
 
