@@ -57,7 +57,7 @@ fun BottomControlBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 28.dp),
+            .padding(horizontal = 16.dp, vertical = 0.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         // [CHANGE 2] Row 1: seek bar spans full width
@@ -73,7 +73,7 @@ fun BottomControlBar(
             thumbRadius = 6.dp,
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         // [CHANGE 4] Row 2: rotation lock and resize mode
         Row(
