@@ -44,4 +44,14 @@ class AppPreferences(context: Context) {
         prefs.edit().putBoolean("dynamic_color", enabled).apply()
         _dynamicColor.value = enabled
     }
+
+    private val _defaultOrientation = MutableStateFlow(
+        prefs.getString("default_orientation", "AUTO") ?: "AUTO"
+    )
+    val defaultOrientation: StateFlow<String> = _defaultOrientation.asStateFlow()
+
+    fun setDefaultOrientation(modeName: String) {
+        prefs.edit().putString("default_orientation", modeName).apply()
+        _defaultOrientation.value = modeName
+    }
 }

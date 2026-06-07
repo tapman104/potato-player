@@ -182,9 +182,18 @@ fun PlayerScreen(
     // Re-run whenever videoTracks changes (e.g. after the engine resolves
     // the stream). Only apply orientation from the first valid track;
     // once locked by the user, applyAutoOrientation no-ops internally.
-    LaunchedEffect(uiState.videoTracks) {
+    val defaultOrientationName by appPreferences.defaultOrientation.collectAsState()
+    val defaultOrientation = remember(defaultOrientationName) {
+        try {
+            com.potato.player.player.ui.state.OrientationMode.valueOf(defaultOrientationName)
+        } catch (e: Exception) {
+            com.potato.player.player.ui.state.OrientationMode.AUTO
+        }
+    }
+
+    LaunchedEffect(uiState.videoTracks, defaultOrientation) {
         if (uiState.videoTracks.isNotEmpty()) {
-            viewModel.applyAutoOrientation(screenW, screenH)
+            viewModel.applyAutoOrientation(screenW, screenH, defaultOrientation)
         }
     }
 

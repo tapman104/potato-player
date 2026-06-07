@@ -59,6 +59,37 @@ fun AppearanceSettingsScreen(onBack: () -> Unit, appPreferences: AppPreferences)
                 }
 
                 item {
+                    Text(
+                        text = "Default Player Orientation",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+                    )
+                    val orientationSelection by appPreferences.defaultOrientation.collectAsState()
+                    val orientationOptions = listOf(
+                        "Auto" to "AUTO",
+                        "Landscape" to "LOCKED_LANDSCAPE",
+                        "Portrait" to "LOCKED_PORTRAIT"
+                    )
+                    val selectedIndex = orientationOptions.indexOfFirst { it.second == orientationSelection }.coerceAtLeast(0)
+                    
+                    SingleChoiceSegmentedButtonRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                    ) {
+                        orientationOptions.forEachIndexed { index, option ->
+                            SegmentedButton(
+                                selected = selectedIndex == index,
+                                onClick = { appPreferences.setDefaultOrientation(option.second) },
+                                shape = SegmentedButtonDefaults.itemShape(index = index, count = orientationOptions.size)
+                            ) {
+                                Text(option.first)
+                            }
+                        }
+                    }
+                }
+
+                item {
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 

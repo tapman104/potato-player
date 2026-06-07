@@ -256,8 +256,14 @@ class PlayerViewModel(
      * NOTE: VideoSizeChanged is not yet in the MediaEvent sealed interface.
      * Dimensions are read from the first [VideoTrack] in [playbackState] instead.
      */
-    fun applyAutoOrientation(screenW: Int, screenH: Int) { // [CHANGE 15]
+    fun applyAutoOrientation(screenW: Int, screenH: Int, defaultOrientation: OrientationMode = OrientationMode.AUTO) { // [CHANGE 15]
+        if (defaultOrientation != OrientationMode.AUTO) {
+            _controlsState.update { it.copy(orientationMode = defaultOrientation, rotationLocked = true) }
+            return
+        }
+
         if (_controlsState.value.rotationLocked) return // [CHANGE 16]
+
         if (screenW == 0 || screenH == 0) return // [CHANGE 17]
         // [CHANGE 18] Prefer _videoSize if populated; fall back to first VideoTrack.
         val (rawW, rawH) = _videoSize.value.let { (w, h) -> // [CHANGE 19]
