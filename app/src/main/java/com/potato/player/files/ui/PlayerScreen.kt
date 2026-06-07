@@ -139,6 +139,8 @@ fun PlayerScreen(
         PlayerGestureHandler(viewModel, audioManager, screenHeightPx, context)
     }
     val gestureState by handler.gestureState.collectAsState()
+    // 24 dp dead zone converted to px once; passed to the handler each drag.
+    val deadZoneThresholdPx = with(density) { 24.dp.toPx() }
 
     DisposableEffect(handler) {
         onDispose { handler.release() }
@@ -304,18 +306,37 @@ fun PlayerScreen(
                             val distance = hypot(dx, dy)
 
                             when {
-                                // ── Drag committed ──────────────────────────────────
+                                // ── Axis classification (pre-commit) ──────────────────
+                                // Once total movement exceeds dragSlop, determine whether
+                                // this is a vertical or horizontal drag:
+                                //   - |dy| > 24dp  AND  |dy| > |dx|*1.5 → vertical: commit
+                                //   - |dx| wins first                    → horizontal: abandon
                                 !gestureCommitted && distance > dragSlop -> {
-                                    gestureCommitted = true
-                                    isDragging = true
-                                    firstDown.consume()
-                                    handler.onVerticalDragStart(downX, size.width.toFloat())
-                                    val firstDy = primary.position.y - lastY
-                                    lastY = primary.position.y
-                                    primary.consume()
-                                    handler.onVerticalDrag(firstDy)
+                                    val absDx = kotlin.math.abs(dx)
+                                    val absDy = kotlin.math.abs(dy)
+                                    when {
+                                        // Clearly vertical: cross dead zone AND steeper than 1.5:1 ratio
+                                        absDy >= deadZoneThresholdPx && absDy > absDx * 1.5f -> {
+                                            gestureCommitted = true
+                                            isDragging = true
+                                            firstDown.consume()
+                                            handler.onVerticalDragStart(downX, size.width.toFloat())
+                                            val firstDy = primary.position.y - lastY
+                                            lastY = primary.position.y
+                                            primary.consume()
+                                            handler.onVerticalDrag(firstDy)
+                                        }
+                                        // Horizontal wins first — abandon this gesture entirely
+                                        // so the horizontal seek handler can take over.
+                                        absDx > absDy * 1.5f -> {
+                                            gestureCommitted = true // prevents re-evaluation
+                                            // isDragging stays false, so onVerticalDragEnd is NOT called
+                                        }
+                                        // Ambiguous (diagonal) — keep waiting
+                                        else -> Unit
+                                    }
                                 }
-                                // ── Continuing drag ─────────────────────────────────
+                                // ── Continuing vertical drag ────────────────────────
                                 isDragging -> {
                                     val delta = primary.position.y - lastY
                                     lastY = primary.position.y
@@ -344,8 +365,8 @@ fun PlayerScreen(
                                             }
                                             if (dtEvent == null) break@doubleTapLoop
 
-                                            val dtPrimary = dtEvent.changes.firstOrNull()
-                                            if (dtPrimary != null && dtPrimary.pressed) {
+                                            val dtPrimary = dtEvent.changes.firstOrNull { it.pressed }
+                                            if (dtPrimary != null) {
                                                 secondDown = true
                                                 val tapX  = dtPrimary.position.x
                                                 val third = size.width / 3f

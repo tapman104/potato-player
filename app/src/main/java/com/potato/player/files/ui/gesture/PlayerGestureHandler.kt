@@ -202,7 +202,7 @@ class PlayerGestureHandler(
         if (kotlin.math.abs(newAccumulator) >= threshold) {
             val stepsToApply  = (newAccumulator / threshold).toInt()
             val remainder     = newAccumulator - (stepsToApply * threshold)
-            val newBrightness = (currentBrightness + stepsToApply * threshold).coerceIn(0.01f, 1.0f)
+            val newBrightness = (currentBrightness + stepsToApply * threshold).coerceIn(0.05f, 1.0f)
 
             lp.screenBrightness = newBrightness
             window.attributes   = lp
