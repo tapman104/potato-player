@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -32,7 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.potato.player.home.components.FolderCard
+import com.potato.player.home.components.MediaFileRow
 import com.potato.player.home.components.MediaSearchBar
 import com.potato.player.home.components.PermissionCard
 import com.potato.player.home.components.RecentFilesRow
@@ -76,17 +77,47 @@ fun HomeScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 20.dp)
-                            .padding(top = 48.dp, bottom = 8.dp),
+                            .padding(top = 48.dp, bottom = 16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Potato Player",
-                            fontSize = 26.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            letterSpacing = (-0.5).sp,
-                            modifier = Modifier.weight(1f)
-                        )
+                        Column {
+                            Text(
+                                text = "VIDEOS",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFFF9800),
+                                letterSpacing = 1.sp,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .height(2.dp)
+                                    .fillMaxWidth(0.15f)
+                                    .background(Color(0xFFFF9800))
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.size(24.dp))
+                        
+                        Column {
+                            Text(
+                                text = "PLAYLISTS",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFFAAAAAA),
+                                letterSpacing = 1.sp,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .height(2.dp)
+                                    .fillMaxWidth(0.2f)
+                                    .background(Color.Transparent)
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.weight(1f))
+                        
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
@@ -97,8 +128,6 @@ fun HomeScreen(
                             Icon(Icons.Outlined.Settings, contentDescription = "Settings", tint = Color(0xFFAAAAAA), modifier = Modifier.size(24.dp))
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(8.dp))
 
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
@@ -119,11 +148,10 @@ fun HomeScreen(
                             )
                         }
 
-                        itemsIndexed(state.folders) { index, folderGroup ->
-                            FolderCard(
-                                folderGroup = folderGroup,
-                                onToggleExpand = { viewModel.onToggleFolder(folderGroup.folderPath) },
-                                onFilePicked = onFilePicked
+                        items(state.files) { file ->
+                            MediaFileRow(
+                                file = file,
+                                onClick = { onFilePicked(file.uri) }
                             )
                         }
                     }

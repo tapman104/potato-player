@@ -12,15 +12,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material3.ripple
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -84,13 +87,13 @@ fun MediaFileRow(
                 indication = ripple(color = Color(0xFF6C63FF).copy(alpha = 0.1f)),
                 onClick = onClick
             )
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(64.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .size(width = 120.dp, height = 68.dp)
+                .clip(RoundedCornerShape(6.dp))
                 .background(Color(0xFF1C1C1C)),
             contentAlignment = Alignment.Center
         ) {
@@ -100,30 +103,41 @@ fun MediaFileRow(
                         bitmap = thumbnail!!.asImageBitmap(),
                         contentDescription = "Thumbnail",
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.size(64.dp)
+                        modifier = Modifier.fillMaxSize()
                     )
                 } else {
-                    Icon(Icons.Outlined.Movie, contentDescription = "Video", tint = Color(0xFF6C63FF), modifier = Modifier.size(22.dp))
+                    Icon(Icons.Outlined.Movie, contentDescription = "Video", tint = Color(0xFF6C63FF), modifier = Modifier.size(24.dp))
                 }
             } else {
-                Icon(Icons.Outlined.MusicNote, contentDescription = "Audio", tint = Color(0xFF6C63FF), modifier = Modifier.size(22.dp))
+                Icon(Icons.Outlined.MusicNote, contentDescription = "Audio", tint = Color(0xFF6C63FF), modifier = Modifier.size(24.dp))
             }
         }
 
-        Column(modifier = Modifier.padding(start = 14.dp).weight(1f)) {
+        Column(modifier = Modifier
+            .padding(start = 16.dp)
+            .weight(1f)
+        ) {
             Text(
                 text = file.displayName,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Normal,
                 color = Color.White,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = "${file.durationMs.toFormattedDuration()} · ${file.sizeBytes.toFormattedSize()}",
-                fontSize = 12.sp,
-                color = Color(0xFF777777),
+                text = "${file.durationMs.toFormattedDuration()} • ${if (file.sizeBytes > 0) "1080p" else "SD"}", // TODO: Actual resolution if available, using placeholder for now to match screenshot style
+                fontSize = 13.sp,
+                color = Color(0xFFAAAAAA),
                 modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+
+        IconButton(onClick = { /* TODO: More options */ }) {
+            Icon(
+                imageVector = Icons.Outlined.MoreVert,
+                contentDescription = "More options",
+                tint = Color.White
             )
         }
     }

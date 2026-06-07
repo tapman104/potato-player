@@ -64,18 +64,8 @@ class HomeViewModel(
             files.filter { it.displayName.contains(query, ignoreCase = true) }
         }
 
-        val grouped = filteredFiles.groupBy { it.folderPath }
-        val folderGroups = grouped.map { (path, folderFiles) ->
-            FolderGroup(
-                folderName = folderFiles.firstOrNull()?.folderName ?: "Unknown",
-                folderPath = path,
-                files = folderFiles.sortedBy { it.displayName },
-                isExpanded = expandedFolders.contains(path)
-            )
-        }.sortedBy { it.folderName }
-
         HomeUiState.Ready(
-            folders = folderGroups,
+            files = filteredFiles,
             recentFiles = recentFiles
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeUiState.Loading)
