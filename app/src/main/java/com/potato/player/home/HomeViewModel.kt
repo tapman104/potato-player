@@ -20,10 +20,6 @@ class HomeViewModel(
     private val appPreferences: AppPreferences
 ) : ViewModel() {
 
-    init {
-        checkPermissions()
-    }
-
     fun checkPermissions() {
         val hasPermission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             androidx.core.content.ContextCompat.checkSelfPermission(applicationContext, android.Manifest.permission.READ_MEDIA_VIDEO) == android.content.pm.PackageManager.PERMISSION_GRANTED &&
@@ -83,6 +79,10 @@ class HomeViewModel(
             recentFiles = recentFiles
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeUiState.Loading)
+
+    init {
+        checkPermissions()
+    }
 
     fun onPermissionResult(granted: Boolean) {
         _permissionGranted.value = granted
