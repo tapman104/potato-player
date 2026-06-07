@@ -44,6 +44,8 @@ class HomeViewModel(
     private val _isLoading = MutableStateFlow(false)
     private val _permissionGranted = MutableStateFlow(false)
 
+    val showVideoFiles: StateFlow<Boolean> = appPreferences.showVideoFiles
+
     val uiState: StateFlow<HomeUiState> = combine(
         _isLoading,
         _permissionGranted,

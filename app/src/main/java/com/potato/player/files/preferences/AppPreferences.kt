@@ -13,6 +13,14 @@ class AppPreferences(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
     private val positionPrefs: SharedPreferences = context.getSharedPreferences("playback_positions", Context.MODE_PRIVATE)
 
+    private val _showVideoFiles = MutableStateFlow(prefs.getBoolean("show_video_files", true))
+    val showVideoFiles: StateFlow<Boolean> = _showVideoFiles.asStateFlow()
+
+    fun setShowVideoFiles(enabled: Boolean) {
+        prefs.edit().putBoolean("show_video_files", enabled).apply()
+        _showVideoFiles.value = enabled
+    }
+
     private val KEY_SAVED_VOLUME = "saved_volume"
     private val KEY_SAVED_BRIGHTNESS = "saved_brightness"
 

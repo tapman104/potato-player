@@ -46,6 +46,12 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val showVideoFiles by viewModel.showVideoFiles.collectAsState()
+
+    val filePickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.OpenDocument(),
+        onResult = { uri -> uri?.let { onFilePicked(it) } }
+    )
 
     BackHandler(enabled = searchQuery.isNotEmpty()) {
         viewModel.onSearchQueryChanged("")
@@ -129,30 +135,44 @@ fun HomeScreen(
                         }
                     }
 
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 32.dp),
-                        verticalArrangement = Arrangement.spacedBy(0.dp)
-                    ) {
-                        item {
-                            MediaSearchBar(
-                                query = searchQuery,
-                                onQueryChange = { viewModel.onSearchQueryChanged(it) }
-                            )
-                        }
+                    if (showVideoFiles) {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(bottom = 32.dp),
+                            verticalArrangement = Arrangement.spacedBy(0.dp)
+                        ) {
+                            item {
+                                MediaSearchBar(
+                                    query = searchQuery,
+                                    onQueryChange = { viewModel.onSearchQueryChanged(it) }
+                                )
+                            }
 
-                        item {
-                            RecentFilesRow(
-                                files = state.recentFiles,
-                                onFilePicked = onFilePicked
-                            )
-                        }
+                            item {
+                                RecentFilesRow(
+                                    files = state.recentFiles,
+                                    onFilePicked = onFilePicked
+                                )
+                            }
 
-                        items(state.files) { file ->
-                            MediaFileRow(
-                                file = file,
-                                onClick = { onFilePicked(file.uri) }
-                            )
+                            items(state.files) { file ->
+                                MediaFileRow(
+                                    file = file,
+                                    onClick = { onFilePicked(file.uri) }
+                                )
+                            }
+                        }
+                    } else {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            androidx.compose.material3.Button(
+                                onClick = { filePickerLauncher.launch(arrayOf("video/*")) },
+                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))
+                            ) {
+                                Text("Open File", color = Color.White, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                 }

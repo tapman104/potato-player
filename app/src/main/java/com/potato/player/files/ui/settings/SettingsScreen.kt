@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.ClosedCaption
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PlayCircle
@@ -31,6 +32,7 @@ fun SettingsScreen(
     onPlaybackClick: () -> Unit,
     onAppearanceClick: () -> Unit,
     onSubtitleAppearanceClick: () -> Unit,
+    onHomeScreenClick: () -> Unit,
     onAboutClick: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -85,6 +87,17 @@ fun SettingsScreen(
                             icon = Icons.Outlined.TouchApp,
                             badgeColor = Color(0xFFFF9800),
                             onClick = onGesturesClick
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+                        )
+                        SettingMenuItem(
+                            title = "Home Screen",
+                            subtitle = "Manage video file display and picker",
+                            icon = Icons.Outlined.Home,
+                            badgeColor = Color(0xFFE91E63),
+                            onClick = onHomeScreenClick
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 16.dp),

@@ -141,6 +141,10 @@ class MainActivity : ComponentActivity() {
                             onBack = { settingsRoute = "settings" },
                             appPreferences = appPreferences
                         )
+                        "home_screen_settings" -> com.potato.player.files.ui.settings.HomeScreenSettingsScreen(
+                            onBack = { settingsRoute = "settings" },
+                            appPreferences = appPreferences
+                        )
                         "playback_settings" -> PlaybackSettingsScreen(
                             onBack = { settingsRoute = "settings" },
                             appPreferences = appPreferences
@@ -151,6 +155,7 @@ class MainActivity : ComponentActivity() {
                             onPlaybackClick = { settingsRoute = "playback_settings" },
                             onAppearanceClick = { settingsRoute = "appearance" },
                             onSubtitleAppearanceClick = { settingsRoute = "subtitle_appearance" },
+                            onHomeScreenClick = { settingsRoute = "home_screen_settings" },
                             onAboutClick = { settingsRoute = "about" },
                         )
                     }
@@ -171,14 +176,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         playerViewRef?.onResume() // re-enables PlayerView rendering
         viewModelState?.onForeground()
     }
 
     override fun onStop() {
         super.onStop()
-        window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         playerViewRef?.onPause()  // disables PlayerView rendering cleanly
         
         if (appPreferences.resumePlayback.value) {
