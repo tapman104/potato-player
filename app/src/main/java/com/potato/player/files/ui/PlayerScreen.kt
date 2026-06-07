@@ -123,7 +123,7 @@ fun PlayerScreen(
     val controlsState by viewModel.controlsState.collectAsState()
 
     // Controls visibility — local UI state, auto-hides after idle period.
-    var controlsVisible by remember { mutableStateOf(true) }
+    var controlsVisible by remember { mutableStateOf(false) }
 
     // Dialog visibility — purely transient UI state, not promoted to ViewModel.
     var showAudioDialog by remember { mutableStateOf(false) }

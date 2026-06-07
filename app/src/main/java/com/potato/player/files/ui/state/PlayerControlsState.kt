@@ -37,7 +37,7 @@ data class PlayerControlsState(
          *  - rotation follows the system sensor (unlocked, AUTO).
          */
         val Initial = PlayerControlsState(
-            controlsVisible = true,
+            controlsVisible = false,
             rotationLocked = false,
             orientationMode = OrientationMode.AUTO,
             resizeMode = ResizeMode.FIT,
