@@ -193,7 +193,7 @@ fun PlayerScreen(
         activity?.requestedOrientation = when (controlsState.orientationMode) {
             com.potato.player.player.ui.state.OrientationMode.AUTO -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR
             com.potato.player.player.ui.state.OrientationMode.LOCKED_PORTRAIT -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-            com.potato.player.player.ui.state.OrientationMode.LOCKED_LANDSCAPE -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            com.potato.player.player.ui.state.OrientationMode.LOCKED_LANDSCAPE -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         }
     }
 
