@@ -3,7 +3,7 @@ package com.potato.player.player
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.os.PowerManager // [CHANGE 43]
+
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -56,12 +56,7 @@ class MainActivity : ComponentActivity() {
     // its own SurfaceHolder internally.
     private var playerViewRef: PlayerView? = null
 
-    // [CHANGE 47] WakeLock acquired while player is in foreground.
-    private val wakeLock: PowerManager.WakeLock by lazy { // [CHANGE 48]
-        @Suppress("DEPRECATION") // SCREEN_DIM_WAKE_LOCK is the least-invasive lock available // [CHANGE 49]
-        (getSystemService(POWER_SERVICE) as PowerManager) // [CHANGE 50]
-            .newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "potato:player") // [CHANGE 51]
-    }
+    // WakeLock removed for better battery efficiency. FLAG_KEEP_SCREEN_ON handles this properly.
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -146,7 +141,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        if (!wakeLock.isHeld) wakeLock.acquire(10 * 60 * 1000L) // 10-min timeout
         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         playerViewRef?.onResume() // re-enables PlayerView rendering
         viewModelState?.onForeground()
@@ -157,7 +151,6 @@ class MainActivity : ComponentActivity() {
         window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         playerViewRef?.onPause()  // disables PlayerView rendering cleanly
         viewModelState?.onBackground()
-        if (wakeLock.isHeld) wakeLock.release()
     }
 
     override fun onDestroy() {
