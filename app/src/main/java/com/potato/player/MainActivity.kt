@@ -52,6 +52,7 @@ class MainActivity : ComponentActivity() {
     private var mediaControllerFuture: ListenableFuture<MediaController>? = null
     private var viewModelState by mutableStateOf<PlayerViewModel?>(null)
     private var mediaUriState by mutableStateOf<String?>(null)
+    private var isExternalLaunch by mutableStateOf(false)
     private val homeViewModel: HomeViewModel by viewModels { HomeViewModel.provideFactory(this) }
 
     // Holds the last known PlayerView to forward Activity lifecycle calls
@@ -65,7 +66,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         appPreferences = AppPreferences(applicationContext)
-        mediaUriState = resolveMediaUri(intent)?.toString()
+        
+        val initialUri = resolveMediaUri(intent)
+        mediaUriState = initialUri?.toString()
+        isExternalLaunch = initialUri != null && intent?.action == Intent.ACTION_VIEW
 
         val sessionToken = SessionToken(this, ComponentName(this, PlaybackService::class.java))
         mediaControllerFuture = MediaController.Builder(this, sessionToken).buildAsync()
@@ -99,13 +103,13 @@ class MainActivity : ComponentActivity() {
                     val actualUri = mediaUriState?.let(Uri::parse)
                     if (actualUri != null && player != null) {
                         BackHandler(enabled = settingsRoute == null) {
-                            mediaUriState = null
+                            if (isExternalLaunch) finish() else mediaUriState = null
                         }
                         PlayerScreen(
                             viewModel = viewModel,
                             player = player,
                             uri = actualUri,
-                            onBack = { mediaUriState = null },
+                            onBack = { if (isExternalLaunch) finish() else mediaUriState = null },
                             onPlayerViewReady = { pv -> playerViewRef = pv },
                         )
                     } else {
@@ -158,7 +162,11 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        mediaUriState = resolveMediaUri(intent)?.toString()
+        val uriFromIntent = resolveMediaUri(intent)
+        if (uriFromIntent != null) {
+            mediaUriState = uriFromIntent.toString()
+            isExternalLaunch = intent.action == Intent.ACTION_VIEW
+        }
     }
 
     override fun onStart() {
