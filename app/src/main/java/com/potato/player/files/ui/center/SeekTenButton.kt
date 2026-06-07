@@ -13,7 +13,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -25,10 +24,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 /**
  * Direction of a fixed-interval seek action.
@@ -54,10 +51,8 @@ const val SEEK_INTERVAL_MS = 10_000L
  * Renders a stacked layout:
  * ```
  * [Replay10 / Forward10 icon]
- *          10
  * ```
- * The label reinforces the interval at a glance. Direction-specific semantics
- * are applied so screen readers announce "Skip back 10 seconds" /
+ * Direction-specific semantics are applied so screen readers announce "Skip back 10 seconds" /
  * "Skip forward 10 seconds" correctly.
  *
  * Press-scale animation uses the same [Spring.StiffnessMediumLow] spring as
@@ -70,7 +65,7 @@ const val SEEK_INTERVAL_MS = 10_000L
  *                   the target position (current Â± [SEEK_INTERVAL_MS]).
  * @param modifier   Applied to the outermost [Column].
  * @param iconSize   Size of the seek icon. Defaults to [DEFAULT_ICON_SIZE].
- * @param tint       Icon and label colour.
+ * @param tint       Icon colour.
  */
 @Composable
 fun SeekTenButton(
@@ -78,7 +73,7 @@ fun SeekTenButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     iconSize: Dp = DEFAULT_ICON_SIZE,
-    tint: Color = Color.White,
+    tint: Color = Color.White.copy(alpha = 0.75f),
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -119,14 +114,6 @@ fun SeekTenButton(
             tint = tint,
             modifier = Modifier.size(iconSize),
         )
-
-        Text(
-            text = "10",
-            color = tint,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-            lineHeight = 12.sp,
-        )
     }
 }
 
@@ -134,5 +121,5 @@ fun SeekTenButton(
 // Constants
 // ---------------------------------------------------------------------------------------
 
-private val DEFAULT_ICON_SIZE = 36.dp
+private val DEFAULT_ICON_SIZE = 32.dp
 private const val PRESSED_SCALE = 0.88f

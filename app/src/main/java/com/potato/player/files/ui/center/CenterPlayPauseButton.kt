@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -64,7 +65,7 @@ fun CenterPlayPauseButton(
     modifier: Modifier = Modifier,
     size: Dp = DEFAULT_SIZE,
     tint: Color = Color.White,
-    backgroundColor: Color = Color.White.copy(alpha = 0.10f),
+    backgroundColor: Color = Color.Transparent,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -78,7 +79,7 @@ fun CenterPlayPauseButton(
 
     // Background brightens slightly on press.
     val bgColor by animateColorAsState(
-        targetValue = if (isPressed) backgroundColor.copy(alpha = 0.35f) else backgroundColor,
+        targetValue = if (isPressed) backgroundColor.copy(alpha = 0f) else backgroundColor,
         animationSpec = tween(durationMillis = 100),
         label = "centerPlayPauseBg",
     )
@@ -108,6 +109,17 @@ fun CenterPlayPauseButton(
                 else Modifier
             ),
     ) {
+        Box(
+            modifier = Modifier
+                .size(96.dp)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(Color.White.copy(alpha = 0.15f), Color.Transparent),
+                        radius = 80f
+                    )
+                )
+        )
+
         when {
             isLoading -> CircularProgressIndicator(
                 color = tint,
@@ -146,11 +158,11 @@ fun CenterPlayPauseButton(
 /** Default diameter. Larger than [com.potato.player.player.ui.PlayPauseButton]'s 64.dp default. */
 private val DEFAULT_SIZE = 64.dp
 
-/** Icon occupies 56 % of the button diameter â€” keeps padding consistent with PlayPauseButton. */
-private const val ICON_SIZE_FRACTION = 0.56f
+/** Icon occupies 60 % of the button diameter. */
+private const val ICON_SIZE_FRACTION = 0.60f
 
 /** Spinner slightly smaller than icon to avoid clipping within the circle. */
 private const val SPINNER_SIZE_FRACTION = 0.50f
 
 /** Scale factor applied on press. Spring animation returns to 1f on release. */
-private const val PRESSED_SCALE = 0.88f
+private const val PRESSED_SCALE = 0.84f

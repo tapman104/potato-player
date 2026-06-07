@@ -65,10 +65,10 @@ fun PlayerSeekBar(
     onSeek: (positionMs: Long) -> Unit,
     modifier: Modifier = Modifier,
     onSeekFinished: (() -> Unit)? = null,
-    trackHeight: Dp = 3.dp,
+    trackHeight: Dp = 2.dp,
     thumbRadius: Dp = 5.dp,
-    trackColor: Color = Color.White.copy(alpha = 0.18f),
-    bufferColor: Color = Color.White.copy(alpha = 0.30f),
+    trackColor: Color = Color.White.copy(alpha = 0.15f),
+    bufferColor: Color = Color.White.copy(alpha = 0.28f),
     progressColor: Color = Color.White,
     thumbColor: Color = Color.White,
     showTimeLabels: Boolean = true,
@@ -176,7 +176,14 @@ fun PlayerSeekBar(
             }
 
             // 4. Thumb â€” slightly larger while dragging for tactile feedback
-            val currentThumbRadius = if (isDragging) thumbRadiusPx * 1.35f else thumbRadiusPx
+            if (isDragging) {
+                drawCircle(
+                    color = Color.White.copy(alpha = 0.18f),
+                    radius = thumbRadiusPx * 2.2f,
+                    center = Offset(trackStartX + played, centerY),
+                )
+            }
+            val currentThumbRadius = if (isDragging) thumbRadiusPx * 1.5f else thumbRadiusPx
             drawCircle(
                 color = thumbColor,
                 radius = currentThumbRadius,
@@ -196,14 +203,14 @@ fun PlayerSeekBar(
 
                 Text(
                     text = displayPosition.toTimeString(),
-                    color = Color.White.copy(alpha = 0.75f),
-                    fontSize = 12.sp,
+                    color = Color.White.copy(alpha = 0.60f),
+                    fontSize = 11.sp,
                     modifier = Modifier.weight(1f),
                 )
                 Text(
                     text = durationMs.toTimeString(),
-                    color = Color.White.copy(alpha = 0.50f),
-                    fontSize = 12.sp,
+                    color = Color.White.copy(alpha = 0.35f),
+                    fontSize = 11.sp,
                 )
             }
         }

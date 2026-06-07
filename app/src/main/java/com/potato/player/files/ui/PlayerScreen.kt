@@ -410,10 +410,9 @@ fun PlayerScreen(
                 modifier = Modifier
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Black.copy(alpha = 0.85f),
-                                Color.Transparent,
-                            ),
+                            0f to Color.Black.copy(alpha = 0.80f),
+                            0.6f to Color.Black.copy(alpha = 0.20f),
+                            1f to Color.Transparent,
                         )
                     ),
             ) {
@@ -455,10 +454,9 @@ fun PlayerScreen(
                 modifier = Modifier
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.90f),
-                            ),
+                            0f to Color.Transparent,
+                            0.4f to Color.Black.copy(alpha = 0.30f),
+                            1f to Color.Black.copy(alpha = 0.88f),
                         )
                     )
                     .navigationBarsPadding()

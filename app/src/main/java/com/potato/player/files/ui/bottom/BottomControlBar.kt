@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -56,7 +58,7 @@ fun BottomControlBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp),
+            .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 20.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         // [CHANGE 2] Row 1: seek bar spans full width
@@ -69,6 +71,8 @@ fun BottomControlBar(
             modifier = Modifier.fillMaxWidth(), // [CHANGE 3]
             showTimeLabels = true,
         )
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         // [CHANGE 4] Row 2: rotation lock and resize mode
         Row(

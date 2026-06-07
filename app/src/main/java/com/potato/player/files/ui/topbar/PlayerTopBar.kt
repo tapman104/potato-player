@@ -95,16 +95,17 @@ fun PlayerTopBar(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back",
-                tint = tint,
+                tint = tint.copy(alpha = 0.85f),
             )
         }
 
         if (!title.isNullOrBlank()) {
             Text(
                 text = title,
-                color = tint,
-                fontSize = 16.sp,
+                color = tint.copy(alpha = 0.90f),
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
+                letterSpacing = 0.5.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
@@ -119,11 +120,13 @@ fun PlayerTopBar(
             isSubtitleActive = isSubtitleActive,
             onClick = onSubtitleClick,
             tint = tint,
+            size = 22.dp,
         )
 
         AudioTrackButton(
             onClick = onAudioTrackClick,
             tint = tint,
+            size = 22.dp,
         )
     }
 }
