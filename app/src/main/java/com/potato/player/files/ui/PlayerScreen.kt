@@ -139,6 +139,9 @@ fun PlayerScreen(
         PlayerGestureHandler(viewModel, audioManager, screenHeightPx, context)
     }
     val gestureState by handler.gestureState.collectAsState()
+    
+    val hideControlsForGesture = gestureState.active is ActiveGesture.LongPressSpeed || gestureState.active is ActiveGesture.DoubleTapSeek
+
     // 24 dp dead zone converted to px once; passed to the handler each drag.
     val deadZoneThresholdPx = with(density) { 24.dp.toPx() }
 
@@ -401,7 +404,7 @@ fun PlayerScreen(
 
         // ────────────────────────────────────────────────────────────────────────────────
         AnimatedVisibility(
-            visible = controlsVisible,
+            visible = controlsVisible && !hideControlsForGesture,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier.align(Alignment.TopCenter),
@@ -428,7 +431,7 @@ fun PlayerScreen(
 
         // â”€â”€ Layer 4: Center controls â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         AnimatedVisibility(
-            visible = controlsVisible,
+            visible = controlsVisible && !hideControlsForGesture,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier.align(Alignment.Center),
@@ -445,7 +448,7 @@ fun PlayerScreen(
 
         // â”€â”€ Layer 5: Bottom control bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         AnimatedVisibility(
-            visible = controlsVisible,
+            visible = controlsVisible && !hideControlsForGesture,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier.align(Alignment.BottomCenter),
@@ -546,5 +549,3 @@ fun PlayerScreen(
 }
 
 private const val CONTROLS_AUTO_HIDE_DELAY_MS = 3_000L // [CHANGE 16]
-
-
