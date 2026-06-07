@@ -23,9 +23,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MusicNote
-import androidx.compose.material.icons.outlined.Videocam
+import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,6 +38,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.potato.player.data.MediaFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -54,10 +54,11 @@ fun RecentFilesRow(
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "Recently Played",
-            style = MaterialTheme.typography.titleSmall,
+            fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
-            color = Color.White,
-            modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp)
+            color = Color(0xFFAAAAAA),
+            letterSpacing = 0.8.sp,
+            modifier = Modifier.padding(start = 20.dp, end = 16.dp, top = 20.dp, bottom = 12.dp)
         )
         
         LazyRow(
@@ -101,18 +102,17 @@ private fun RecentFileItem(file: MediaFile, onClick: () -> Unit) {
 
     Box(
         modifier = Modifier
-            .width(100.dp)
-            .height(130.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFF1A1A1A))
+            .width(110.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(Color(0xFF161616))
             .clickable(onClick = onClick)
     ) {
         Column {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(80.dp)
-                    .background(Color(0xFF2A2A2A)),
+                    .height(70.dp)
+                    .background(Color(0xFF1C1C1C)),
                 contentAlignment = Alignment.Center
             ) {
                 if (file.isVideo) {
@@ -121,26 +121,26 @@ private fun RecentFileItem(file: MediaFile, onClick: () -> Unit) {
                             bitmap = thumbnail!!.asImageBitmap(),
                             contentDescription = "Thumbnail",
                             contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxWidth().height(80.dp)
+                            modifier = Modifier.fillMaxWidth().height(70.dp)
                         )
                     } else {
-                        Icon(Icons.Outlined.Videocam, contentDescription = "Video", tint = Color(0xFF555555))
+                        Icon(Icons.Outlined.PlayCircle, contentDescription = "Video", tint = Color(0xFF6C63FF), modifier = Modifier.size(24.dp))
                     }
                 } else {
-                    Icon(Icons.Outlined.MusicNote, contentDescription = "Audio", tint = Color(0xFF7C4DFF))
+                    Icon(Icons.Outlined.MusicNote, contentDescription = "Audio", tint = Color(0xFF6C63FF), modifier = Modifier.size(24.dp))
                 }
             }
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
-                    .padding(horizontal = 6.dp),
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
                 contentAlignment = Alignment.CenterStart
             ) {
                 Text(
                     text = file.displayName,
-                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
                     color = Color.White,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis

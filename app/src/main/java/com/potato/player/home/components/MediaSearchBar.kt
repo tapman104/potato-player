@@ -16,7 +16,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -43,14 +43,14 @@ fun MediaSearchBar(
         onValueChange = onQueryChange,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .height(52.dp)
-            .background(Color(0xFF1E1E1E), RoundedCornerShape(14.dp)),
-        textStyle = TextStyle(color = Color.White, fontSize = 16.sp),
+            .padding(horizontal = 16.dp)
+            .height(48.dp)
+            .background(Color(0xFF1C1C1C), RoundedCornerShape(12.dp)),
+        textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
-        cursorBrush = SolidColor(Color.White),
+        cursorBrush = SolidColor(Color(0xFF6C63FF)),
         decorationBox = { innerTextField ->
             Row(
                 modifier = Modifier
@@ -59,22 +59,22 @@ fun MediaSearchBar(
                     .padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Outlined.Search, contentDescription = "Search", tint = Color(0xFF888888))
-                Spacer(modifier = Modifier.width(8.dp))
+                Icon(Icons.Outlined.Search, contentDescription = "Search", tint = Color(0xFF555555), modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(10.dp))
                 Box(modifier = Modifier.weight(1f)) {
                     if (query.isEmpty()) {
-                        Text("Search media...", color = Color(0xFF555555), fontSize = 16.sp)
+                        Text("Search media...", color = Color(0xFF444444), fontSize = 14.sp)
                     }
                     innerTextField()
                 }
                 if (query.isNotEmpty()) {
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
                     Icon(
-                        imageVector = Icons.Outlined.Close,
+                        imageVector = Icons.Rounded.Close,
                         contentDescription = "Clear",
-                        tint = Color(0xFF888888),
+                        tint = Color(0xFF666666),
                         modifier = Modifier
-                            .size(20.dp)
+                            .size(16.dp)
                             .clickable { onQueryChange("") }
                     )
                 }
