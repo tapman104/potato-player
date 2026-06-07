@@ -51,6 +51,7 @@ class MainActivity : ComponentActivity() {
 
     private var mediaControllerFuture: ListenableFuture<MediaController>? = null
     private var viewModelState by mutableStateOf<PlayerViewModel?>(null)
+    private var mediaUriState by mutableStateOf<String?>(null)
     private val homeViewModel: HomeViewModel by viewModels { HomeViewModel.provideFactory(this) }
 
     // Holds the last known PlayerView to forward Activity lifecycle calls
@@ -64,6 +65,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         appPreferences = AppPreferences(applicationContext)
+        mediaUriState = resolveMediaUri(intent)?.toString()
 
         val sessionToken = SessionToken(this, ComponentName(this, PlaybackService::class.java))
         mediaControllerFuture = MediaController.Builder(this, sessionToken).buildAsync()
@@ -87,7 +89,6 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
-                    var mediaUri by rememberSaveable { mutableStateOf(resolveMediaUri(intent)?.toString()) }
                     var settingsRoute by rememberSaveable { mutableStateOf<String?>(null) }
                     val viewModel = viewModelState
                     if (viewModel == null) {
@@ -95,7 +96,7 @@ class MainActivity : ComponentActivity() {
                         return@Surface
                     }
                     val player = viewModel.playerViewPlayer
-                    val actualUri = mediaUri?.let(Uri::parse)
+                    val actualUri = mediaUriState?.let(Uri::parse)
                     if (actualUri != null && player != null) {
                         BackHandler(enabled = settingsRoute == null) {
                             moveTaskToBack(true)
@@ -110,7 +111,7 @@ class MainActivity : ComponentActivity() {
                     } else {
                         HomeScreen(
                             viewModel = homeViewModel,
-                            onFilePicked = { uri -> mediaUri = uri.toString() },
+                            onFilePicked = { uri -> mediaUriState = uri.toString() },
                             onSettingsClick = { settingsRoute = "settings" },
                         )
                     }
@@ -149,6 +150,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        mediaUriState = resolveMediaUri(intent)?.toString()
     }
 
     override fun onStart() {
