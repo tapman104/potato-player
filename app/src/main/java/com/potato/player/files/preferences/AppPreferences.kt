@@ -13,6 +13,25 @@ class AppPreferences(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
     private val positionPrefs: SharedPreferences = context.getSharedPreferences("playback_positions", Context.MODE_PRIVATE)
 
+    private val KEY_SAVED_VOLUME = "saved_volume"
+    private val KEY_SAVED_BRIGHTNESS = "saved_brightness"
+
+    fun saveVolume(fraction: Float) {
+        prefs.edit().putFloat(KEY_SAVED_VOLUME, fraction).apply()
+    }
+
+    fun getSavedVolume(): Float {
+        return prefs.getFloat(KEY_SAVED_VOLUME, -1f)
+    }
+
+    fun saveBrightness(fraction: Float) {
+        prefs.edit().putFloat(KEY_SAVED_BRIGHTNESS, fraction).apply()
+    }
+
+    fun getSavedBrightness(): Float {
+        return prefs.getFloat(KEY_SAVED_BRIGHTNESS, -1f)
+    }
+
     private val _resumePlayback = MutableStateFlow(prefs.getBoolean("resume_playback", true))
     val resumePlayback: StateFlow<Boolean> = _resumePlayback.asStateFlow()
 

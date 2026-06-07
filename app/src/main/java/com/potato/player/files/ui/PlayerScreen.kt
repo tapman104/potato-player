@@ -184,6 +184,23 @@ fun PlayerScreen(
         
         // Apply default playback speed
         viewModel.setPlaybackSpeed(appPreferences.defaultPlaybackSpeed.value)
+
+        val savedVolume = appPreferences.getSavedVolume()
+        if (savedVolume != -1f) {
+            val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+            val targetStep = (savedVolume * maxVolume).toInt()
+            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, targetStep, 0)
+        }
+
+        val savedBrightness = appPreferences.getSavedBrightness()
+        if (savedBrightness != -1f) {
+            val window = (activityContext as? android.app.Activity)?.window
+            window?.let {
+                val lp = it.attributes
+                lp.screenBrightness = savedBrightness
+                it.attributes = lp
+            }
+        }
     }
 
     LaunchedEffect(uiState.canPlay, uri) {

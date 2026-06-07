@@ -172,6 +172,7 @@ class PlayerGestureHandler(
                     newVolume,
                     0
                 )
+                appPreferences.saveVolume(currentVolumeFraction())
 
                 state.copy(
                     active = ActiveGesture.VolumeSwipe(currentVolumeFraction()),
@@ -213,6 +214,7 @@ class PlayerGestureHandler(
 
             lp.screenBrightness = newBrightness
             window.attributes   = lp
+            appPreferences.saveBrightness(newBrightness)
 
             _gestureState.value = state.copy(
                 active               = ActiveGesture.BrightnessSwipe(newBrightness),
