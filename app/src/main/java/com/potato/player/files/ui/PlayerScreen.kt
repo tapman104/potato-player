@@ -62,6 +62,7 @@ import com.potato.player.files.ui.settings.GestureSettingsScreen
 import com.potato.player.files.ui.settings.SettingsScreen
 import com.potato.player.files.preferences.AppPreferences
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import mediaengine.MediaEvent
 
@@ -129,6 +130,19 @@ fun PlayerScreen(
     var showSubtitleDialog by remember { mutableStateOf(false) }
     var subtitleSettings by remember { mutableStateOf(SubtitleSettings()) }
     var showSubtitleSizeDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        appPreferences.getSubtitleSettings().first().let { 
+            subtitleSettings = it 
+        }
+    }
+
+    LaunchedEffect(subtitleSettings) {
+        playerViewRef?.subtitleView?.let {
+            applySubtitleSettings(it, subtitleSettings)
+        }
+    }
+    
     var playerViewRef by remember { mutableStateOf<PlayerView?>(null) }
     var settingsRoute by rememberSaveable { mutableStateOf<String?>(null) }
 
@@ -538,11 +552,16 @@ fun PlayerScreen(
                 onBack = { settingsRoute = "settings" },
                 appPreferences = appPreferences
             )
+            "subtitle_appearance" -> com.potato.player.files.ui.settings.SubtitleAppearanceSettingsScreen(
+                onBack = { settingsRoute = "settings" },
+                appPreferences = appPreferences,
+            )
             "gestures" -> GestureSettingsScreen(onBack = { settingsRoute = "settings" })
             "settings" -> SettingsScreen(
                 onBack = { settingsRoute = null },
                 onGesturesClick = { settingsRoute = "gestures" },
                 onAppearanceClick = { settingsRoute = "appearance" },
+                onSubtitleAppearanceClick = { settingsRoute = "subtitle_appearance" },
                 onAboutClick = { settingsRoute = "about" },
             )
         }
