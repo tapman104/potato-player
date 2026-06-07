@@ -186,8 +186,8 @@ fun PlayerScreen(
         viewModel.setPlaybackSpeed(appPreferences.defaultPlaybackSpeed.value)
     }
 
-    LaunchedEffect(uiState.phase, uri) {
-        if (!hasResumed && uiState.phase == mediaengine.MediaPhase.Ready && appPreferences.resumePlayback.value) {
+    LaunchedEffect(uiState.canPlay, uri) {
+        if (!hasResumed && uiState.canPlay && appPreferences.resumePlayback.value) {
             val savedPos = appPreferences.getPlaybackPosition(uri.toString())
             if (savedPos > 0L) {
                 viewModel.seekTo(savedPos)
