@@ -75,7 +75,8 @@ fun HomeScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp, top = 48.dp, bottom = 8.dp),
+                            .padding(horizontal = 20.dp)
+                            .padding(top = 48.dp, bottom = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
