@@ -99,16 +99,19 @@ class MainActivity : ComponentActivity() {
                     val actualUri = mediaUriState?.let(Uri::parse)
                     if (actualUri != null && player != null) {
                         BackHandler(enabled = settingsRoute == null) {
-                            moveTaskToBack(true)
+                            mediaUriState = null
                         }
                         PlayerScreen(
                             viewModel = viewModel,
                             player = player,
                             uri = actualUri,
-                            onBack = { moveTaskToBack(true) },
+                            onBack = { mediaUriState = null },
                             onPlayerViewReady = { pv -> playerViewRef = pv },
                         )
                     } else {
+                        BackHandler(enabled = settingsRoute == null) {
+                            moveTaskToBack(true)
+                        }
                         HomeScreen(
                             viewModel = homeViewModel,
                             onFilePicked = { uri -> mediaUriState = uri.toString() },
