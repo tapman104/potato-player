@@ -402,7 +402,6 @@ fun PlayerScreen(
                     onBack = onBack,
                     onSubtitleClick = { showSubtitleDialog = true },
                     onAudioTrackClick = { showAudioDialog = true },
-                    onResizeModeClick = viewModel::cycleResizeMode,
                 )
             }
         }
@@ -453,6 +452,7 @@ fun PlayerScreen(
                     },
                     onSeekFinished = { viewModel.setPositionUpdateRate(250L) },
                     onToggleRotationLock = viewModel::toggleRotationLock,
+                    onResizeModeClick = viewModel::cycleResizeMode,
                 )
             }
         }

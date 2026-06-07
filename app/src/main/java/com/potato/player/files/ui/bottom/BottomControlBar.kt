@@ -49,6 +49,7 @@ fun BottomControlBar(
     // [CHANGE 1] onTogglePlayPause removed — play/pause no longer lives here
     onSeek: (positionMs: Long) -> Unit,
     onToggleRotationLock: () -> Unit,
+    onResizeModeClick: () -> Unit,
     onSeekFinished: (() -> Unit)? = null, // Plumbed from PlayerScreen for rate reset
     modifier: Modifier = Modifier,
 ) {
@@ -71,16 +72,20 @@ fun BottomControlBar(
             showTimeLabels = true,
         )
 
-        // [CHANGE 4] Row 2: rotation lock, start-aligned
+        // [CHANGE 4] Row 2: rotation lock and resize mode
         Row(
             modifier = Modifier.fillMaxWidth(), // [CHANGE 5]
-            horizontalArrangement = Arrangement.Start, // [CHANGE 6]
+            horizontalArrangement = Arrangement.SpaceBetween, // [CHANGE 6]
         ) {
             RotationLockButton( // [CHANGE 7]
                 isLocked = isRotationLocked,
                 onClick = onToggleRotationLock,
                 tint = Color.White,
                 size = 20.dp, // Fix 2: smallest practical touch target
+            )
+            ResizeModeButton(
+                onClick = onResizeModeClick,
+                tint = Color.White,
             )
         }
     }
