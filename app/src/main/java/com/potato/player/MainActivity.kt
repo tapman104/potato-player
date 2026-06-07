@@ -21,7 +21,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.media3.ui.PlayerView // [CHANGE 44]
-import com.potato.player.player.ui.HomeScreen
+import com.potato.player.home.HomeScreen
+import com.potato.player.home.HomeViewModel
 import com.potato.player.files.ui.settings.AboutScreen
 import com.potato.player.files.ui.settings.AppearanceSettingsScreen
 import com.potato.player.files.ui.settings.GestureSettingsScreen
@@ -50,6 +51,7 @@ class MainActivity : ComponentActivity() {
 
     private var mediaControllerFuture: ListenableFuture<MediaController>? = null
     private var viewModelState by mutableStateOf<PlayerViewModel?>(null)
+    private val homeViewModel: HomeViewModel by viewModels { HomeViewModel.provideFactory(this) }
 
     // Holds the last known PlayerView to forward Activity lifecycle calls
     // (onResume / onPause) so PlayerView can re-enable rendering correctly.
@@ -107,6 +109,7 @@ class MainActivity : ComponentActivity() {
                         )
                     } else {
                         HomeScreen(
+                            viewModel = homeViewModel,
                             onFilePicked = { uri -> mediaUri = uri.toString() },
                             onSettingsClick = { settingsRoute = "settings" },
                         )

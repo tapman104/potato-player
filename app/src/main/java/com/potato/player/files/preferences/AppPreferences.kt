@@ -124,4 +124,8 @@ class AppPreferences(context: Context) {
             positionPrefs.edit().remove(uri).apply()
         }
     }
+
+    fun getAllSavedPositionUris(): Set<String> {
+        return positionPrefs.all.keys
+    }
 }
