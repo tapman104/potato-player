@@ -283,12 +283,15 @@ class PlayerViewModel(
         engine.release()
     }
 
+    private var wasPlayingBeforeBackground = false
+
     /**
      * Called from [MainActivity.onStop]. Pauses playback.
      * Surface lifecycle is managed entirely by PlayerView via its own
      * SurfaceHolder.Callback — do not touch the surface here.
      */
     fun onBackground() {
+        wasPlayingBeforeBackground = uiState.value.isPlaying
         engine.pause()
     }
 
@@ -298,7 +301,7 @@ class PlayerViewModel(
      * during its own onResume(), so no surface manipulation is needed here.
      */
     fun onForeground() {
-        if (!uiState.value.isEnded) {
+        if (!uiState.value.isEnded && wasPlayingBeforeBackground) {
             engine.play()
         }
     }
