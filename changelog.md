@@ -2,7 +2,18 @@
 
 All notable changes to the Potato Player project will be documented in this file.
 
-## [Unreleased] - Media Browser Refactor
+## [Unreleased] - Volume & Brightness Persistence
+### Added
+- Added volume and brightness level persistence across sessions using `AppPreferences` ("saved_volume" and "saved_brightness").
+- Implemented volume and brightness restoration in `PlayerScreen` upon opening a media URI.
+- Connected drag gesture handlers in `PlayerGestureHandler` to trigger saving of current levels when adjusted.
+
+### Fixed
+- Fixed an initialization order crash (`NullPointerException`) in `HomeViewModel` by ensuring all `MutableStateFlow` properties are initialized before the `init` block runs.
+
+---
+
+## [Phase 5] - Media Browser Refactor
 ### Added
 - Created `MediaFile` data class storing properties of local media files (URI, display name, duration, size, folder info, MIME type).
 - Added formatting extensions `Long.toFormattedDuration()` and `Long.toFormattedSize()` for media metadata presentation.

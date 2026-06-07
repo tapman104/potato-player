@@ -1,6 +1,7 @@
 package com.potato.player.home
 
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,10 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+
+    BackHandler(enabled = searchQuery.isNotEmpty()) {
+        viewModel.onSearchQueryChanged("")
+    }
 
     Box(
         modifier = Modifier

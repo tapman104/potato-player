@@ -146,8 +146,6 @@ fun PlayerScreen(
         }
     }
 
-    var settingsRoute by rememberSaveable { mutableStateOf<String?>(null) }
-
     // ── Gesture handler ───────────────────────────────────────────────────────────
     val density = LocalDensity.current
     val screenHeightPx = with(density) { LocalConfiguration.current.screenHeightDp.dp.toPx() }
@@ -608,37 +606,8 @@ fun PlayerScreen(
             )
         }
 
-        // ── Settings navigation stack ─────────────────────────────────────────────
-        BackHandler(enabled = settingsRoute != null) {
-            if (settingsRoute == "settings") settingsRoute = null else settingsRoute = "settings"
-        }
-
-        when (settingsRoute) {
-            "about" -> AboutScreen(onBack = { settingsRoute = "settings" })
-            "appearance" -> AppearanceSettingsScreen(
-                onBack = { settingsRoute = "settings" },
-                appPreferences = appPreferences
-            )
-            "subtitle_appearance" -> com.potato.player.files.ui.settings.SubtitleAppearanceSettingsScreen(
-                onBack = { settingsRoute = "settings" },
-                appPreferences = appPreferences,
-            )
-            "gestures" -> GestureSettingsScreen(
-                onBack = { settingsRoute = "settings" },
-                appPreferences = appPreferences
-            )
-            "playback_settings" -> PlaybackSettingsScreen(
-                onBack = { settingsRoute = "settings" },
-                appPreferences = appPreferences
-            )
-            "settings" -> SettingsScreen(
-                onBack = { settingsRoute = null },
-                onGesturesClick = { settingsRoute = "gestures" },
-                onPlaybackClick = { settingsRoute = "playback_settings" },
-                onAppearanceClick = { settingsRoute = "appearance" },
-                onSubtitleAppearanceClick = { settingsRoute = "subtitle_appearance" },
-                onAboutClick = { settingsRoute = "about" },
-            )
+        BackHandler(enabled = controlsVisible) {
+            controlsVisible = false
         }
     }
 }
