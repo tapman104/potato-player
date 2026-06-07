@@ -411,7 +411,7 @@ fun PlayerScreen(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Black.copy(alpha = 0.70f),
+                                Color.Black.copy(alpha = 0.85f),
                                 Color.Transparent,
                             ),
                         )
@@ -457,7 +457,7 @@ fun PlayerScreen(
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color.Black.copy(alpha = 0.75f),
+                                Color.Black.copy(alpha = 0.90f),
                             ),
                         )
                     )

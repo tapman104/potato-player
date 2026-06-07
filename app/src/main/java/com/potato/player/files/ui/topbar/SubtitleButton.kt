@@ -85,15 +85,10 @@ fun SubtitleButton(
         label = "subtitleButtonScale",
     )
 
-    // Pill background: visible only when a subtitle track is active.
-    val bgColor by animateColorAsState(
-        targetValue = when {
-            isSubtitleActive && isPressed -> ACTIVE_BG_PRESSED
-            isSubtitleActive             -> ACTIVE_BG
-            else                         -> Color.Transparent
-        },
+    val iconTint by animateColorAsState(
+        targetValue = if (isSubtitleActive) Color(0xFF00D4FF) else tint,
         animationSpec = tween(durationMillis = 150),
-        label = "subtitleButtonBg",
+        label = "subtitleButtonTint",
     )
 
     Box(
@@ -101,8 +96,6 @@ fun SubtitleButton(
         modifier = modifier
             .size(TOUCH_TARGET_SIZE)
             .scale(scale)
-            .clip(RoundedCornerShape(PILL_CORNER_RADIUS))
-            .background(bgColor)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -120,7 +113,7 @@ fun SubtitleButton(
         Icon(
             imageVector = Icons.Outlined.ClosedCaption,
             contentDescription = null,
-            tint = tint,
+            tint = iconTint,
             modifier = Modifier.size(size),
         )
     }
@@ -132,11 +125,4 @@ fun SubtitleButton(
 
 private val TOUCH_TARGET_SIZE   = 48.dp
 private val DEFAULT_ICON_SIZE   = 24.dp
-private val PILL_CORNER_RADIUS  = 8.dp
 private const val PRESSED_SCALE = 0.88f
-
-/** Background colour when a subtitle track is active (rest state). */
-private val ACTIVE_BG         = Color.White.copy(alpha = 0.20f)
-
-/** Background colour when a subtitle track is active and the button is pressed. */
-private val ACTIVE_BG_PRESSED = Color.White.copy(alpha = 0.35f)
