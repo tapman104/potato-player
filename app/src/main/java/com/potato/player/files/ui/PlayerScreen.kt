@@ -175,19 +175,24 @@ fun PlayerScreen(
     val configuration = LocalConfiguration.current
     val screenW = configuration.screenWidthDp
     val screenH = configuration.screenHeightDp
+    var hasResumed by remember { mutableStateOf(false) }
+
     LaunchedEffect(uri) {
+        hasResumed = false
         viewModel.cacheScreenSize(screenW, screenH)
         viewModel.open(uri)
         
         // Apply default playback speed
         viewModel.setPlaybackSpeed(appPreferences.defaultPlaybackSpeed.value)
+    }
 
-        // Resume playback if enabled
-        if (appPreferences.resumePlayback.value) {
+    LaunchedEffect(uiState.phase, uri) {
+        if (!hasResumed && uiState.phase == mediaengine.MediaPhase.Ready && appPreferences.resumePlayback.value) {
             val savedPos = appPreferences.getPlaybackPosition(uri.toString())
             if (savedPos > 0L) {
                 viewModel.seekTo(savedPos)
             }
+            hasResumed = true
         }
     }
 

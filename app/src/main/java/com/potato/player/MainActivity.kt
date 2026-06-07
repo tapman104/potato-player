@@ -174,7 +174,7 @@ class MainActivity : ComponentActivity() {
         playerViewRef?.onPause()  // disables PlayerView rendering cleanly
         
         if (appPreferences.resumePlayback.value) {
-            val uriStr = intent?.data?.toString() ?: intent?.getStringExtra(EXTRA_MEDIA_URI)
+            val uriStr = mediaUriState ?: intent?.data?.toString() ?: intent?.getStringExtra(EXTRA_MEDIA_URI)
             if (uriStr != null) {
                 viewModelState?.uiState?.value?.positionMs?.let { pos ->
                     appPreferences.savePlaybackPosition(uriStr, pos)
