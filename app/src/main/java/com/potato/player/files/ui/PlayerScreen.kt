@@ -131,6 +131,8 @@ fun PlayerScreen(
     var subtitleSettings by remember { mutableStateOf(SubtitleSettings()) }
     var showSubtitleSizeDialog by remember { mutableStateOf(false) }
 
+    var playerViewRef by remember { mutableStateOf<PlayerView?>(null) }
+
     LaunchedEffect(Unit) {
         appPreferences.getSubtitleSettings().first().let { 
             subtitleSettings = it 
@@ -142,8 +144,7 @@ fun PlayerScreen(
             applySubtitleSettings(it, subtitleSettings)
         }
     }
-    
-    var playerViewRef by remember { mutableStateOf<PlayerView?>(null) }
+
     var settingsRoute by rememberSaveable { mutableStateOf<String?>(null) }
 
     // ── Gesture handler ───────────────────────────────────────────────────────────

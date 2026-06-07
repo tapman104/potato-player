@@ -123,11 +123,16 @@ class MainActivity : ComponentActivity() {
                             onBack = { settingsRoute = "settings" },
                             appPreferences = appPreferences
                         )
+                        "subtitle_appearance" -> com.potato.player.files.ui.settings.SubtitleAppearanceSettingsScreen(
+                            onBack = { settingsRoute = "settings" },
+                            appPreferences = appPreferences,
+                        )
                         "gestures" -> GestureSettingsScreen(onBack = { settingsRoute = "settings" })
                         "settings" -> SettingsScreen(
                             onBack = { settingsRoute = null },
                             onGesturesClick = { settingsRoute = "gestures" },
                             onAppearanceClick = { settingsRoute = "appearance" },
+                            onSubtitleAppearanceClick = { settingsRoute = "subtitle_appearance" },
                             onAboutClick = { settingsRoute = "about" },
                         )
                     }
