@@ -239,6 +239,9 @@ fun PlayerScreen(
             },
             update = { pv ->
                 if (pv.player !== player) pv.player = player
+                if (pv.resizeMode != controlsState.resizeMode.value) {
+                    pv.resizeMode = controlsState.resizeMode.value
+                }
             },
             modifier = Modifier.fillMaxSize(),
         )
@@ -397,6 +400,7 @@ fun PlayerScreen(
                     onBack = onBack,
                     onSubtitleClick = { showSubtitleDialog = true },
                     onAudioTrackClick = { showAudioDialog = true },
+                    onResizeModeClick = viewModel::cycleResizeMode,
                 )
             }
         }

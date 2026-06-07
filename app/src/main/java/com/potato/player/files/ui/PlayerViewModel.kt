@@ -240,6 +240,15 @@ class PlayerViewModel(
     }
 
     /**
+     * Cycles the video resize mode (FIT -> FILL -> ZOOM -> FIT).
+     */
+    fun cycleResizeMode() {
+        _controlsState.update { current ->
+            current.copy(resizeMode = current.resizeMode.next())
+        }
+    }
+
+    /**
      * Compare the loaded video's aspect ratio against the screen and update
      * [controlsState] to the matching [OrientationMode].
      *

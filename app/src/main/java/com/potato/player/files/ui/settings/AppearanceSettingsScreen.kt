@@ -10,22 +10,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
+import com.potato.player.files.preferences.AppPreferences
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppearanceSettingsScreen(onBack: () -> Unit) {
-    var themeSelection by remember { mutableStateOf(0) } // 0: Light, 1: Dark, 2: System
+fun AppearanceSettingsScreen(onBack: () -> Unit, appPreferences: AppPreferences) {
+    val themeSelection by appPreferences.themeSelection.collectAsState()
     val themeOptions = listOf("Light", "Dark", "System")
-    var dynamicColor by remember { mutableStateOf(true) }
-
-    MaterialTheme(
-        colorScheme = darkColorScheme(
-            background = Color(0xFF121212),
-            surface = Color(0xFF1E1E1E),
-            onBackground = Color.White,
-            onSurface = Color.White,
-            onSurfaceVariant = Color.White
-        )
-    ) {
+    val dynamicColor by appPreferences.dynamicColor.collectAsState()
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -34,15 +26,9 @@ fun AppearanceSettingsScreen(onBack: () -> Unit) {
                         IconButton(onClick = onBack) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color(0xFF121212),
-                        titleContentColor = Color.White,
-                        navigationIconContentColor = Color.White
-                    )
+                    }
                 )
-            },
-            containerColor = MaterialTheme.colorScheme.background
+            }
         ) { paddingValues ->
             LazyColumn(
                 modifier = Modifier
@@ -53,7 +39,6 @@ fun AppearanceSettingsScreen(onBack: () -> Unit) {
                     Text(
                         text = "Theme",
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color.White,
                         modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
                     )
                     SingleChoiceSegmentedButtonRow(
@@ -64,10 +49,10 @@ fun AppearanceSettingsScreen(onBack: () -> Unit) {
                         themeOptions.forEachIndexed { index, option ->
                             SegmentedButton(
                                 selected = themeSelection == index,
-                                onClick = { themeSelection = index },
+                                onClick = { appPreferences.setThemeSelection(index) },
                                 shape = SegmentedButtonDefaults.itemShape(index = index, count = themeOptions.size)
                             ) {
-                                Text(option, color = Color.White)
+                                Text(option)
                             }
                         }
                     }
@@ -79,15 +64,14 @@ fun AppearanceSettingsScreen(onBack: () -> Unit) {
 
                 item {
                     ListItem(
-                        headlineContent = { Text("Dynamic Color", color = Color.White) },
-                        supportingContent = { Text("Uses wallpaper colors on Android 12+", color = Color.White) },
+                        headlineContent = { Text("Dynamic Color") },
+                        supportingContent = { Text("Uses wallpaper colors on Android 12+") },
                         trailingContent = {
-                            Switch(checked = dynamicColor, onCheckedChange = { dynamicColor = it })
+                            Switch(checked = dynamicColor, onCheckedChange = { appPreferences.setDynamicColor(it) })
                         },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                     )
                 }
             }
         }
-    }
 }

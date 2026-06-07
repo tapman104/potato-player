@@ -30,11 +30,25 @@ import com.potato.player.player.ui.PlayerScreen
 import com.potato.player.player.viewmodel.PlayerViewModel
 import mediaengine.ExoPlayerEngine
 
+import android.content.ComponentName
+import androidx.core.content.ContextCompat
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
+import com.google.common.util.concurrent.ListenableFuture
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
+import com.potato.player.PlaybackService
+import com.potato.player.files.preferences.AppPreferences
+import com.potato.player.ui.theme.VoraPlayerTheme
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.collectAsState
+
 class MainActivity : ComponentActivity() {
 
-    private val viewModel: PlayerViewModel by viewModels {
-        PlayerViewModelFactory(applicationContext)
-    }
+    private lateinit var appPreferences: AppPreferences
+
+    private var mediaControllerFuture: ListenableFuture<MediaController>? = null
+    private var viewModelState by mutableStateOf<PlayerViewModel?>(null)
 
     // Holds the last known PlayerView to forward Activity lifecycle calls
     // (onResume / onPause) so PlayerView can re-enable rendering correctly.
@@ -51,15 +65,37 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        appPreferences = AppPreferences(applicationContext)
+
+        val sessionToken = SessionToken(this, ComponentName(this, PlaybackService::class.java))
+        mediaControllerFuture = MediaController.Builder(this, sessionToken).buildAsync()
+        mediaControllerFuture?.addListener({
+            val controller = mediaControllerFuture?.get() ?: return@addListener
+            viewModelState = PlayerViewModel(ExoPlayerEngine(controller))
+        }, ContextCompat.getMainExecutor(this))
 
         setContent {
-            MaterialTheme {
+            val themeSelection by appPreferences.themeSelection.collectAsState()
+            val dynamicColor by appPreferences.dynamicColor.collectAsState()
+
+            val isDarkTheme = when (themeSelection) {
+                0 -> false
+                1 -> true
+                else -> isSystemInDarkTheme()
+            }
+
+            VoraPlayerTheme(darkTheme = isDarkTheme, dynamicColor = dynamicColor) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = Color.Black,
+                    color = MaterialTheme.colorScheme.background,
                 ) {
                     var mediaUri by rememberSaveable { mutableStateOf(resolveMediaUri(intent)?.toString()) }
                     var settingsRoute by rememberSaveable { mutableStateOf<String?>(null) }
+                    val viewModel = viewModelState
+                    if (viewModel == null) {
+                        Box(modifier = Modifier.fillMaxSize().background(Color.Black))
+                        return@Surface
+                    }
                     val player = viewModel.playerViewPlayer
                     val actualUri = mediaUri?.let(Uri::parse)
                     if (actualUri != null && player != null) {
@@ -83,7 +119,10 @@ class MainActivity : ComponentActivity() {
 
                     when (settingsRoute) {
                         "about" -> AboutScreen(onBack = { settingsRoute = "settings" })
-                        "appearance" -> AppearanceSettingsScreen(onBack = { settingsRoute = "settings" })
+                        "appearance" -> AppearanceSettingsScreen(
+                            onBack = { settingsRoute = "settings" },
+                            appPreferences = appPreferences
+                        )
                         "gestures" -> GestureSettingsScreen(onBack = { settingsRoute = "settings" })
                         "settings" -> SettingsScreen(
                             onBack = { settingsRoute = null },
@@ -102,15 +141,20 @@ class MainActivity : ComponentActivity() {
         if (!wakeLock.isHeld) wakeLock.acquire(10 * 60 * 1000L) // 10-min timeout
         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         playerViewRef?.onResume() // re-enables PlayerView rendering
-        viewModel.onForeground()
+        viewModelState?.onForeground()
     }
 
     override fun onStop() {
         super.onStop()
         window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         playerViewRef?.onPause()  // disables PlayerView rendering cleanly
-        viewModel.onBackground()
+        // Intentionally skipping viewModelState?.onBackground() to allow background audio
         if (wakeLock.isHeld) wakeLock.release()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        mediaControllerFuture?.let { MediaController.releaseFuture(it) }
     }
 
     private fun resolveMediaUri(intent: Intent?): Uri? {
@@ -121,17 +165,7 @@ class MainActivity : ComponentActivity() {
         return rawExtra?.takeIf { it.isNotBlank() }?.let(Uri::parse)
     }
 
-    private class PlayerViewModelFactory(
-        private val appContext: android.content.Context,
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(PlayerViewModel::class.java)) {
-                return PlayerViewModel(ExoPlayerEngine(appContext)) as T
-            }
-            throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
-        }
-    }
+    // Factory removed as we now instantiate PlayerViewModel directly with the MediaController
 
     companion object {
         const val EXTRA_MEDIA_URI = "media_uri"

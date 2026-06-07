@@ -49,11 +49,10 @@ import kotlinx.coroutines.launch
  * same thread that launched them.
  */
 class ExoPlayerEngine(
-    context: Context,
+    val player: Player,
     private val settings: EngineSettings = EngineSettings(),
 ) : MediaEngine {
 
-    private val player: ExoPlayer = ExoPlayer.Builder(context).build()
     val playerViewPlayer: Player
         get() = player
 

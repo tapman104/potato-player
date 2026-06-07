@@ -1,5 +1,7 @@
 package com.potato.player.player.ui.state
 
+import androidx.media3.ui.AspectRatioFrameLayout
+
 /**
  * UI-only state for the player controls overlay.
  *
@@ -26,6 +28,7 @@ data class PlayerControlsState(
     val controlsVisible: Boolean,
     val rotationLocked: Boolean,
     val orientationMode: OrientationMode,
+    val resizeMode: ResizeMode,
 ) {
     companion object {
         /**
@@ -37,6 +40,7 @@ data class PlayerControlsState(
             controlsVisible = true,
             rotationLocked = false,
             orientationMode = OrientationMode.AUTO,
+            resizeMode = ResizeMode.FIT,
         )
     }
 }
@@ -80,4 +84,20 @@ enum class OrientationMode {
      * [android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE].
      */
     LOCKED_LANDSCAPE,
+}
+
+// ---------------------------------------------------------------------------------------
+// Resize mode
+// ---------------------------------------------------------------------------------------
+
+enum class ResizeMode(val value: Int) {
+    FIT(AspectRatioFrameLayout.RESIZE_MODE_FIT),
+    FILL(AspectRatioFrameLayout.RESIZE_MODE_FILL),
+    ZOOM(AspectRatioFrameLayout.RESIZE_MODE_ZOOM);
+
+    fun next(): ResizeMode = when (this) {
+        FIT -> FILL
+        FILL -> ZOOM
+        ZOOM -> FIT
+    }
 }

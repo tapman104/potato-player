@@ -41,10 +41,10 @@ fun VoraPlayerTheme(
     when {
       dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
         val context = LocalContext.current
-        dynamicDarkColorScheme(context)
+        if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
       }
-
-      else -> DarkColorScheme
+      darkTheme -> DarkColorScheme
+      else -> LightColorScheme
     }
 
   MaterialTheme(colorScheme = colorScheme, typography = Typography, content = content)
