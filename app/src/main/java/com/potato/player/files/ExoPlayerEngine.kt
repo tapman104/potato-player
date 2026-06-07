@@ -86,7 +86,7 @@ class ExoPlayerEngine(
     private var released: Boolean = false
     private val trackKeyById = mutableMapOf<String, TrackKey>()
     // REF-3: Mutable polling rate; default 250ms, reduced to 100ms during scrub.
-    private var positionUpdateIntervalMs: Long = 250L
+    private var positionUpdateIntervalMs: Long = 1000L
 
 
     private data class TrackKey(

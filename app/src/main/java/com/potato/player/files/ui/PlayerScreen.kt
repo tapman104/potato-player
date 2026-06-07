@@ -488,7 +488,7 @@ fun PlayerScreen(
                         viewModel.setPositionUpdateRate(100L)
                         viewModel.seekTo(positionMs)
                     },
-                    onSeekFinished = { viewModel.setPositionUpdateRate(250L) },
+                    onSeekFinished = { viewModel.setPositionUpdateRate(1000L) },
                     onCycleRotation = viewModel::cycleRotationMode,
                     onResizeModeClick = viewModel::cycleResizeMode,
                 )
