@@ -462,8 +462,7 @@ fun PlayerScreen(
                             1f to Color.Black.copy(alpha = 0.88f),
                         )
                     )
-                    .navigationBarsPadding()
-                    .padding(bottom = 12.dp),
+                    .navigationBarsPadding(),
             ) {
                 BottomControlBar(
                     uiState = uiState,
