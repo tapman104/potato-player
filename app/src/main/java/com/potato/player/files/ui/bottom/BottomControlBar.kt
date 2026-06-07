@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 import com.potato.player.player.ui.PlayerSeekBar
+import com.potato.player.player.ui.state.OrientationMode
 import com.potato.player.player.viewmodel.PlayerUiState
 
 /**
@@ -35,21 +36,20 @@ import com.potato.player.player.viewmodel.PlayerUiState
  *
  * @param uiState          Current player state snapshot. Drives the seek bar
  *                         and play/pause button appearance.
- * @param isRotationLocked `true` when orientation is pinned, `false` for
- *                         auto-rotate. Controls the icon shown by
+ * @param orientationMode  Current orientation mode. Controls the icon and tint shown by
  *                         [RotationLockButton].
  * @param onSeek           Called with the target position (ms) during scrub
  *                         or tap on the seek bar.
- * @param onToggleRotationLock Called when [RotationLockButton] is tapped.
+ * @param onCycleRotation  Called when [RotationLockButton] is tapped.
  * @param modifier         Optional [Modifier] applied to the outer [Column].
  */
 @Composable
 fun BottomControlBar(
     uiState: PlayerUiState,
-    isRotationLocked: Boolean,
+    orientationMode: OrientationMode,
     // [CHANGE 1] onTogglePlayPause removed — play/pause no longer lives here
     onSeek: (positionMs: Long) -> Unit,
-    onToggleRotationLock: () -> Unit,
+    onCycleRotation: () -> Unit,
     onResizeModeClick: () -> Unit,
     onSeekFinished: (() -> Unit)? = null, // Plumbed from PlayerScreen for rate reset
     modifier: Modifier = Modifier,
@@ -81,9 +81,8 @@ fun BottomControlBar(
             horizontalArrangement = Arrangement.SpaceBetween, // [CHANGE 6]
         ) {
             RotationLockButton( // [CHANGE 7]
-                isLocked = isRotationLocked,
-                onClick = onToggleRotationLock,
-                tint = Color.White,
+                orientationMode = orientationMode,
+                onClick = onCycleRotation,
                 size = 20.dp, // Fix 2: smallest practical touch target
             )
             ResizeModeButton(

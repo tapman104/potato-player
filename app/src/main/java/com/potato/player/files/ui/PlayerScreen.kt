@@ -483,13 +483,13 @@ fun PlayerScreen(
             ) {
                 BottomControlBar(
                     uiState = uiState,
-                    isRotationLocked = controlsState.rotationLocked,
+                    orientationMode = controlsState.orientationMode,
                     onSeek = { positionMs ->
                         viewModel.setPositionUpdateRate(100L)
                         viewModel.seekTo(positionMs)
                     },
                     onSeekFinished = { viewModel.setPositionUpdateRate(250L) },
-                    onToggleRotationLock = viewModel::toggleRotationLock,
+                    onCycleRotation = viewModel::cycleRotationMode,
                     onResizeModeClick = viewModel::cycleResizeMode,
                 )
             }

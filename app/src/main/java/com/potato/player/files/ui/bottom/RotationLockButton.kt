@@ -8,8 +8,9 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.ScreenRotation
+import androidx.compose.material.icons.filled.StayCurrentLandscape
+import androidx.compose.material.icons.filled.StayCurrentPortrait
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -21,38 +22,26 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.toggleableState
-import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.potato.player.player.ui.state.OrientationMode
 
 /**
- * Icon toggle button for the rotation-lock control.
+ * Icon button for the rotation-lock control.
  *
- * When [isLocked] is `true` a filled **Lock** icon is shown, signalling that
- * the screen orientation is pinned. When `false` a **ScreenRotation** icon is
- * shown, signalling that auto-rotate is active.
+ * Cycles between AUTO, LOCKED_LANDSCAPE, and LOCKED_PORTRAIT.
  *
- * The button applies a spring-animated press-scale identical to the one used
- * by [com.potato.player.player.ui.PlayPauseButton] so the two feel consistent when
- * placed in the same control bar.
- *
- * This composable is stateless: the caller owns [isLocked] and must update it
- * in response to [onClick].
- *
- * @param isLocked `true` when rotation is locked; `false` for auto-rotate.
+ * @param orientationMode Current orientation mode.
  * @param onClick  Invoked when the user taps the button.
  * @param modifier Optional [Modifier] applied to the icon.
  * @param size     Touch / icon size. Default 36.dp.
- * @param tint     Icon tint. Default [Color.White].
  */
 @Composable
 fun RotationLockButton(
-    isLocked: Boolean,
+    orientationMode: OrientationMode,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     size: Dp = 36.dp,
-    tint: Color = Color.White,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -63,10 +52,25 @@ fun RotationLockButton(
         label = "rotationLockScale",
     )
 
-    val description = if (isLocked) "Rotation locked â€” tap to unlock" else "Auto-rotate â€” tap to lock"
+    val description = when (orientationMode) {
+        OrientationMode.AUTO -> "Auto-rotate"
+        OrientationMode.LOCKED_LANDSCAPE -> "Locked landscape"
+        OrientationMode.LOCKED_PORTRAIT -> "Locked portrait"
+    }
+
+    val icon = when (orientationMode) {
+        OrientationMode.AUTO -> Icons.Filled.ScreenRotation
+        OrientationMode.LOCKED_LANDSCAPE -> Icons.Filled.StayCurrentLandscape
+        OrientationMode.LOCKED_PORTRAIT -> Icons.Filled.StayCurrentPortrait
+    }
+
+    val tint = when (orientationMode) {
+        OrientationMode.AUTO -> Color.White.copy(alpha = 0.60f)
+        else -> Color.White
+    }
 
     Icon(
-        imageVector = if (isLocked) Icons.Filled.Lock else Icons.Filled.ScreenRotation,
+        imageVector = icon,
         contentDescription = null, // declared in semantics below
         tint = tint,
         modifier = modifier
@@ -78,9 +82,8 @@ fun RotationLockButton(
                 onClick = onClick,
             )
             .semantics {
-                role = Role.Switch
+                role = Role.Button
                 contentDescription = description
-                toggleableState = if (isLocked) ToggleableState.On else ToggleableState.Off
             },
     )
 }

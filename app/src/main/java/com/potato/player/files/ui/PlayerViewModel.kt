@@ -208,23 +208,17 @@ class PlayerViewModel(
      * `LaunchedEffect` that calls `Activity.requestedOrientation` with the
      * appropriate constant whenever the flag changes.
      */
-    fun toggleRotationLock() { // [CHANGE 6]
-        val wasLocked = _controlsState.value.rotationLocked // [CHANGE 7]
+    fun cycleRotationMode() {
         _controlsState.update { current ->
+            val nextMode = when (current.orientationMode) {
+                OrientationMode.AUTO             -> OrientationMode.LOCKED_LANDSCAPE
+                OrientationMode.LOCKED_LANDSCAPE -> OrientationMode.LOCKED_PORTRAIT
+                OrientationMode.LOCKED_PORTRAIT  -> OrientationMode.AUTO
+            }
             current.copy(
-                rotationLocked = !current.rotationLocked,
-                orientationMode = if (!current.rotationLocked) { // [CHANGE 8]
-                    // Locking: default to landscape (typical for a video player).
-                    OrientationMode.LOCKED_LANDSCAPE
-                } else {
-                    // Unlocking: revert to sensor-driven auto-rotate.
-                    OrientationMode.AUTO
-                },
+                orientationMode = nextMode,
+                rotationLocked = nextMode != OrientationMode.AUTO,
             )
-        }
-        // [CHANGE 9] On unlock, immediately re-orient to match the video.
-        if (wasLocked) { // [CHANGE 10]
-            applyAutoOrientation(lastScreenW, lastScreenH) // [CHANGE 11]
         }
     }
 
