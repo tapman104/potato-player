@@ -12,6 +12,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.ClosedCaption
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.TouchApp
@@ -33,6 +34,7 @@ fun SettingsScreen(
     onAppearanceClick: () -> Unit,
     onSubtitleAppearanceClick: () -> Unit,
     onHomeScreenClick: () -> Unit,
+    onMiscClick: () -> Unit,
     onAboutClick: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -131,6 +133,17 @@ fun SettingsScreen(
                             icon = Icons.Outlined.ClosedCaption,
                             badgeColor = Color(0xFF009688),
                             onClick = onSubtitleAppearanceClick
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+                        )
+                        SettingMenuItem(
+                            title = "Miscellaneous",
+                            subtitle = "Experimental and other settings",
+                            icon = Icons.Outlined.Build,
+                            badgeColor = Color(0xFF795548),
+                            onClick = onMiscClick
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 16.dp),

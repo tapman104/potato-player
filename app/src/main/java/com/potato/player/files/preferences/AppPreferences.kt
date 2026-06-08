@@ -61,6 +61,9 @@ class AppPreferences(context: Context) {
     private val _swipeForVolume = MutableStateFlow(prefs.getBoolean("swipe_for_volume", true))
     val swipeForVolume: StateFlow<Boolean> = _swipeForVolume.asStateFlow()
 
+    private val _enablePlaybackService = MutableStateFlow(prefs.getBoolean("enable_playback_service", true))
+    val enablePlaybackService: StateFlow<Boolean> = _enablePlaybackService.asStateFlow()
+
 
     private val _subtitleSettings = MutableStateFlow(
         SubtitleSettings(
@@ -138,6 +141,11 @@ class AppPreferences(context: Context) {
     fun setSwipeForVolume(enabled: Boolean) {
         prefs.edit().putBoolean("swipe_for_volume", enabled).apply()
         _swipeForVolume.value = enabled
+    }
+
+    fun setEnablePlaybackService(enabled: Boolean) {
+        prefs.edit().putBoolean("enable_playback_service", enabled).apply()
+        _enablePlaybackService.value = enabled
     }
 
     fun getPlaybackPosition(uri: String): Long {

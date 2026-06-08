@@ -71,12 +71,18 @@ class MainActivity : ComponentActivity() {
         mediaUriState = initialUri?.toString()
         isExternalLaunch = initialUri != null && intent?.action == Intent.ACTION_VIEW
 
-        val sessionToken = SessionToken(this, ComponentName(this, PlaybackService::class.java))
-        mediaControllerFuture = MediaController.Builder(this, sessionToken).buildAsync()
-        mediaControllerFuture?.addListener({
-            val controller = mediaControllerFuture?.get() ?: return@addListener
-            viewModelState = PlayerViewModel(ExoPlayerEngine(controller))
-        }, ContextCompat.getMainExecutor(this))
+        val enablePlaybackService = appPreferences.enablePlaybackService.value
+        if (enablePlaybackService) {
+            val sessionToken = SessionToken(this, ComponentName(this, PlaybackService::class.java))
+            mediaControllerFuture = MediaController.Builder(this, sessionToken).buildAsync()
+            mediaControllerFuture?.addListener({
+                val controller = mediaControllerFuture?.get() ?: return@addListener
+                viewModelState = PlayerViewModel(ExoPlayerEngine(controller))
+            }, ContextCompat.getMainExecutor(this))
+        } else {
+            val exoPlayer = androidx.media3.exoplayer.ExoPlayer.Builder(this).build()
+            viewModelState = PlayerViewModel(ExoPlayerEngine(exoPlayer))
+        }
 
         setContent {
             val themeSelection by appPreferences.themeSelection.collectAsState()
@@ -154,6 +160,10 @@ class MainActivity : ComponentActivity() {
                             onBack = { settingsRoute = "settings" },
                             appPreferences = appPreferences
                         )
+                        "misc_settings" -> com.potato.player.files.ui.settings.MiscSettingsScreen(
+                            onBack = { settingsRoute = "settings" },
+                            appPreferences = appPreferences
+                        )
                         "settings" -> SettingsScreen(
                             onBack = { settingsRoute = null },
                             onGesturesClick = { settingsRoute = "gestures" },
@@ -161,6 +171,7 @@ class MainActivity : ComponentActivity() {
                             onAppearanceClick = { settingsRoute = "appearance" },
                             onSubtitleAppearanceClick = { settingsRoute = "subtitle_appearance" },
                             onHomeScreenClick = { settingsRoute = "home_screen_settings" },
+                            onMiscClick = { settingsRoute = "misc_settings" },
                             onAboutClick = { settingsRoute = "about" },
                         )
                     }
