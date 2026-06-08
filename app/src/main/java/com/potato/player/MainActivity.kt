@@ -118,6 +118,13 @@ class MainActivity : ComponentActivity() {
                         ).build()
                     val exoPlayer = androidx.media3.exoplayer.ExoPlayer.Builder(this@MainActivity)
                         .setLoadControl(loadControl)
+                        .setAudioAttributes(
+                            androidx.media3.common.AudioAttributes.Builder()
+                                .setContentType(androidx.media3.common.C.AUDIO_CONTENT_TYPE_MOVIE)
+                                .setUsage(androidx.media3.common.C.USAGE_MEDIA)
+                                .build(),
+                            true // handleAudioFocus
+                        )
                         .build()
                     viewModelState = PlayerViewModel(ExoPlayerEngine(exoPlayer))
                     currentUri?.let { uriStr ->
