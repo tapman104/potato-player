@@ -75,6 +75,16 @@ graph TD
 
 ---
 
+## 📂 Supported Formats
+
+Potato Player natively supports a wide range of media formats powered by AndroidX Media3 (ExoPlayer):
+
+* **Video**: MP4, WebM, MKV, FLV, AVI, MPEG-TS, 3GP
+* **Audio**: MP3, AAC, FLAC, WAV, Ogg, M4A, AMR
+* **Subtitles**: SubRip (.srt), WebVTT (.vtt), SubStation Alpha (.ssa/.ass), TTML
+
+---
+
 ## 🔄 App Flow & Lifecycle
 
 ```mermaid
