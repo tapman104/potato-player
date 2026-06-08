@@ -73,7 +73,7 @@ fun PlayerSeekBar(
     thumbColor: Color = Color.White,
     showTimeLabels: Boolean = true,
 ) {
-    // Raw fractional progress [0f, 1f]. Unknown duration â†’ 0.
+    // Raw fractional progress [0f, 1f]. Unknown duration -> 0.
     val playedFraction = if (durationMs > 0L) {
         (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
     } else 0f
@@ -95,18 +95,32 @@ fun PlayerSeekBar(
         label = "seekBarProgress",
     )
 
+    // Premium visual expansion when dragging
+    val animatedTrackHeight by androidx.compose.animation.core.animateDpAsState(
+        targetValue = if (isDragging) trackHeight * 2f else trackHeight,
+        animationSpec = tween(durationMillis = 200),
+        label = "trackHeightAnim"
+    )
+    val animatedThumbRadius by androidx.compose.animation.core.animateDpAsState(
+        targetValue = if (isDragging) thumbRadius * 1.8f else thumbRadius,
+        animationSpec = tween(durationMillis = 200),
+        label = "thumbRadiusAnim"
+    )
+
     Column(modifier = modifier) {
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(thumbRadius * 2 + trackHeight)
+                .height(48.dp) // Minimum recommended touch target size
                 .semantics {
                     contentDescription = "Seek bar, position ${positionMs.toTimeString()} of ${durationMs.toTimeString()}"
                 }
                 .pointerInput(durationMs) {
                     detectTapGestures { offset ->
                         if (durationMs <= 0L) return@detectTapGestures
-                        val fraction = (offset.x / size.width).coerceIn(0f, 1f)
+                        val baseThumbRadiusPx = thumbRadius.toPx()
+                        val trackWidth = size.width - 2 * baseThumbRadiusPx
+                        val fraction = ((offset.x - baseThumbRadiusPx) / trackWidth).coerceIn(0f, 1f)
                         val targetMs = (fraction * durationMs).roundToLong()
                         onSeek(targetMs)
                     }
@@ -115,7 +129,9 @@ fun PlayerSeekBar(
                     detectHorizontalDragGestures(
                         onDragStart = { offset ->
                             isDragging = true
-                            scrubFraction = (offset.x / size.width).coerceIn(0f, 1f)
+                            val baseThumbRadiusPx = thumbRadius.toPx()
+                            val trackWidth = size.width - 2 * baseThumbRadiusPx
+                            scrubFraction = ((offset.x - baseThumbRadiusPx) / trackWidth).coerceIn(0f, 1f)
                         },
                         onDragEnd = {
                             isDragging = false
@@ -129,7 +145,9 @@ fun PlayerSeekBar(
                         },
                         onHorizontalDrag = { change, _ ->
                             change.consume()
-                            val fraction = (change.position.x / size.width).coerceIn(0f, 1f)
+                            val baseThumbRadiusPx = thumbRadius.toPx()
+                            val trackWidth = size.width - 2 * baseThumbRadiusPx
+                            val fraction = ((change.position.x - baseThumbRadiusPx) / trackWidth).coerceIn(0f, 1f)
                             scrubFraction = fraction
                             if (durationMs > 0L) {
                                 onSeek((fraction * durationMs).roundToLong())
@@ -138,11 +156,13 @@ fun PlayerSeekBar(
                     )
                 },
         ) {
-            val trackHeightPx = trackHeight.toPx()
-            val thumbRadiusPx = thumbRadius.toPx()
+            val trackHeightPx = animatedTrackHeight.toPx()
+            val baseThumbRadiusPx = thumbRadius.toPx()
+            val thumbRadiusPx = animatedThumbRadius.toPx()
+            
             val centerY = size.height / 2f
-            val trackStartX = thumbRadiusPx
-            val trackEndX = size.width - thumbRadiusPx
+            val trackStartX = baseThumbRadiusPx
+            val trackEndX = size.width - baseThumbRadiusPx
             val trackWidth = trackEndX - trackStartX
             val cornerRadius = CornerRadius(trackHeightPx / 2f)
 
@@ -175,18 +195,18 @@ fun PlayerSeekBar(
                 )
             }
 
-            // 4. Thumb â€” slightly larger while dragging for tactile feedback
+            // 4. Thumb — slightly larger while dragging for tactile feedback
             if (isDragging) {
                 drawCircle(
-                    color = Color.White.copy(alpha = 0.18f),
+                    color = Color.White.copy(alpha = 0.15f),
                     radius = thumbRadiusPx * 2.2f,
                     center = Offset(trackStartX + played, centerY),
                 )
             }
-            val currentThumbRadius = if (isDragging) thumbRadiusPx * 1.5f else thumbRadiusPx
+            
             drawCircle(
                 color = thumbColor,
-                radius = currentThumbRadius,
+                radius = thumbRadiusPx,
                 center = Offset(trackStartX + played, centerY),
             )
         }
@@ -195,7 +215,7 @@ fun PlayerSeekBar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = thumbRadius),
+                    .padding(horizontal = 8.dp),
             ) {
                 val displayPosition = if (isDragging) {
                     (scrubFraction * durationMs).roundToLong()
@@ -203,14 +223,16 @@ fun PlayerSeekBar(
 
                 Text(
                     text = displayPosition.toTimeString(),
-                    color = Color.White.copy(alpha = 0.60f),
-                    fontSize = 11.sp,
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
                     modifier = Modifier.weight(1f),
                 )
                 Text(
                     text = durationMs.toTimeString(),
-                    color = Color.White.copy(alpha = 0.35f),
-                    fontSize = 11.sp,
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontSize = 12.sp,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
                 )
             }
         }
