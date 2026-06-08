@@ -21,7 +21,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-
+import androidx.compose.ui.unit.sp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(onBack: () -> Unit) {
@@ -104,7 +104,7 @@ fun AboutScreen(onBack: () -> Unit) {
                                 modifier = Modifier.wrapContentSize()
                             ) {
                                 Text(
-                                    text = "v1.0.0",
+                                    text = "v1.1.0",
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                                     style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.Bold,
@@ -150,6 +150,29 @@ fun AboutScreen(onBack: () -> Unit) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Outlined.OpenInNew, 
                                     contentDescription = "Open GitHub", 
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                    )
+                    
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+                    )
+                    
+                    ListItem(
+                        headlineContent = { Text("Buy me a Coffee", fontWeight = FontWeight.SemiBold) },
+                        supportingContent = { Text("Support the development") },
+                        leadingContent = {
+                            Text("☕", fontSize = 24.sp)
+                        },
+                        trailingContent = {
+                            IconButton(onClick = { uriHandler.openUri("https://buymeacoffee.com/tapman") }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Outlined.OpenInNew, 
+                                    contentDescription = "Buy me a Coffee", 
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
@@ -238,14 +261,14 @@ fun AboutScreen(onBack: () -> Unit) {
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = "Version 1.0",
+                            text = "Version 1.1.0",
                             fontWeight = FontWeight.SemiBold,
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "- Background playback toggle\n- Playback speed control\n- Fixed system back gesture\n- Fixed landscape orientation on back\n- MX Player-style gesture controls\n- Subtitle appearance settings\n- Rotation lock\n- Project structure reorganization",
+                            text = "- Dramatically smoother scrolling in Home screen\n- Fixed player back button behavior when controls are hidden\n- Added \"Buy me a Coffee\" support link\n- Background playback toggles and fixes",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
