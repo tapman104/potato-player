@@ -1,4 +1,4 @@
-package mediaengine
+package com.potato.player.engine
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted

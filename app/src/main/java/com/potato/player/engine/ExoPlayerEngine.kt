@@ -1,4 +1,4 @@
-package mediaengine
+package com.potato.player.engine
 
 import android.content.Context
 import android.graphics.Color
@@ -17,7 +17,6 @@ import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.common.Tracks
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.CaptionStyleCompat
-import com.potato.player.media.settings.EngineSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

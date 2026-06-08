@@ -21,7 +21,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import mediaengine.AudioTrack
+import com.potato.player.engine.AudioTrack
 
 /**
  * A modal dialog that presents the list of available audio tracks and lets

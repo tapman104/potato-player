@@ -1,4 +1,4 @@
-package com.potato.player.media.settings
+package com.potato.player.engine
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow

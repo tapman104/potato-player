@@ -1,4 +1,4 @@
-package com.potato.player.player.viewmodel
+package com.potato.player.viewmodel
 
 import android.net.Uri
 import androidx.lifecycle.ViewModel
@@ -14,13 +14,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.potato.player.player.ui.state.OrientationMode
 import com.potato.player.player.ui.state.PlayerControlsState
-import mediaengine.AudioTrack
-import mediaengine.ExoPlayerEngine
-import mediaengine.MediaEngine
-import mediaengine.MediaEvent
-import mediaengine.MediaPhase
-import mediaengine.SubtitleTrack
-import mediaengine.VideoTrack
+import com.potato.player.engine.AudioTrack
+import com.potato.player.engine.ExoPlayerEngine
+import com.potato.player.engine.MediaEngine
+import com.potato.player.engine.MediaEvent
+import com.potato.player.engine.MediaPhase
+import com.potato.player.engine.SubtitleTrack
+import com.potato.player.engine.VideoTrack
 
 /**
  * Bridges [MediaEngine] to the player UI.

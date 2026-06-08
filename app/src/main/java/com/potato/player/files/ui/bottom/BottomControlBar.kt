@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 
 import com.potato.player.player.ui.PlayerSeekBar
 import com.potato.player.player.ui.state.OrientationMode
-import com.potato.player.player.viewmodel.PlayerUiState
+import com.potato.player.viewmodel.PlayerUiState
 
 /**
  * Bottom control bar that assembles the full player transport UI.

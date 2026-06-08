@@ -29,8 +29,8 @@ import com.potato.player.files.ui.settings.GestureSettingsScreen
 import com.potato.player.files.ui.settings.PlaybackSettingsScreen
 import com.potato.player.files.ui.settings.SettingsScreen
 import com.potato.player.player.ui.PlayerScreen
-import com.potato.player.player.viewmodel.PlayerViewModel
-import mediaengine.ExoPlayerEngine
+import com.potato.player.viewmodel.PlayerViewModel
+import com.potato.player.engine.ExoPlayerEngine
 
 import android.content.ComponentName
 import androidx.core.content.ContextCompat

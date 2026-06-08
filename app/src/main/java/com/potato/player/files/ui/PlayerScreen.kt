@@ -55,7 +55,7 @@ import com.potato.player.player.ui.gesture.ActiveGesture
 import com.potato.player.player.ui.gesture.GestureOverlay
 import com.potato.player.player.ui.gesture.PlayerGestureHandler
 import com.potato.player.player.ui.topbar.PlayerTopBar
-import com.potato.player.player.viewmodel.PlayerViewModel
+import com.potato.player.viewmodel.PlayerViewModel
 import com.potato.player.files.ui.settings.AboutScreen
 import com.potato.player.files.ui.settings.AppearanceSettingsScreen
 import com.potato.player.files.ui.settings.GestureSettingsScreen
@@ -65,7 +65,7 @@ import com.potato.player.files.preferences.AppPreferences
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
-import mediaengine.MediaEvent
+import com.potato.player.engine.MediaEvent
 
 /**
  * Root player screen.

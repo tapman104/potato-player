@@ -1,4 +1,4 @@
-package mediaengine
+package com.potato.player.engine
 
 import android.net.Uri
 import kotlinx.coroutines.flow.SharedFlow

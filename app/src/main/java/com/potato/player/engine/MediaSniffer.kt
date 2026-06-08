@@ -1,4 +1,4 @@
-package com.potato.player.ui
+package com.potato.player.engine
 
 import android.content.Context
 import android.media.MediaMetadataRetriever

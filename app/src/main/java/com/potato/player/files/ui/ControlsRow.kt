@@ -10,7 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.potato.player.player.viewmodel.PlayerUiState
+import com.potato.player.viewmodel.PlayerUiState
 
 /**
  * Horizontal control bar rendered at the bottom of the player.

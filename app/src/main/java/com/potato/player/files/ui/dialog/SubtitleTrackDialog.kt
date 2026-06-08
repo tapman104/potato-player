@@ -21,7 +21,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import mediaengine.SubtitleTrack
+import com.potato.player.engine.SubtitleTrack
 
 /**
  * A modal dialog that presents the list of available subtitle tracks and
