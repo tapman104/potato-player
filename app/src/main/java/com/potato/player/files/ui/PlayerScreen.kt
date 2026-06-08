@@ -122,6 +122,7 @@ fun PlayerScreen(
     // ── State collection ──────────────────────────────────────────────────────────
     val uiState by viewModel.uiState.collectAsState()
     val controlsState by viewModel.controlsState.collectAsState()
+    val backgroundPlaybackEnabled by viewModel.backgroundPlaybackEnabled.collectAsState()
 
     // Controls visibility — local UI state, auto-hides after idle period.
     var controlsVisible by remember { mutableStateOf(false) }
@@ -133,6 +134,7 @@ fun PlayerScreen(
     var showSubtitleSizeDialog by remember { mutableStateOf(false) }
 
     var playerViewRef by remember { mutableStateOf<PlayerView?>(null) }
+    var showSpeedDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         appPreferences.getSubtitleSettings().first().let { 
@@ -507,6 +509,9 @@ fun PlayerScreen(
                     onBack = onBack,
                     onSubtitleClick = { showSubtitleDialog = true },
                     onAudioTrackClick = { showAudioDialog = true },
+                    isBackgroundPlaybackEnabled = backgroundPlaybackEnabled,
+                    onBackgroundPlaybackClick = { viewModel.toggleBackgroundPlayback() },
+                    onSpeedClick = { showSpeedDialog = true }
                 )
             }
         }
@@ -605,6 +610,14 @@ fun PlayerScreen(
                     showSubtitleSizeDialog = false
                 },
                 onDismiss = { showSubtitleSizeDialog = false },
+            )
+        }
+
+        if (showSpeedDialog) {
+            com.potato.player.player.ui.dialog.SpeedDialog(
+                currentSpeed = uiState.playbackSpeed,
+                onSpeedSelected = { speed -> viewModel.setPlaybackSpeed(speed) },
+                onDismiss = { showSpeedDialog = false }
             )
         }
 

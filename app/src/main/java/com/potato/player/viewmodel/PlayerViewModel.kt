@@ -93,6 +93,13 @@ class PlayerViewModel(
     private val _controlsState = MutableStateFlow(PlayerControlsState.Initial)
     val controlsState: StateFlow<PlayerControlsState> = _controlsState.asStateFlow()
 
+    private val _backgroundPlaybackEnabled = MutableStateFlow(false)
+    val backgroundPlaybackEnabled: StateFlow<Boolean> = _backgroundPlaybackEnabled.asStateFlow()
+
+    fun toggleBackgroundPlayback() {
+        _backgroundPlaybackEnabled.update { !it }
+    }
+
     // [CHANGE 1] Video dimensions inferred from the first VideoTrack in playbackState.
     // NOTE: VideoSizeChanged is not yet in the MediaEvent sealed interface — skip event
     // collection for now. Dimensions are read lazily in applyAutoOrientation().
@@ -298,7 +305,7 @@ class PlayerViewModel(
      */
     fun onBackground() {
         wasPlayingBeforeBackground = uiState.value.isPlaying
-        engine.pause()
+        if (!_backgroundPlaybackEnabled.value) engine.pause()
     }
 
     /**

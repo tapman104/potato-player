@@ -79,6 +79,9 @@ fun PlayerTopBar(
     onBack: () -> Unit,
     onSubtitleClick: () -> Unit,
     onAudioTrackClick: () -> Unit,
+    isBackgroundPlaybackEnabled: Boolean = false,
+    onBackgroundPlaybackClick: () -> Unit = {},
+    onSpeedClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     tint: Color = Color.White,
 ) {
@@ -116,6 +119,19 @@ fun PlayerTopBar(
         }
 
         // ── Right section ─────────────────────────────────────────────────────────
+        SpeedButton(
+            onClick = onSpeedClick,
+            tint = tint,
+            size = 22.dp,
+        )
+
+        BackgroundPlaybackButton(
+            isEnabled = isBackgroundPlaybackEnabled,
+            onClick = onBackgroundPlaybackClick,
+            tint = tint,
+            size = 22.dp,
+        )
+
         SubtitleButton(
             isSubtitleActive = isSubtitleActive,
             onClick = onSubtitleClick,
