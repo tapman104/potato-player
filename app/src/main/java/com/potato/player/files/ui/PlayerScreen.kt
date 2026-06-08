@@ -97,7 +97,7 @@ import com.potato.player.engine.MediaEvent
  * @param viewModel           The player ViewModel.
  * @param player              ExoPlayer [Player] instance forwarded to [PlayerView].
  * @param uri                 URI to open for playback. Changes trigger [MediaEngine.open].
- * @param onBack              Called when the top-bar back button is tapped.
+ * @param onBack              Called when the top-bar back button is tapped. Callers must reset orientation before finishing.
  * @param title               Optional media title shown in [PlayerTopBar].
  * @param onError             Optional callback for fatal playback errors.
  * @param onPlaybackCompleted Optional callback when the source finishes.
@@ -304,13 +304,14 @@ fun PlayerScreen(
         }
     }
 
+    BackHandler { onBack() }
+
     // â”€â”€ UI tree â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black),
     ) {
-        // ──────────────────────────────────────────────────────────────────────────
         // PlayerView with useController=false — our Compose layer owns controls.
         AndroidView(
             factory = { ctx ->

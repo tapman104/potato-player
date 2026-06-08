@@ -109,7 +109,10 @@ class MainActivity : ComponentActivity() {
                             viewModel = viewModel,
                             player = player,
                             uri = actualUri,
-                            onBack = { if (isExternalLaunch) finish() else mediaUriState = null },
+                            onBack = {
+                                requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                                if (isExternalLaunch) finish() else mediaUriState = null
+                            },
                             onPlayerViewReady = { pv -> playerViewRef = pv },
                         )
                     } else {
