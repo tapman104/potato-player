@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.ui.input.pointer.PointerEvent
 import kotlin.math.abs
 import kotlin.math.hypot
@@ -31,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.ui.platform.LocalConfiguration
@@ -53,6 +55,7 @@ import com.potato.player.player.ui.dialog.AudioTrackDialog
 import com.potato.player.player.ui.dialog.SubtitleTrackDialog
 import com.potato.player.player.ui.gesture.ActiveGesture
 import com.potato.player.player.ui.gesture.GestureOverlay
+import com.potato.player.player.ui.gesture.PinchZoomHandler
 import com.potato.player.player.ui.gesture.PlayerGestureHandler
 import com.potato.player.player.ui.topbar.PlayerTopBar
 import com.potato.player.viewmodel.PlayerViewModel
@@ -134,6 +137,9 @@ fun PlayerScreen(
 
     var playerViewRef by remember { mutableStateOf<PlayerView?>(null) }
     var showSpeedDialog by remember { mutableStateOf(false) }
+
+    val zoomHandler = remember { PinchZoomHandler() }
+    val zoomScale by zoomHandler.zoomScale.collectAsState()
 
     LaunchedEffect(Unit) {
         appPreferences.getSubtitleSettings().first().let { 
@@ -337,11 +343,18 @@ fun PlayerScreen(
             },
             update = { pv ->
                 if (pv.player !== player) pv.player = player
-                if (pv.resizeMode != controlsState.resizeMode.value) {
-                    pv.resizeMode = controlsState.resizeMode.value
+                pv.resizeMode = if (zoomScale > 1f) {
+                    AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                } else {
+                    AspectRatioFrameLayout.RESIZE_MODE_FIT
                 }
             },
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    scaleX = zoomScale
+                    scaleY = zoomScale
+                },
         )
 
         // ── Layer 2: Unified gesture state machine ──────────────────────────
@@ -353,6 +366,11 @@ fun PlayerScreen(
                 // edge don't trigger Android's predictive-back and close the
                 // Activity.
                 .systemGestureExclusion()
+                .pointerInput(Unit) {
+                    detectTransformGestures { _, _, zoom, _ ->
+                        zoomHandler.onZoom(zoom)
+                    }
+                }
                 .pointerInput(viewModel) { // key=viewModel so it resets if VM changes
                     // Android timing constants from the system ViewConfiguration
                     val longPressMs = viewConfiguration.longPressTimeoutMillis
@@ -467,7 +485,14 @@ fun PlayerScreen(
                                                 when {
                                                     tapX < third      -> handler.onDoubleTap(isForward = false)
                                                     tapX > third * 2f -> handler.onDoubleTap(isForward = true)
-                                                    else              -> controlsVisible = !controlsVisible
+                                                    else              -> {
+                                                        if (zoomScale > 1f) {
+                                                            zoomHandler.resetZoom()
+                                                        } else {
+                                                            handler.onTap()
+                                                            controlsVisible = !controlsVisible
+                                                        }
+                                                    }
                                                 }
                                                 withTimeoutOrNull(500L) { awaitPointerEvent() } // drain UP
                                                 break@doubleTapLoop
