@@ -7,7 +7,9 @@ A lightweight, modern, and premium Android video player built with **Jetpack Com
 ---
 
 ## 🎨 Design & Aesthetics
+
 Potato Player is designed with visual excellence and rich modern design principles in mind:
+
 * **Harmonious Dark Theme**: Sleek dark interfaces tailored to look immersive and keep focus on the video content.
 * **Modern Typography**: Clear font hierarchy using professional sans-serif scaling.
 * **Micro-Animations & Smooth Gradients**: Controls fade gracefully with custom overlays, volume HUDs, and gesture feedback pills.
@@ -16,6 +18,7 @@ Potato Player is designed with visual excellence and rich modern design principl
 ---
 
 ## 🏗️ Architecture Details
+
 The project is built adhering to the **pure data-in / intent-out (MVI)** patterns. The layer boundaries are strictly defined, ensuring the media engine remains decoupled from the presentation logic:
 
 ```mermaid
@@ -28,8 +31,9 @@ graph TD
     C -->|PlayerUiState Flow| B
 ```
 
-### Key Architectural Layers:
-1. **System & Lifecycle (`MainActivity.kt`)**: 
+### Key Architectural Layers
+
+1. **System & Lifecycle (`MainActivity.kt`)**:
    * Manages entry intent Uri resolution and file pickers.
    * Controls system-level window flags (e.g., keeping screen active via WakeLocks, setting edge-to-edge UI).
    * Forwards foreground/background events to the ViewModel.
@@ -102,7 +106,7 @@ sequenceDiagram
 2. **Playback Preparation**: The URI is sent to the ViewModel, which stops previous sessions, resets parameters, and calls `prepare()` on ExoPlayer.
 3. **Controls Overlay Lifecycle**:
    * Interactive controls overlay hides after 3 seconds of active playback.
-   * Tapping anywhere on the screen displays the controllers again. 
+   * Tapping anywhere on the screen displays the controllers again.
    * Auto-hide is suppressed when dragging, seeking, or long-pressing.
 4. **Subtitle Adjustments**: The user opens the subtitle selector, views available tracks, and taps **Appearance** to refine text sizing and placement.
 5. **Safe Tear-down**: Upon pausing or backgrounding, system controls and daemons sleep, releasing native decoders safely to prevent resource leaks.
@@ -110,6 +114,16 @@ sequenceDiagram
 ---
 
 ## 🛠️ Build & Development
+
+## Support Development
+
+If you find AnyFile Opener useful, consider supporting development:
+
+<a href="https://buymeacoffee.com/tapman" target="_blank">
+  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
+       alt="Buy Me A Coffee"
+       width="200">
+</a>
 
 The project is built using Gradle. To generate the debug build:
 
