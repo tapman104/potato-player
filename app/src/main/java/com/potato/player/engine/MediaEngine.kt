@@ -84,6 +84,14 @@ interface MediaEngine {
     fun seekTo(positionMs: Long)
 
     /**
+     * Seek relative to the current position.
+     *
+     * @param offsetMs The time offset in milliseconds. Positive values seek forward,
+     * negative values seek backward.
+     */
+    fun seekRelative(offsetMs: Long)
+
+    /**
      * Set the playback speed multiplier. `1.0f` is normal speed,
      * `2.0f` is double speed, `0.5f` is half speed. Values `<= 0`
      * or `NaN` are invalid and must be ignored.

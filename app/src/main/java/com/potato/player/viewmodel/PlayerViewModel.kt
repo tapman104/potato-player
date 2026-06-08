@@ -171,9 +171,7 @@ class PlayerViewModel(
      * of the source so the engine never receives an out-of-range position.
      */
     fun seekForward10() {
-        val target = (positionState.value.positionMs + SEEK_INTERVAL_MS)
-            .coerceAtMost(positionState.value.durationMs.coerceAtLeast(0L))
-        engine.seekTo(target)
+        engine.seekRelative(SEEK_INTERVAL_MS)
     }
 
     /**
@@ -181,8 +179,7 @@ class PlayerViewModel(
      * so the engine never receives a negative position.
      */
     fun seekBackward10() {
-        val target = (positionState.value.positionMs - SEEK_INTERVAL_MS).coerceAtLeast(0L)
-        engine.seekTo(target)
+        engine.seekRelative(-SEEK_INTERVAL_MS)
     }
 
     /**

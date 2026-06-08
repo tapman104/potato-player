@@ -111,10 +111,27 @@ fun PlayerSeekBar(
         label = "thumbRadiusAnim"
     )
 
-    Box(modifier = modifier) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        val displayPosition = if (isDragging) {
+            (scrubFraction * durationMs).roundToLong()
+        } else positionMs
+
+        if (showTimeLabels && durationMs > 0L) {
+            Text(
+                text = displayPosition.toTimeString(),
+                color = Color.White,
+                fontSize = 13.sp,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                modifier = Modifier.padding(start = 8.dp, end = 12.dp)
+            )
+        }
+
         Canvas(
             modifier = Modifier
-                .fillMaxWidth()
+                .weight(1f)
                 .height(48.dp) // Minimum recommended touch target size
                 .semantics {
                     contentDescription = "Seek bar, position ${positionMs.toTimeString()} of ${durationMs.toTimeString()}"
@@ -222,33 +239,14 @@ fun PlayerSeekBar(
             )
         }
 
-        if (durationMs > 0L) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp, vertical = 2.dp)
-                    .align(Alignment.BottomCenter),
-            ) {
-                val displayPosition = if (isDragging) {
-                    (scrubFraction * durationMs).roundToLong()
-                } else positionMs
-
-                Text(
-                    text = displayPosition.toTimeString(),
-                    color = Color.White,
-                    fontSize = 12.sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-                    modifier = Modifier.wrapContentWidth(Alignment.Start),
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    text = durationMs.toTimeString(),
-                    color = Color.White,
-                    fontSize = 12.sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-                    modifier = Modifier.wrapContentWidth(Alignment.End),
-                )
-            }
+        if (showTimeLabels && durationMs > 0L) {
+            Text(
+                text = durationMs.toTimeString(),
+                color = Color.White,
+                fontSize = 13.sp,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                modifier = Modifier.padding(start = 12.dp, end = 8.dp)
+            )
         }
     }
 }

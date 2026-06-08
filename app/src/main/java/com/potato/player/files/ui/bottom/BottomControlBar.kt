@@ -65,8 +65,8 @@ fun BottomControlBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 0.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+            .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 12.dp), // Added bottom padding to move up
+        verticalArrangement = Arrangement.spacedBy(16.dp), // Increased gap between seekbar and bottom buttons
     ) {
         val positionState by positionStateFlow.collectAsState()
 
@@ -78,8 +78,7 @@ fun BottomControlBar(
             onSeek = onSeek,
             onSeekFinished = onSeekFinished,
             modifier = Modifier.fillMaxWidth(),
-            trackHeight = 2.dp,
-            thumbRadius = 5.dp,
+            // Using default attractive sizes
         )
 
         // Row 2: rotation lock and placeholder

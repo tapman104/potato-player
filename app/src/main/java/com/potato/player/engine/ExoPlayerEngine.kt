@@ -177,6 +177,12 @@ class ExoPlayerEngine(
         }
     }
 
+    override fun seekRelative(offsetMs: Long) {
+        if (released) return
+        if (player.playbackState == Player.STATE_IDLE) return
+        seekTo(player.currentPosition + offsetMs)
+    }
+
     override fun setPlaybackSpeed(speed: Float) {
         if (released) return
         // REF-1: Clamp to safe range before any other guard.
