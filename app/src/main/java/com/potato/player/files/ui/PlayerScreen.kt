@@ -141,6 +141,10 @@ fun PlayerScreen(
     val zoomHandler = remember { PinchZoomHandler() }
     val zoomScale by zoomHandler.zoomScale.collectAsState()
 
+    val videoTrack = uiState.videoTracks.firstOrNull()
+    val videoW = videoTrack?.width?.toFloat() ?: 0f
+    val videoH = videoTrack?.height?.toFloat() ?: 0f
+
     LaunchedEffect(Unit) {
         appPreferences.getSubtitleSettings().first().let { 
             subtitleSettings = it 
@@ -188,6 +192,18 @@ fun PlayerScreen(
     val configuration = LocalConfiguration.current
     val screenW = configuration.screenWidthDp
     val screenH = configuration.screenHeightDp
+    
+    val maxZoomScale = remember(screenW, screenH, videoW, videoH) {
+        if (videoW > 0f && videoH > 0f && screenW > 0f && screenH > 0f) {
+            val wRatio = screenW.toFloat() / videoW
+            val hRatio = screenH.toFloat() / videoH
+            val fillScale = maxOf(wRatio, hRatio)
+            val fitScale = minOf(wRatio, hRatio)
+            (fillScale / fitScale).coerceAtLeast(1f)
+        } else {
+            3f
+        }
+    }
     var hasResumed by remember { mutableStateOf(false) }
 
     LaunchedEffect(uri, viewModel) {
@@ -344,16 +360,21 @@ fun PlayerScreen(
             update = { pv ->
                 if (pv.player !== player) pv.player = player
                 pv.resizeMode = if (zoomScale > 1f) {
-                    AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                } else {
                     AspectRatioFrameLayout.RESIZE_MODE_FIT
+                } else {
+                    controlsState.resizeMode.value
                 }
             },
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer {
-                    scaleX = zoomScale
-                    scaleY = zoomScale
+                    if (zoomScale > 1f) {
+                        scaleX = zoomScale
+                        scaleY = zoomScale
+                    } else {
+                        scaleX = 1f
+                        scaleY = 1f
+                    }
                 },
         )
 
@@ -368,7 +389,7 @@ fun PlayerScreen(
                 .systemGestureExclusion()
                 .pointerInput(Unit) {
                     detectTransformGestures { _, _, zoom, _ ->
-                        zoomHandler.onZoom(zoom)
+                        zoomHandler.onZoom(zoom, maxZoomScale)
                     }
                 }
                 .pointerInput(viewModel) { // key=viewModel so it resets if VM changes

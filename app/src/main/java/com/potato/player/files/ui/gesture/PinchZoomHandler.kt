@@ -9,9 +9,9 @@ class PinchZoomHandler {
     val zoomScale: StateFlow<Float> = _zoomScale.asStateFlow()
 
     /** Called on every pinch gesture tick with the cumulative scale factor. */
-    fun onZoom(scaleFactor: Float) {
+    fun onZoom(scaleFactor: Float, maxZoom: Float = MAX_ZOOM) {
         val current = _zoomScale.value
-        val next = (current * scaleFactor).coerceIn(MIN_ZOOM, MAX_ZOOM)
+        val next = (current * scaleFactor).coerceIn(MIN_ZOOM, maxZoom)
         _zoomScale.value = next
     }
 
