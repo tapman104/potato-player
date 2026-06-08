@@ -111,8 +111,8 @@ class MainActivity : ComponentActivity() {
                 } else {
                     val loadControl = androidx.media3.exoplayer.DefaultLoadControl.Builder()
                         .setBufferDurationsMs(
-                            androidx.media3.exoplayer.DefaultLoadControl.DEFAULT_MIN_BUFFER_MS,
-                            30_000,
+                            30_000, // minBufferMs
+                            30_000, // maxBufferMs
                             androidx.media3.exoplayer.DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
                             androidx.media3.exoplayer.DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
                         ).build()
