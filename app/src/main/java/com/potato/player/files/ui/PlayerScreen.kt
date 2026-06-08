@@ -176,7 +176,7 @@ fun PlayerScreen(
     val screenH = configuration.screenHeightDp
     var hasResumed by remember { mutableStateOf(false) }
 
-    LaunchedEffect(uri) {
+    LaunchedEffect(uri, viewModel) {
         hasResumed = false
         viewModel.cacheScreenSize(screenW, screenH)
         viewModel.open(uri)
@@ -202,7 +202,7 @@ fun PlayerScreen(
         }
     }
 
-    LaunchedEffect(uiState.canPlay, uri) {
+    LaunchedEffect(uiState.canPlay, uri, viewModel) {
         if (!hasResumed && uiState.canPlay && appPreferences.resumePlayback.value) {
             val savedPos = appPreferences.getPlaybackPosition(uri.toString())
             if (savedPos > 0L) {
@@ -213,7 +213,7 @@ fun PlayerScreen(
     }
 
     // Save playback position periodically while playing
-    LaunchedEffect(uri, uiState.isPlaying) {
+    LaunchedEffect(uri, uiState.isPlaying, viewModel) {
         if (uiState.isPlaying && appPreferences.resumePlayback.value) {
             while (true) {
                 delay(5000)
@@ -222,7 +222,7 @@ fun PlayerScreen(
         }
     }
 
-    DisposableEffect(uri) {
+    DisposableEffect(uri, viewModel) {
         onDispose {
             if (appPreferences.resumePlayback.value) {
                 appPreferences.savePlaybackPosition(uri.toString(), viewModel.uiState.value.positionMs)
@@ -242,7 +242,7 @@ fun PlayerScreen(
         }
     }
 
-    LaunchedEffect(uiState.videoTracks, defaultOrientation) {
+    LaunchedEffect(uiState.videoTracks, defaultOrientation, viewModel) {
         if (uiState.videoTracks.isNotEmpty()) {
             viewModel.applyAutoOrientation(screenW, screenH, defaultOrientation)
         }
@@ -290,7 +290,7 @@ fun PlayerScreen(
     }
 
     // One-time event handling.
-    LaunchedEffect(Unit) {
+    LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {
                 is MediaEvent.Error -> onError?.invoke(event.throwable)

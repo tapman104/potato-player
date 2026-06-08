@@ -284,9 +284,13 @@ class PlayerViewModel(
 
     // endregion
 
+    fun release() {
+        engine.release()
+    }
+
     override fun onCleared() {
         super.onCleared()
-        engine.release()
+        release()
     }
 
     private var wasPlayingBeforeBackground = false

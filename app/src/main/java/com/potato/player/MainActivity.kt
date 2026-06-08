@@ -44,6 +44,9 @@ import com.potato.player.files.preferences.AppPreferences
 import com.potato.player.ui.theme.VoraPlayerTheme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -54,6 +57,7 @@ class MainActivity : ComponentActivity() {
     private var mediaUriState by mutableStateOf<String?>(null)
     private var isExternalLaunch by mutableStateOf(false)
     private val homeViewModel: HomeViewModel by viewModels { HomeViewModel.provideFactory(this) }
+    private var isUsingService: Boolean? = null
 
     // Holds the last known PlayerView to forward Activity lifecycle calls
     // (onResume / onPause) so PlayerView can re-enable rendering correctly.
@@ -71,17 +75,50 @@ class MainActivity : ComponentActivity() {
         mediaUriState = initialUri?.toString()
         isExternalLaunch = initialUri != null && intent?.action == Intent.ACTION_VIEW
 
-        val enablePlaybackService = appPreferences.enablePlaybackService.value
-        if (enablePlaybackService) {
-            val sessionToken = SessionToken(this, ComponentName(this, PlaybackService::class.java))
-            mediaControllerFuture = MediaController.Builder(this, sessionToken).buildAsync()
-            mediaControllerFuture?.addListener({
-                val controller = mediaControllerFuture?.get() ?: return@addListener
-                viewModelState = PlayerViewModel(ExoPlayerEngine(controller))
-            }, ContextCompat.getMainExecutor(this))
-        } else {
-            val exoPlayer = androidx.media3.exoplayer.ExoPlayer.Builder(this).build()
-            viewModelState = PlayerViewModel(ExoPlayerEngine(exoPlayer))
+        lifecycleScope.launch {
+            appPreferences.enablePlaybackService.collectLatest { useService ->
+                if (isUsingService == useService) return@collectLatest
+                isUsingService = useService
+
+                val currentPos = viewModelState?.uiState?.value?.positionMs
+                val currentUri = mediaUriState
+
+                viewModelState?.release()
+                viewModelState = null
+                mediaControllerFuture?.let {
+                    MediaController.releaseFuture(it)
+                    mediaControllerFuture = null
+                }
+
+                if (useService) {
+                    val sessionToken = SessionToken(this@MainActivity, ComponentName(this@MainActivity, PlaybackService::class.java))
+                    val future = MediaController.Builder(this@MainActivity, sessionToken).buildAsync()
+                    mediaControllerFuture = future
+                    future.addListener({
+                        val controller = future.get() ?: return@addListener
+                        if (mediaControllerFuture == future) {
+                            viewModelState = PlayerViewModel(ExoPlayerEngine(controller))
+                            currentUri?.let { uriStr ->
+                                viewModelState?.open(Uri.parse(uriStr))
+                                if (currentPos != null && currentPos > 0L) {
+                                    viewModelState?.seekTo(currentPos)
+                                }
+                            }
+                        } else {
+                            MediaController.releaseFuture(future)
+                        }
+                    }, ContextCompat.getMainExecutor(this@MainActivity))
+                } else {
+                    val exoPlayer = androidx.media3.exoplayer.ExoPlayer.Builder(this@MainActivity).build()
+                    viewModelState = PlayerViewModel(ExoPlayerEngine(exoPlayer))
+                    currentUri?.let { uriStr ->
+                        viewModelState?.open(Uri.parse(uriStr))
+                        if (currentPos != null && currentPos > 0L) {
+                            viewModelState?.seekTo(currentPos)
+                        }
+                    }
+                }
+            }
         }
 
         setContent {
