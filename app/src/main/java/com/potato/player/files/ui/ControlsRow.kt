@@ -12,23 +12,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.potato.player.viewmodel.PlayerUiState
 
-/**
- * Horizontal control bar rendered at the bottom of the player.
- *
- * Layout (left â†’ right):
- *
- *   [PlayPause]   [SeekBar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€]
- *
- * The seek bar fills all remaining horizontal space. Time labels are
- * rendered inside [PlayerSeekBar] below the track.
- *
- * This composable is stateless: all state comes from [uiState] and all
- * user intents propagate up via [onTogglePlayPause] and [onSeek].
- *
- * @param uiState Current player state snapshot.
- * @param onTogglePlayPause Called when the play/pause button is tapped.
- * @param onSeek Called with a target position (ms) during scrub or tap.
- */
 @Composable
 fun ControlsRow(
     uiState: PlayerUiState,
@@ -57,6 +40,7 @@ fun ControlsRow(
                 backgroundColor = Color.White.copy(alpha = 0.15f),
             )
 
+            PlayerSeekBar(
                 positionMs = 0L,
                 durationMs = 0L,
                 bufferedPositionMs = 0L,
