@@ -243,15 +243,7 @@ fun PlayerScreen(
         }
     }
 
-    // Save playback position periodically while playing
-    LaunchedEffect(uri, uiState.isPlaying, viewModel) {
-        if (uiState.isPlaying && appPreferences.resumePlayback.value) {
-            while (true) {
-                delay(15000)
-                appPreferences.savePlaybackPosition(uri.toString(), viewModel.positionState.value.positionMs)
-            }
-        }
-    }
+    // Periodic playback position save removed for battery optimization (I/O reduction)
 
     DisposableEffect(uri, viewModel) {
         onDispose {

@@ -32,6 +32,7 @@ class PlaybackService : MediaSessionService() {
                     .build(),
                 true // handleAudioFocus
             )
+            .setHandleAudioBecomingNoisy(true)
             .setVideoScalingMode(C.VIDEO_SCALING_MODE_SCALE_TO_FIT)
             .build()
             

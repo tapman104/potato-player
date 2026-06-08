@@ -125,6 +125,8 @@ class MainActivity : ComponentActivity() {
                                 .build(),
                             true // handleAudioFocus
                         )
+                        .setHandleAudioBecomingNoisy(true)
+                        .setVideoScalingMode(androidx.media3.common.C.VIDEO_SCALING_MODE_SCALE_TO_FIT)
                         .build()
                     viewModelState = PlayerViewModel(ExoPlayerEngine(exoPlayer))
                     currentUri?.let { uriStr ->
