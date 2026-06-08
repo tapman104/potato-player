@@ -122,7 +122,6 @@ fun PlayerScreen(
     // ── State collection ──────────────────────────────────────────────────────────
     val uiState by viewModel.uiState.collectAsState()
     val controlsState by viewModel.controlsState.collectAsState()
-    val backgroundPlaybackEnabled by viewModel.backgroundPlaybackEnabled.collectAsState()
 
     // Controls visibility — local UI state, auto-hides after idle period.
     var controlsVisible by remember { mutableStateOf(false) }
@@ -509,8 +508,6 @@ fun PlayerScreen(
                     onBack = onBack,
                     onSubtitleClick = { showSubtitleDialog = true },
                     onAudioTrackClick = { showAudioDialog = true },
-                    isBackgroundPlaybackEnabled = backgroundPlaybackEnabled,
-                    onBackgroundPlaybackClick = { viewModel.toggleBackgroundPlayback() },
                     onSpeedClick = { showSpeedDialog = true }
                 )
             }

@@ -103,6 +103,7 @@ class MainActivity : ComponentActivity() {
                     val actualUri = mediaUriState?.let(Uri::parse)
                     if (actualUri != null && player != null) {
                         BackHandler(enabled = settingsRoute == null) {
+                            viewModelState?.pause()
                             if (isExternalLaunch) finish() else mediaUriState = null
                         }
                         PlayerScreen(
@@ -110,6 +111,7 @@ class MainActivity : ComponentActivity() {
                             player = player,
                             uri = actualUri,
                             onBack = {
+                                viewModelState?.pause()
                                 requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                                 if (isExternalLaunch) finish() else mediaUriState = null
                             },
@@ -196,9 +198,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        if (!appPreferences.backgroundPlayback.value) {
-            viewModelState?.onBackground()
-        }
+        viewModelState?.onBackground()
     }
 
     override fun onDestroy() {
