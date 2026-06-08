@@ -8,9 +8,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.material3.Text
 
 import com.potato.player.player.ui.PlayerSeekBar
 import com.potato.player.player.ui.state.OrientationMode
@@ -18,6 +22,7 @@ import com.potato.player.viewmodel.PlayerPositionState
 import kotlinx.coroutines.flow.StateFlow
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import com.potato.player.player.ui.toTimeString
 
 /**
  * Bottom control bar that assembles the full player transport UI.
@@ -73,7 +78,7 @@ fun BottomControlBar(
             onSeek = onSeek,
             onSeekFinished = onSeekFinished,
             modifier = Modifier.fillMaxWidth(), // [CHANGE 3]
-            showTimeLabels = true,
+            showTimeLabels = false,
             trackHeight = 4.dp,
             thumbRadius = 6.dp,
         )
@@ -82,13 +87,20 @@ fun BottomControlBar(
 
         // [CHANGE 4] Row 2: rotation lock and resize mode
         Row(
-            modifier = Modifier.fillMaxWidth(), // [CHANGE 5]
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp), // [CHANGE 5]
             horizontalArrangement = Arrangement.SpaceBetween, // [CHANGE 6]
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             RotationLockButton( // [CHANGE 7]
                 orientationMode = orientationMode,
                 onClick = onCycleRotation,
                 size = 20.dp, // Fix 2: smallest practical touch target
+            )
+            Text(
+                text = "${positionState.positionMs.toTimeString()} / ${positionState.durationMs.toTimeString()}",
+                color = Color.White,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
             )
             ResizeModeButton(
                 onClick = onResizeModeClick,

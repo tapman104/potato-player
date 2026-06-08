@@ -246,7 +246,7 @@ fun PlayerSeekBar(
 /**
  * Format milliseconds as `m:ss` or `h:mm:ss`.
  */
-private fun Long.toTimeString(): String {
+internal fun Long.toTimeString(): String {
     val totalSeconds = (this / 1_000L).coerceAtLeast(0L)
     val hours = totalSeconds / 3_600L
     val minutes = (totalSeconds % 3_600L) / 60L

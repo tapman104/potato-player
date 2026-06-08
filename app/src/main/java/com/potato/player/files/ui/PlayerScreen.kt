@@ -601,7 +601,7 @@ fun PlayerScreen(
                             1f to Color.Black.copy(alpha = 0.88f),
                         )
                     )
-                    .padding(bottom = 16.dp, start = 32.dp, end = 32.dp),
+                    .padding(bottom = 8.dp, start = 16.dp, end = 16.dp),
             ) {
                 BottomControlBar(
                     positionStateFlow = viewModel.positionState,
