@@ -5,11 +5,15 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.ui.Alignment
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -65,12 +69,12 @@ fun PlayerSeekBar(
     onSeek: (positionMs: Long) -> Unit,
     modifier: Modifier = Modifier,
     onSeekFinished: (() -> Unit)? = null,
-    trackHeight: Dp = 2.dp,
-    thumbRadius: Dp = 5.dp,
-    trackColor: Color = Color.White.copy(alpha = 0.15f),
-    bufferColor: Color = Color.White.copy(alpha = 0.28f),
-    progressColor: Color = Color.White,
-    thumbColor: Color = Color.White,
+    trackHeight: Dp = 4.dp,
+    thumbRadius: Dp = 8.dp,
+    trackColor: Color = Color.White.copy(alpha = 0.2f),
+    bufferColor: Color = Color.White.copy(alpha = 0.4f),
+    progressColor: Color = MaterialTheme.colorScheme.primary,
+    thumbColor: Color = MaterialTheme.colorScheme.primary,
     showTimeLabels: Boolean = true,
 ) {
     // Raw fractional progress [0f, 1f]. Unknown duration -> 0.
@@ -107,7 +111,7 @@ fun PlayerSeekBar(
         label = "thumbRadiusAnim"
     )
 
-    Column(modifier = modifier) {
+    Box(modifier = modifier) {
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
@@ -198,11 +202,18 @@ fun PlayerSeekBar(
             // 4. Thumb — slightly larger while dragging for tactile feedback
             if (isDragging) {
                 drawCircle(
-                    color = Color.White.copy(alpha = 0.15f),
-                    radius = thumbRadiusPx * 2.2f,
+                    color = thumbColor.copy(alpha = 0.2f),
+                    radius = thumbRadiusPx * 2.5f,
                     center = Offset(trackStartX + played, centerY),
                 )
             }
+            
+            // Drop shadow
+            drawCircle(
+                color = Color.Black.copy(alpha = 0.25f),
+                radius = thumbRadiusPx * 1.15f,
+                center = Offset(trackStartX + played, centerY),
+            )
             
             drawCircle(
                 color = thumbColor,
@@ -211,11 +222,12 @@ fun PlayerSeekBar(
             )
         }
 
-        if (showTimeLabels && durationMs > 0L) {
+        if (durationMs > 0L) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
+                    .padding(horizontal = 4.dp, vertical = 2.dp)
+                    .align(Alignment.BottomCenter),
             ) {
                 val displayPosition = if (isDragging) {
                     (scrubFraction * durationMs).roundToLong()
@@ -225,14 +237,16 @@ fun PlayerSeekBar(
                     text = displayPosition.toTimeString(),
                     color = Color.White,
                     fontSize = 12.sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
-                    modifier = Modifier.weight(1f),
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                    modifier = Modifier.wrapContentWidth(Alignment.Start),
                 )
+                Spacer(modifier = Modifier.weight(1f))
                 Text(
                     text = durationMs.toTimeString(),
-                    color = Color.White.copy(alpha = 0.7f),
+                    color = Color.White,
                     fontSize = 12.sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                    modifier = Modifier.wrapContentWidth(Alignment.End),
                 )
             }
         }

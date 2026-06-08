@@ -65,47 +65,35 @@ fun BottomControlBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 0.dp),
+            .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 0.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         val positionState by positionStateFlow.collectAsState()
 
-        // [CHANGE 2] Row 1: seek bar spans full width
+        // Row 1: seek bar spans full width
         PlayerSeekBar(
             positionMs = positionState.positionMs,
             durationMs = positionState.durationMs,
             bufferedPositionMs = positionState.bufferedPositionMs,
             onSeek = onSeek,
             onSeekFinished = onSeekFinished,
-            modifier = Modifier.fillMaxWidth(), // [CHANGE 3]
-            showTimeLabels = false,
-            trackHeight = 4.dp,
-            thumbRadius = 6.dp,
+            modifier = Modifier.fillMaxWidth(),
+            trackHeight = 2.dp,
+            thumbRadius = 5.dp,
         )
 
-        Spacer(modifier = Modifier.height(4.dp))
-
-        // [CHANGE 4] Row 2: rotation lock and resize mode
+        // Row 2: rotation lock and placeholder
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp), // [CHANGE 5]
-            horizontalArrangement = Arrangement.SpaceBetween, // [CHANGE 6]
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            RotationLockButton( // [CHANGE 7]
+            RotationLockButton(
                 orientationMode = orientationMode,
                 onClick = onCycleRotation,
-                size = 20.dp, // Fix 2: smallest practical touch target
+                size = 20.dp,
             )
-            Text(
-                text = "${positionState.positionMs.toTimeString()} / ${positionState.durationMs.toTimeString()}",
-                color = Color.White,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-            )
-            ResizeModeButton(
-                onClick = onResizeModeClick,
-                tint = Color.White,
-            )
+            Spacer(modifier = Modifier)
         }
     }
 }

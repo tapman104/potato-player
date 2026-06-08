@@ -65,7 +65,7 @@ fun CenterPlayPauseButton(
     modifier: Modifier = Modifier,
     size: Dp = DEFAULT_SIZE,
     tint: Color = Color.White,
-    backgroundColor: Color = Color.Transparent,
+    backgroundColor: Color = Color.White.copy(alpha = 0.12f),
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -156,7 +156,7 @@ fun CenterPlayPauseButton(
 // ---------------------------------------------------------------------------------------
 
 /** Default diameter. Larger than [com.potato.player.player.ui.PlayPauseButton]'s 64.dp default. */
-private val DEFAULT_SIZE = 64.dp
+private val DEFAULT_SIZE = 72.dp
 
 /** Icon occupies 60 % of the button diameter. */
 private const val ICON_SIZE_FRACTION = 0.60f

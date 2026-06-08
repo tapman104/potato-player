@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -574,14 +575,18 @@ fun PlayerScreen(
             exit = fadeOut(),
             modifier = Modifier.align(Alignment.Center),
         ) {
-            CenterControlsRow(
-                isPlaying = uiState.isPlaying,
-                isLoading = uiState.isLoading,
-                isEnded = uiState.isEnded,
-                onPlayPauseClick = viewModel::togglePlayPause,
-                onSeekBackward = viewModel::seekBackward10,
-                onSeekForward = viewModel::seekForward10,
-            )
+            Box(
+                modifier = Modifier
+            ) {
+                CenterControlsRow(
+                    isPlaying = uiState.isPlaying,
+                    isLoading = uiState.isLoading,
+                    isEnded = uiState.isEnded,
+                    onPlayPauseClick = viewModel::togglePlayPause,
+                    onSeekBackward = viewModel::seekBackward10,
+                    onSeekForward = viewModel::seekForward10,
+                )
+            }
         }
 
         // â”€â”€ Layer 5: Bottom control bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -598,10 +603,10 @@ fun PlayerScreen(
                         Brush.verticalGradient(
                             0f to Color.Transparent,
                             0.4f to Color.Black.copy(alpha = 0.30f),
-                            1f to Color.Black.copy(alpha = 0.88f),
+                            1f to Color.Black.copy(alpha = 0.65f),
                         )
                     )
-                    .padding(bottom = 8.dp, start = 16.dp, end = 16.dp),
+                    .padding(bottom = 4.dp, start = 16.dp, end = 16.dp),
             ) {
                 BottomControlBar(
                     positionStateFlow = viewModel.positionState,

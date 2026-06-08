@@ -121,5 +121,5 @@ fun SeekTenButton(
 // Constants
 // ---------------------------------------------------------------------------------------
 
-private val DEFAULT_ICON_SIZE = 32.dp
+private val DEFAULT_ICON_SIZE = 30.dp
 private const val PRESSED_SCALE = 0.88f

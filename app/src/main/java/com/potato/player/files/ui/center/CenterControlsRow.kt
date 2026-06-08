@@ -90,4 +90,4 @@ fun CenterControlsRow(
 // ---------------------------------------------------------------------------------------
 
 /** Horizontal gap between each button pair. */
-private val BUTTON_SPACING = 40.dp
+private val BUTTON_SPACING = 24.dp
