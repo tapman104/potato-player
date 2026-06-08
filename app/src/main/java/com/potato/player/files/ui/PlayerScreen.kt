@@ -351,7 +351,6 @@ fun PlayerScreen(
                     this.player = player
                     // Explicit resize mode — RESIZE_MODE_FIT ensures no cropping.
                     resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-                    setKeepScreenOn(true)
                     subtitleView?.let { applySubtitleSettings(it, subtitleSettings) }
                     onPlayerViewReady?.invoke(this)
                     playerViewRef = this
@@ -364,6 +363,7 @@ fun PlayerScreen(
                 } else {
                     controlsState.resizeMode.value
                 }
+                pv.keepScreenOn = uiState.isPlaying
             },
             modifier = Modifier
                 .fillMaxSize()
