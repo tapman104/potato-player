@@ -80,7 +80,7 @@ class MainActivity : ComponentActivity() {
                 if (isUsingService == useService) return@collectLatest
                 isUsingService = useService
 
-                val currentPos = viewModelState?.uiState?.value?.positionMs
+                val currentPos = viewModelState?.positionState?.value?.positionMs
                 val currentUri = mediaUriState
 
                 viewModelState?.release()
@@ -109,7 +109,16 @@ class MainActivity : ComponentActivity() {
                         }
                     }, ContextCompat.getMainExecutor(this@MainActivity))
                 } else {
-                    val exoPlayer = androidx.media3.exoplayer.ExoPlayer.Builder(this@MainActivity).build()
+                    val loadControl = androidx.media3.exoplayer.DefaultLoadControl.Builder()
+                        .setBufferDurationsMs(
+                            androidx.media3.exoplayer.DefaultLoadControl.DEFAULT_MIN_BUFFER_MS,
+                            30_000,
+                            androidx.media3.exoplayer.DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
+                            androidx.media3.exoplayer.DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
+                        ).build()
+                    val exoPlayer = androidx.media3.exoplayer.ExoPlayer.Builder(this@MainActivity)
+                        .setLoadControl(loadControl)
+                        .build()
                     viewModelState = PlayerViewModel(ExoPlayerEngine(exoPlayer))
                     currentUri?.let { uriStr ->
                         viewModelState?.open(Uri.parse(uriStr))
@@ -240,7 +249,7 @@ class MainActivity : ComponentActivity() {
         if (appPreferences.resumePlayback.value) {
             val uriStr = mediaUriState ?: intent?.data?.toString() ?: intent?.getStringExtra(EXTRA_MEDIA_URI)
             if (uriStr != null) {
-                viewModelState?.uiState?.value?.positionMs?.let { pos ->
+                viewModelState?.positionState?.value?.positionMs?.let { pos ->
                     appPreferences.savePlaybackPosition(uriStr, pos)
                 }
             }

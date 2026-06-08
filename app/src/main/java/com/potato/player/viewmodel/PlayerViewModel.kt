@@ -61,9 +61,6 @@ class PlayerViewModel(
                 isPlaying = state.isPlaying,
                 isLoading = state.phase is MediaPhase.Loading,
                 isEnded = state.phase is MediaPhase.Ended,
-                positionMs = state.positionMs,
-                durationMs = state.durationMs,
-                bufferedPositionMs = state.bufferedPositionMs,
                 playbackSpeed = state.playbackSpeed,
                 canPlay = state.phase.canPlay(),
                 audioTracks = state.audioTracks,
@@ -77,6 +74,20 @@ class PlayerViewModel(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(SUBSCRIPTION_STOP_TIMEOUT_MS),
             initialValue = PlayerUiState.Initial,
+        )
+
+    val positionState: StateFlow<PlayerPositionState> = engine.playbackState
+        .map { state ->
+            PlayerPositionState(
+                positionMs = state.positionMs,
+                durationMs = state.durationMs,
+                bufferedPositionMs = state.bufferedPositionMs,
+            )
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(SUBSCRIPTION_STOP_TIMEOUT_MS),
+            initialValue = PlayerPositionState(0L, 0L, 0L),
         )
 
     /**
@@ -160,8 +171,8 @@ class PlayerViewModel(
      * of the source so the engine never receives an out-of-range position.
      */
     fun seekForward10() {
-        val target = (uiState.value.positionMs + SEEK_INTERVAL_MS)
-            .coerceAtMost(uiState.value.durationMs.coerceAtLeast(0L))
+        val target = (positionState.value.positionMs + SEEK_INTERVAL_MS)
+            .coerceAtMost(positionState.value.durationMs.coerceAtLeast(0L))
         engine.seekTo(target)
     }
 
@@ -170,7 +181,7 @@ class PlayerViewModel(
      * so the engine never receives a negative position.
      */
     fun seekBackward10() {
-        val target = (uiState.value.positionMs - SEEK_INTERVAL_MS).coerceAtLeast(0L)
+        val target = (positionState.value.positionMs - SEEK_INTERVAL_MS).coerceAtLeast(0L)
         engine.seekTo(target)
     }
 
@@ -350,9 +361,6 @@ private fun MediaPhase.canPlay(): Boolean = when (this) {
  * @property isPlaying True when the engine is actively rendering.
  * @property isLoading True while the source is preparing.
  * @property isEnded True when playback reached end-of-file.
- * @property positionMs Current position in milliseconds.
- * @property durationMs Total duration in milliseconds. 0 if unknown.
- * @property bufferedPositionMs How far the buffer extends, in ms.
  * @property playbackSpeed Current speed multiplier.
  * @property canPlay True when the engine can start playing immediately.
  * @property audioTracks Available audio tracks for the current source.
@@ -365,9 +373,6 @@ data class PlayerUiState(
     val isPlaying: Boolean,
     val isLoading: Boolean,
     val isEnded: Boolean,
-    val positionMs: Long,
-    val durationMs: Long,
-    val bufferedPositionMs: Long,
     val playbackSpeed: Float,
     val canPlay: Boolean,
     val audioTracks: List<AudioTrack>,
@@ -375,6 +380,27 @@ data class PlayerUiState(
     val videoTracks: List<VideoTrack>,
     val selectedAudioTrackId: String?,
     val selectedSubtitleTrackId: String?,
+) {
+    companion object {
+        val Initial = PlayerUiState(
+            isPlaying = false,
+            isLoading = false,
+            isEnded = false,
+            playbackSpeed = 1.0f,
+            canPlay = false,
+            audioTracks = emptyList(),
+            subtitleTracks = emptyList(),
+            videoTracks = emptyList(),
+            selectedAudioTrackId = null,
+            selectedSubtitleTrackId = null,
+        )
+    }
+}
+
+data class PlayerPositionState(
+    val positionMs: Long,
+    val durationMs: Long,
+    val bufferedPositionMs: Long,
 ) {
     /** Progress ratio [0f, 1f], or null if duration is unknown. */
     val progress: Float?
@@ -387,22 +413,4 @@ data class PlayerUiState(
         get() = if (durationMs > 0L) {
             (bufferedPositionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
         } else null
-
-    companion object {
-        val Initial = PlayerUiState(
-            isPlaying = false,
-            isLoading = false,
-            isEnded = false,
-            positionMs = 0L,
-            durationMs = 0L,
-            bufferedPositionMs = 0L,
-            playbackSpeed = 1.0f,
-            canPlay = false,
-            audioTracks = emptyList(),
-            subtitleTracks = emptyList(),
-            videoTracks = emptyList(),
-            selectedAudioTrackId = null,
-            selectedSubtitleTrackId = null,
-        )
-    }
 }

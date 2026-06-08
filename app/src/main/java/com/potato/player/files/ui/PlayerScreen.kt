@@ -246,8 +246,8 @@ fun PlayerScreen(
     LaunchedEffect(uri, uiState.isPlaying, viewModel) {
         if (uiState.isPlaying && appPreferences.resumePlayback.value) {
             while (true) {
-                delay(5000)
-                appPreferences.savePlaybackPosition(uri.toString(), viewModel.uiState.value.positionMs)
+                delay(15000)
+                appPreferences.savePlaybackPosition(uri.toString(), viewModel.positionState.value.positionMs)
             }
         }
     }
@@ -255,7 +255,7 @@ fun PlayerScreen(
     DisposableEffect(uri, viewModel) {
         onDispose {
             if (appPreferences.resumePlayback.value) {
-                appPreferences.savePlaybackPosition(uri.toString(), viewModel.uiState.value.positionMs)
+                appPreferences.savePlaybackPosition(uri.toString(), viewModel.positionState.value.positionMs)
             }
         }
     }
@@ -604,7 +604,7 @@ fun PlayerScreen(
                     .padding(bottom = 16.dp, start = 32.dp, end = 32.dp),
             ) {
                 BottomControlBar(
-                    uiState = uiState,
+                    positionStateFlow = viewModel.positionState,
                     orientationMode = controlsState.orientationMode,
                     onSeek = { positionMs ->
                         viewModel.setPositionUpdateRate(100L)

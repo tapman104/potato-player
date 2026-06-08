@@ -14,7 +14,10 @@ import androidx.compose.ui.unit.dp
 
 import com.potato.player.player.ui.PlayerSeekBar
 import com.potato.player.player.ui.state.OrientationMode
-import com.potato.player.viewmodel.PlayerUiState
+import com.potato.player.viewmodel.PlayerPositionState
+import kotlinx.coroutines.flow.StateFlow
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 
 /**
  * Bottom control bar that assembles the full player transport UI.
@@ -45,7 +48,7 @@ import com.potato.player.viewmodel.PlayerUiState
  */
 @Composable
 fun BottomControlBar(
-    uiState: PlayerUiState,
+    positionStateFlow: StateFlow<PlayerPositionState>,
     orientationMode: OrientationMode,
     // [CHANGE 1] onTogglePlayPause removed — play/pause no longer lives here
     onSeek: (positionMs: Long) -> Unit,
@@ -60,11 +63,13 @@ fun BottomControlBar(
             .padding(horizontal = 16.dp, vertical = 0.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
+        val positionState by positionStateFlow.collectAsState()
+
         // [CHANGE 2] Row 1: seek bar spans full width
         PlayerSeekBar(
-            positionMs = uiState.positionMs,
-            durationMs = uiState.durationMs,
-            bufferedPositionMs = uiState.bufferedPositionMs,
+            positionMs = positionState.positionMs,
+            durationMs = positionState.durationMs,
+            bufferedPositionMs = positionState.bufferedPositionMs,
             onSeek = onSeek,
             onSeekFinished = onSeekFinished,
             modifier = Modifier.fillMaxWidth(), // [CHANGE 3]

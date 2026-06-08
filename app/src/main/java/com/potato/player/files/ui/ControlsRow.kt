@@ -57,10 +57,9 @@ fun ControlsRow(
                 backgroundColor = Color.White.copy(alpha = 0.15f),
             )
 
-            PlayerSeekBar(
-                positionMs = uiState.positionMs,
-                durationMs = uiState.durationMs,
-                bufferedPositionMs = uiState.bufferedPositionMs,
+                positionMs = 0L,
+                durationMs = 0L,
+                bufferedPositionMs = 0L,
                 onSeek = onSeek,
                 modifier = Modifier.weight(1f),
                 trackHeight = 4.dp,
