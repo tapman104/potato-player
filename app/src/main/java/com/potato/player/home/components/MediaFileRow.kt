@@ -1,9 +1,8 @@
 package com.potato.player.home.components
 
-import android.graphics.Bitmap
-import android.media.ThumbnailUtils
-import android.provider.MediaStore
-import android.util.Size
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.decode.VideoFrameDecoder
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -32,13 +31,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -48,9 +45,6 @@ import androidx.compose.ui.unit.sp
 import com.potato.player.data.MediaFile
 import com.potato.player.data.toFormattedDuration
 import com.potato.player.data.toFormattedSize
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.io.File
 
 @Composable
 fun MediaFileRow(
@@ -60,27 +54,7 @@ fun MediaFileRow(
     val context = LocalContext.current
     var menuExpanded by remember { mutableStateOf(false) }
 
-    val thumbnail by produceState<Bitmap?>(initialValue = ThumbnailCache.cache.get(file.uri.toString() + "_128"), key1 = file.uri) {
-        if (value == null && file.isVideo) {
-            value = withContext(Dispatchers.IO) {
-                try {
-                    val bitmap = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                        context.contentResolver.loadThumbnail(file.uri, Size(128, 128), null)
-                    } else {
-                        val filePath = File(file.folderPath, file.displayName).absolutePath
-                        @Suppress("DEPRECATION")
-                        ThumbnailUtils.createVideoThumbnail(
-                            filePath,
-                            MediaStore.Images.Thumbnails.MINI_KIND
-                        )
-                    }
-                    bitmap?.also { ThumbnailCache.cache.put(file.uri.toString() + "_128", it) }
-                } catch (e: Exception) {
-                    null
-                }
-            }
-        }
-    }
+
 
     Row(
         modifier = Modifier
@@ -101,16 +75,16 @@ fun MediaFileRow(
             contentAlignment = Alignment.Center
         ) {
             if (file.isVideo) {
-                if (thumbnail != null) {
-                    Image(
-                        bitmap = thumbnail!!.asImageBitmap(),
-                        contentDescription = "Thumbnail",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    Icon(Icons.Outlined.Movie, contentDescription = "Video", tint = Color(0xFF6C63FF), modifier = Modifier.size(24.dp))
-                }
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(file.uri)
+                        .decoderFactory(VideoFrameDecoder.Factory())
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Thumbnail",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
             } else {
                 Icon(Icons.Outlined.MusicNote, contentDescription = "Audio", tint = Color(0xFF6C63FF), modifier = Modifier.size(24.dp))
             }
