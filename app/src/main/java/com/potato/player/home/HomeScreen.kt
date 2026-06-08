@@ -103,25 +103,6 @@ fun HomeScreen(
                             )
                         }
                         
-                        Spacer(modifier = Modifier.size(24.dp))
-                        
-                        Column {
-                            Text(
-                                text = "PLAYLISTS",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color(0xFFAAAAAA),
-                                letterSpacing = 1.sp,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .height(2.dp)
-                                    .fillMaxWidth(0.2f)
-                                    .background(Color.Transparent)
-                            )
-                        }
-                        
                         Spacer(modifier = Modifier.weight(1f))
                         
                         Box(
@@ -155,7 +136,10 @@ fun HomeScreen(
                                 )
                             }
 
-                            items(state.files) { file ->
+                            items(
+                                items = state.files,
+                                key = { it.uri.toString() }
+                            ) { file ->
                                 MediaFileRow(
                                     file = file,
                                     onClick = { onFilePicked(file.uri) }

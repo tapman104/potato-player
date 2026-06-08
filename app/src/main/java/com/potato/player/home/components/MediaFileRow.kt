@@ -8,10 +8,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,8 +26,12 @@ import androidx.compose.material3.ripple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -54,19 +58,16 @@ fun MediaFileRow(
     onClick: () -> Unit
 ) {
     val context = LocalContext.current
+    var menuExpanded by remember { mutableStateOf(false) }
 
     val thumbnail by produceState<Bitmap?>(initialValue = null, key1 = file.uri) {
         if (file.isVideo) {
             value = withContext(Dispatchers.IO) {
                 try {
-                    val filePath = File(file.folderPath, file.displayName).absolutePath
                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                        ThumbnailUtils.createVideoThumbnail(
-                            File(filePath),
-                            Size(128, 128),
-                            null
-                        )
+                        context.contentResolver.loadThumbnail(file.uri, Size(128, 128), null)
                     } else {
+                        val filePath = File(file.folderPath, file.displayName).absolutePath
                         @Suppress("DEPRECATION")
                         ThumbnailUtils.createVideoThumbnail(
                             filePath,
@@ -134,12 +135,34 @@ fun MediaFileRow(
             )
         }
 
-        IconButton(onClick = { /* TODO: More options */ }) {
-            Icon(
-                imageVector = Icons.Outlined.MoreVert,
-                contentDescription = "More options",
-                tint = Color.White
-            )
+        Box {
+            IconButton(onClick = { menuExpanded = true }) {
+                Icon(
+                    imageVector = Icons.Outlined.MoreVert,
+                    contentDescription = "More options",
+                    tint = Color.White
+                )
+            }
+            DropdownMenu(
+                expanded = menuExpanded,
+                onDismissRequest = { menuExpanded = false },
+                modifier = Modifier.background(Color(0xFF2C2C2C))
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Play", color = Color.White) },
+                    onClick = {
+                        menuExpanded = false
+                        onClick()
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Details", color = Color.White) },
+                    onClick = {
+                        menuExpanded = false
+                        // TODO: Show details dialog
+                    }
+                )
+            }
         }
     }
 }
