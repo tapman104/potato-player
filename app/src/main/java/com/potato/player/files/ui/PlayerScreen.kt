@@ -374,11 +374,6 @@ fun PlayerScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                // Exclude the full view from the system back swipe gesture so
-                // vertical brightness/volume drags starting at the left/right
-                // edge don't trigger Android's predictive-back and close the
-                // Activity.
-                .systemGestureExclusion()
                 .pointerInput(Unit) {
                     detectTransformGestures { _, _, zoom, _ ->
                         zoomHandler.onZoom(zoom, maxZoomScale)
