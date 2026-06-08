@@ -28,6 +28,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -59,7 +60,11 @@ fun HomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0A0A0A))
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(0xFF16161E), Color(0xFF0A0A0E))
+                )
+            )
     ) {
         when (val state = uiState) {
             is HomeUiState.Loading -> {
@@ -81,24 +86,17 @@ fun HomeScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp)
-                            .padding(top = 48.dp, bottom = 16.dp),
+                            .padding(horizontal = 24.dp)
+                            .padding(top = 56.dp, bottom = 24.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
                             Text(
-                                text = "VIDEOS",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFFF9800),
-                                letterSpacing = 1.sp,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .height(2.dp)
-                                    .fillMaxWidth(0.15f)
-                                    .background(Color(0xFFFF9800))
+                                text = "Library",
+                                fontSize = 32.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White,
+                                letterSpacing = (-0.5).sp
                             )
                         }
                         
@@ -106,12 +104,12 @@ fun HomeScreen(
                         
                         Box(
                             modifier = Modifier
-                                .size(40.dp)
-                                .background(Color(0xFF1C1C1C), CircleShape)
+                                .size(44.dp)
+                                .background(Color(0xFF2A2A35), CircleShape)
                                 .clickable(onClick = onSettingsClick),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Outlined.Settings, contentDescription = "Settings", tint = Color(0xFFAAAAAA), modifier = Modifier.size(24.dp))
+                            Icon(Icons.Outlined.Settings, contentDescription = "Settings", tint = Color.White, modifier = Modifier.size(24.dp))
                         }
                     }
 
@@ -152,7 +150,7 @@ fun HomeScreen(
                         ) {
                             androidx.compose.material3.Button(
                                 onClick = { filePickerLauncher.launch(arrayOf("video/*")) },
-                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))
+                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Color(0xFF6C63FF))
                             ) {
                                 Text("Open File", color = Color.White, fontWeight = FontWeight.Bold)
                             }

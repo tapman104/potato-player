@@ -14,13 +14,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material.icons.outlined.MusicNote
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.ripple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -61,7 +64,7 @@ fun MediaFileRow(
             .fillMaxWidth()
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(color = Color(0xFF6C63FF).copy(alpha = 0.1f)),
+                indication = ripple(color = Color(0xFF6C63FF).copy(alpha = 0.2f)),
                 onClick = onClick
             )
             .padding(horizontal = 16.dp, vertical = 8.dp),
@@ -69,9 +72,9 @@ fun MediaFileRow(
     ) {
         Box(
             modifier = Modifier
-                .size(width = 120.dp, height = 68.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(Color(0xFF1C1C1C)),
+                .size(width = 140.dp, height = 80.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color(0xFF1E1E24)),
             contentAlignment = Alignment.Center
         ) {
             if (file.isVideo) {
@@ -85,8 +88,35 @@ fun MediaFileRow(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.PlayArrow,
+                        contentDescription = "Play",
+                        tint = Color.White.copy(alpha = 0.8f),
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(6.dp)
+                        .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = file.durationMs.toFormattedDuration(),
+                        color = Color.White,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             } else {
-                Icon(Icons.Outlined.MusicNote, contentDescription = "Audio", tint = Color(0xFF6C63FF), modifier = Modifier.size(24.dp))
+                Icon(Icons.Outlined.MusicNote, contentDescription = "Audio", tint = Color(0xFF6C63FF), modifier = Modifier.size(28.dp))
             }
         }
 
@@ -96,18 +126,33 @@ fun MediaFileRow(
         ) {
             Text(
                 text = file.displayName,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Normal,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
                 color = Color.White,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
-            Text(
-                text = "${file.durationMs.toFormattedDuration()} • ${if (file.sizeBytes > 0) "1080p" else "SD"}", // TODO: Actual resolution if available, using placeholder for now to match screenshot style
-                fontSize = 13.sp,
-                color = Color(0xFFAAAAAA),
-                modifier = Modifier.padding(top = 4.dp)
-            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .background(Color(0xFF2A2A35), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = if (file.sizeBytes > 0) "1080p" else "SD",
+                        fontSize = 10.sp,
+                        color = Color(0xFFB0B0B8),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = file.sizeBytes.toFormattedSize(),
+                    fontSize = 12.sp,
+                    color = Color(0xFF8A8A93)
+                )
+            }
         }
 
         Box {

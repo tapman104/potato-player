@@ -43,10 +43,10 @@ fun MediaSearchBar(
         onValueChange = onQueryChange,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .height(48.dp)
-            .background(Color(0xFF1C1C1C), RoundedCornerShape(12.dp)),
-        textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .height(52.dp)
+            .background(Color(0xFF1E1E24), RoundedCornerShape(14.dp)),
+        textStyle = TextStyle(color = Color.White, fontSize = 15.sp),
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
