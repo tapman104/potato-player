@@ -60,11 +60,11 @@ fun MediaFileRow(
     val context = LocalContext.current
     var menuExpanded by remember { mutableStateOf(false) }
 
-    val thumbnail by produceState<Bitmap?>(initialValue = null, key1 = file.uri) {
-        if (file.isVideo) {
+    val thumbnail by produceState<Bitmap?>(initialValue = ThumbnailCache.cache.get(file.uri.toString() + "_128"), key1 = file.uri) {
+        if (value == null && file.isVideo) {
             value = withContext(Dispatchers.IO) {
                 try {
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    val bitmap = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
                         context.contentResolver.loadThumbnail(file.uri, Size(128, 128), null)
                     } else {
                         val filePath = File(file.folderPath, file.displayName).absolutePath
@@ -74,6 +74,7 @@ fun MediaFileRow(
                             MediaStore.Images.Thumbnails.MINI_KIND
                         )
                     }
+                    bitmap?.also { ThumbnailCache.cache.put(file.uri.toString() + "_128", it) }
                 } catch (e: Exception) {
                     null
                 }

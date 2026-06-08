@@ -168,6 +168,14 @@ fun PlayerScreen(
     // Track whether a long-press is currently active so we can detect finger-up.
     var isLongPressing by remember { mutableStateOf(false) }
 
+    BackHandler {
+        if (controlsVisible) {
+            controlsVisible = false
+        } else {
+            onBack()
+        }
+    }
+
     // ── Effects ──────────────────────────────────────────────────────────────────
 
     // Open the URI once (or when it changes).
@@ -616,10 +624,6 @@ fun PlayerScreen(
                 onSpeedSelected = { speed -> viewModel.setPlaybackSpeed(speed) },
                 onDismiss = { showSpeedDialog = false }
             )
-        }
-
-        BackHandler(enabled = controlsVisible) {
-            controlsVisible = false
         }
     }
 }
