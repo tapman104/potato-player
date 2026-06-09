@@ -22,7 +22,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -35,6 +37,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -549,7 +552,7 @@ fun PlayerScreen(
                     .padding(horizontal = 16.dp, vertical = 16.dp)
                     .clip(RoundedCornerShape(24.dp))
                     .background(Color.Black.copy(alpha = 0.5f))
-                    .androidx.compose.foundation.border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(24.dp))
+                    .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(24.dp))
             ) {
                 PlayerTopBar(
                     title = title,
@@ -573,7 +576,7 @@ fun PlayerScreen(
                 modifier = Modifier
                     .clip(RoundedCornerShape(32.dp))
                     .background(Color.Black.copy(alpha = 0.4f))
-                    .androidx.compose.foundation.border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(32.dp))
+                    .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(32.dp))
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 CenterControlsRow(
@@ -602,7 +605,7 @@ fun PlayerScreen(
                     .padding(horizontal = 16.dp, vertical = 24.dp)
                     .clip(RoundedCornerShape(24.dp))
                     .background(Color.Black.copy(alpha = 0.6f))
-                    .androidx.compose.foundation.border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(24.dp))
+                    .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(24.dp))
             ) {
                 BottomControlBar(
                     positionStateFlow = viewModel.positionState,
