@@ -23,6 +23,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -87,6 +89,8 @@ fun PlayerSeekBar(
         (bufferedPositionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
     } else 0f
 
+    val haptic = LocalHapticFeedback.current
+
     // While dragging, override the displayed fraction with the finger position.
     var isDragging by remember { mutableStateOf(false) }
     var scrubFraction by remember { mutableFloatStateOf(0f) }
@@ -140,6 +144,7 @@ fun PlayerSeekBar(
                 .pointerInput(durationMs) {
                     detectTapGestures { offset ->
                         if (durationMs <= 0L) return@detectTapGestures
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         val baseThumbRadiusPx = thumbRadius.toPx()
                         val trackWidth = size.width - 2 * baseThumbRadiusPx
                         val fraction = ((offset.x - baseThumbRadiusPx) / trackWidth).coerceIn(0f, 1f)
@@ -151,12 +156,14 @@ fun PlayerSeekBar(
                     detectHorizontalDragGestures(
                         onDragStart = { offset ->
                             isDragging = true
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             val baseThumbRadiusPx = thumbRadius.toPx()
                             val trackWidth = size.width - 2 * baseThumbRadiusPx
                             scrubFraction = ((offset.x - baseThumbRadiusPx) / trackWidth).coerceIn(0f, 1f)
                         },
                         onDragEnd = {
                             isDragging = false
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             if (durationMs > 0L) {
                                 onSeek((scrubFraction * durationMs).roundToLong())
                             }

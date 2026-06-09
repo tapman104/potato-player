@@ -27,6 +27,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -69,6 +71,7 @@ fun CenterPlayPauseButton(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val haptic = LocalHapticFeedback.current
 
     // Scale spring â€” same stiffness as PlayPauseButton for a consistent feel.
     val scale by animateFloatAsState(
@@ -96,7 +99,10 @@ fun CenterPlayPauseButton(
                     .clickable(
                         interactionSource = interactionSource,
                         indication = null,
-                        onClick = onClick,
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onClick()
+                        },
                     )
                     .semantics {
                         role = Role.Button
