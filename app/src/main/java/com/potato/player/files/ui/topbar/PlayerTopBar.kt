@@ -89,7 +89,6 @@ fun PlayerTopBar(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         modifier = modifier
             .fillMaxWidth()
-            .statusBarsPadding()
             .padding(horizontal = 8.dp, vertical = 6.dp),
     ) {
         // ── Left section ──────────────────────────────────────────────────────────

@@ -535,13 +535,11 @@ fun PlayerScreen(
         ) {
             Box(
                 modifier = Modifier
-                    .background(
-                        Brush.verticalGradient(
-                            0f to Color.Black.copy(alpha = 0.80f),
-                            0.6f to Color.Black.copy(alpha = 0.20f),
-                            1f to Color.Transparent,
-                        )
-                    ),
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 16.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .androidx.compose.foundation.border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(24.dp))
             ) {
                 PlayerTopBar(
                     title = title,
@@ -563,6 +561,10 @@ fun PlayerScreen(
         ) {
             Box(
                 modifier = Modifier
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(Color.Black.copy(alpha = 0.4f))
+                    .androidx.compose.foundation.border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(32.dp))
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 CenterControlsRow(
                     isPlaying = uiState.isPlaying,
@@ -585,14 +587,11 @@ fun PlayerScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(
-                        Brush.verticalGradient(
-                            0f to Color.Transparent,
-                            0.4f to Color.Black.copy(alpha = 0.30f),
-                            1f to Color.Black.copy(alpha = 0.65f),
-                        )
-                    )
-                    .padding(bottom = 4.dp, start = 16.dp, end = 16.dp),
+                    .navigationBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 24.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .androidx.compose.foundation.border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(24.dp))
             ) {
                 BottomControlBar(
                     positionStateFlow = viewModel.positionState,

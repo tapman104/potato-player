@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
@@ -209,7 +210,11 @@ fun PlayerSeekBar(
             val played = trackWidth * animatedFraction
             if (played > 0f) {
                 drawRoundRect(
-                    color = progressColor,
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(Color(0xFF00E5FF), Color(0xFFD500F9)),
+                        startX = trackStartX,
+                        endX = trackStartX + trackWidth
+                    ),
                     topLeft = Offset(trackStartX, centerY - trackHeightPx / 2f),
                     size = Size(played, trackHeightPx),
                     cornerRadius = cornerRadius,
@@ -219,7 +224,7 @@ fun PlayerSeekBar(
             // 4. Thumb — slightly larger while dragging for tactile feedback
             if (isDragging) {
                 drawCircle(
-                    color = thumbColor.copy(alpha = 0.2f),
+                    color = Color.White.copy(alpha = 0.15f),
                     radius = thumbRadiusPx * 2.5f,
                     center = Offset(trackStartX + played, centerY),
                 )
@@ -227,15 +232,24 @@ fun PlayerSeekBar(
             
             // Drop shadow
             drawCircle(
-                color = Color.Black.copy(alpha = 0.25f),
-                radius = thumbRadiusPx * 1.15f,
+                color = Color.Black.copy(alpha = 0.4f),
+                radius = thumbRadiusPx * 1.3f,
                 center = Offset(trackStartX + played, centerY),
             )
             
+            // Vibrant thumb color matching the end of the gradient
             drawCircle(
-                color = thumbColor,
+                color = Color(0xFFD500F9),
                 radius = thumbRadiusPx,
                 center = Offset(trackStartX + played, centerY),
+            )
+            
+            // Subtle white border
+            drawCircle(
+                color = Color.White,
+                radius = thumbRadiusPx,
+                center = Offset(trackStartX + played, centerY),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
             )
         }
 
