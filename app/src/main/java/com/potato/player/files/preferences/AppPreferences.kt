@@ -61,6 +61,9 @@ class AppPreferences(context: Context) {
     private val _swipeForVolume = MutableStateFlow(prefs.getBoolean("swipe_for_volume", true))
     val swipeForVolume: StateFlow<Boolean> = _swipeForVolume.asStateFlow()
 
+    private val _enableHaptics = MutableStateFlow(prefs.getBoolean("enable_haptics", true))
+    val enableHaptics: StateFlow<Boolean> = _enableHaptics.asStateFlow()
+
     private val _enablePlaybackService = MutableStateFlow(prefs.getBoolean("enable_playback_service", true))
     val enablePlaybackService: StateFlow<Boolean> = _enablePlaybackService.asStateFlow()
 
@@ -141,6 +144,11 @@ class AppPreferences(context: Context) {
     fun setSwipeForVolume(enabled: Boolean) {
         prefs.edit().putBoolean("swipe_for_volume", enabled).apply()
         _swipeForVolume.value = enabled
+    }
+
+    fun setEnableHaptics(enabled: Boolean) {
+        prefs.edit().putBoolean("enable_haptics", enabled).apply()
+        _enableHaptics.value = enabled
     }
 
     fun setEnablePlaybackService(enabled: Boolean) {

@@ -79,6 +79,7 @@ fun PlayerSeekBar(
     progressColor: Color = MaterialTheme.colorScheme.primary,
     thumbColor: Color = MaterialTheme.colorScheme.primary,
     showTimeLabels: Boolean = true,
+    enableHaptics: Boolean = true,
 ) {
     // Raw fractional progress [0f, 1f]. Unknown duration -> 0.
     val playedFraction = if (durationMs > 0L) {
@@ -144,7 +145,7 @@ fun PlayerSeekBar(
                 .pointerInput(durationMs) {
                     detectTapGestures { offset ->
                         if (durationMs <= 0L) return@detectTapGestures
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        if (enableHaptics) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         val baseThumbRadiusPx = thumbRadius.toPx()
                         val trackWidth = size.width - 2 * baseThumbRadiusPx
                         val fraction = ((offset.x - baseThumbRadiusPx) / trackWidth).coerceIn(0f, 1f)
@@ -156,14 +157,14 @@ fun PlayerSeekBar(
                     detectHorizontalDragGestures(
                         onDragStart = { offset ->
                             isDragging = true
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            if (enableHaptics) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             val baseThumbRadiusPx = thumbRadius.toPx()
                             val trackWidth = size.width - 2 * baseThumbRadiusPx
                             scrubFraction = ((offset.x - baseThumbRadiusPx) / trackWidth).coerceIn(0f, 1f)
                         },
                         onDragEnd = {
                             isDragging = false
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            if (enableHaptics) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             if (durationMs > 0L) {
                                 onSeek((scrubFraction * durationMs).roundToLong())
                             }

@@ -57,6 +57,7 @@ fun CenterControlsRow(
     onSeekForward: () -> Unit,
     modifier: Modifier = Modifier,
     tint: Color = Color.White,
+    enableHaptics: Boolean = true,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -75,6 +76,7 @@ fun CenterControlsRow(
             isEnded = isEnded,
             onClick = onPlayPauseClick,
             tint = tint,
+            enableHaptics = enableHaptics,
         )
 
         SeekTenButton(

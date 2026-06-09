@@ -61,6 +61,7 @@ fun BottomControlBar(
     onResizeModeClick: () -> Unit,
     onSeekFinished: (() -> Unit)? = null, // Plumbed from PlayerScreen for rate reset
     modifier: Modifier = Modifier,
+    enableHaptics: Boolean = true,
 ) {
     Column(
         modifier = modifier
@@ -78,6 +79,7 @@ fun BottomControlBar(
             onSeek = onSeek,
             onSeekFinished = onSeekFinished,
             modifier = Modifier.fillMaxWidth(),
+            enableHaptics = enableHaptics,
             // Using default attractive sizes
         )
 

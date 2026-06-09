@@ -68,6 +68,7 @@ fun CenterPlayPauseButton(
     size: Dp = DEFAULT_SIZE,
     tint: Color = Color.White,
     backgroundColor: Color = Color.White.copy(alpha = 0.12f),
+    enableHaptics: Boolean = true,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -100,7 +101,9 @@ fun CenterPlayPauseButton(
                         interactionSource = interactionSource,
                         indication = null,
                         onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            if (enableHaptics) {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            }
                             onClick()
                         },
                     )

@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.TouchApp
+import androidx.compose.material.icons.outlined.Vibration
 import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,6 +27,7 @@ fun GestureSettingsScreen(
     val doubleTapToSeek by appPreferences.doubleTapToSeek.collectAsState()
     val longPressForSpeed by appPreferences.longPressForSpeed.collectAsState()
     val swipeForVolume by appPreferences.swipeForVolume.collectAsState()
+    val enableHaptics by appPreferences.enableHaptics.collectAsState()
 
     Scaffold(
         topBar = {
@@ -130,6 +132,29 @@ fun GestureSettingsScreen(
                         },
                         trailingContent = {
                             Switch(checked = swipeForVolume, onCheckedChange = { appPreferences.setSwipeForVolume(it) })
+                        },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+                    )
+                    ListItem(
+                        headlineContent = { 
+                            Text("Haptic feedback", fontWeight = FontWeight.SemiBold) 
+                        },
+                        supportingContent = { 
+                            Text("Vibrate on interactions like seek and play") 
+                        },
+                        leadingContent = {
+                            Icon(
+                                imageVector = Icons.Outlined.Vibration, 
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        },
+                        trailingContent = {
+                            Switch(checked = enableHaptics, onCheckedChange = { appPreferences.setEnableHaptics(it) })
                         },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                     )
