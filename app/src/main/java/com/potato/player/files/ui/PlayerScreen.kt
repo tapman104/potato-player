@@ -7,10 +7,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -22,9 +18,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -37,7 +31,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -46,8 +39,6 @@ import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.WindowCompat
@@ -131,12 +122,10 @@ fun PlayerScreen(
     val context = LocalContext.current
     val activityContext = context
     val appPreferences = remember { AppPreferences(context.applicationContext) }
-    val haptic = LocalHapticFeedback.current
 
     // ── State collection ──────────────────────────────────────────────────────────
     val uiState by viewModel.uiState.collectAsState()
     val controlsState by viewModel.controlsState.collectAsState()
-    val enableHaptics by appPreferences.enableHaptics.collectAsState()
 
     // Controls visibility — local UI state, auto-hides after idle period.
     var controlsVisible by remember { mutableStateOf(false) }
@@ -293,13 +282,33 @@ fun PlayerScreen(
 
     // One-shot: configure edge-to-edge and swipe-to-reveal system bars behaviour.
     // This only needs to happen once for the lifetime of the screen.
-    LaunchedEffect(Unit) {
-        val activity = activityContext as? android.app.Activity ?: return@LaunchedEffect
-        val window = activity.window
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        val insetsCtrl = WindowInsetsControllerCompat(window, window.decorView)
-        insetsCtrl.systemBarsBehavior =
-            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+    DisposableEffect(Unit) {
+        val activity = activityContext as? android.app.Activity
+        val window = activity?.window
+        
+        if (window != null) {
+            WindowCompat.setDecorFitsSystemWindows(window, false)
+            val insetsCtrl = WindowInsetsControllerCompat(window, window.decorView)
+            insetsCtrl.systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
+
+        onDispose {
+            if (activity != null) {
+                activity.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            }
+            if (window != null) {
+                // Restore brightness
+                val lp = window.attributes
+                lp.screenBrightness = android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+                window.attributes = lp
+                
+                // Restore window decor
+                WindowCompat.setDecorFitsSystemWindows(window, true)
+                val insetsCtrl = WindowInsetsControllerCompat(window, window.decorView)
+                insetsCtrl.show(WindowInsetsCompat.Type.systemBars())
+            }
+        }
     }
 
     // Show/hide system bars whenever controls visibility toggles.
@@ -510,7 +519,6 @@ fun PlayerScreen(
                                                         } else {
                                                             handler.onTap()
                                                             controlsVisible = !controlsVisible
-                                                            if (enableHaptics) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                                         }
                                                     }
                                                 }
@@ -522,7 +530,6 @@ fun PlayerScreen(
                                         if (!secondDown) {
                                             // No second tap — plain single tap: toggle controls
                                             controlsVisible = !controlsVisible
-                                            if (enableHaptics) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                         }
                                     }
                                 }
@@ -542,17 +549,19 @@ fun PlayerScreen(
         // ────────────────────────────────────────────────────────────────────────────────
         AnimatedVisibility(
             visible = controlsVisible && !hideControlsForGesture,
-            enter = fadeIn() + slideInVertically(initialOffsetY = { -it }),
-            exit = fadeOut() + slideOutVertically(targetOffsetY = { -it }),
+            enter = fadeIn(),
+            exit = fadeOut(),
             modifier = Modifier.align(Alignment.TopCenter),
         ) {
             Box(
                 modifier = Modifier
-                    .statusBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 16.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(Color.Black.copy(alpha = 0.5f))
-                    .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(24.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            0f to Color.Black.copy(alpha = 0.80f),
+                            0.6f to Color.Black.copy(alpha = 0.20f),
+                            1f to Color.Transparent,
+                        )
+                    ),
             ) {
                 PlayerTopBar(
                     title = title,
@@ -568,16 +577,12 @@ fun PlayerScreen(
         // â”€â”€ Layer 4: Center controls â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         AnimatedVisibility(
             visible = controlsVisible && !hideControlsForGesture,
-            enter = fadeIn() + scaleIn(initialScale = 0.8f),
-            exit = fadeOut() + scaleOut(targetScale = 0.8f),
+            enter = fadeIn(),
+            exit = fadeOut(),
             modifier = Modifier.align(Alignment.Center),
         ) {
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(32.dp))
-                    .background(Color.Black.copy(alpha = 0.4f))
-                    .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(32.dp))
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 CenterControlsRow(
                     isPlaying = uiState.isPlaying,
@@ -586,7 +591,6 @@ fun PlayerScreen(
                     onPlayPauseClick = viewModel::togglePlayPause,
                     onSeekBackward = viewModel::seekBackward10,
                     onSeekForward = viewModel::seekForward10,
-                    enableHaptics = enableHaptics,
                 )
             }
         }
@@ -594,18 +598,21 @@ fun PlayerScreen(
         // â”€â”€ Layer 5: Bottom control bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         AnimatedVisibility(
             visible = controlsVisible && !hideControlsForGesture,
-            enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
-            exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
+            enter = fadeIn(),
+            exit = fadeOut(),
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 24.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(Color.Black.copy(alpha = 0.6f))
-                    .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(24.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            0f to Color.Transparent,
+                            0.4f to Color.Black.copy(alpha = 0.30f),
+                            1f to Color.Black.copy(alpha = 0.65f),
+                        )
+                    )
+                    .padding(bottom = 4.dp, start = 16.dp, end = 16.dp),
             ) {
                 BottomControlBar(
                     positionStateFlow = viewModel.positionState,
@@ -617,7 +624,6 @@ fun PlayerScreen(
                     onSeekFinished = { viewModel.setPositionUpdateRate(1000L) },
                     onCycleRotation = viewModel::cycleRotationMode,
                     onResizeModeClick = viewModel::cycleResizeMode,
-                    enableHaptics = enableHaptics,
                 )
             }
         }

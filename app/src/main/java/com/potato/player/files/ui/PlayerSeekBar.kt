@@ -74,10 +74,10 @@ fun PlayerSeekBar(
     onSeekFinished: (() -> Unit)? = null,
     trackHeight: Dp = 4.dp,
     thumbRadius: Dp = 8.dp,
-    trackColor: Color = Color.White.copy(alpha = 0.2f),
+    trackColor: Color = Color.DarkGray,
     bufferColor: Color = Color.White.copy(alpha = 0.4f),
-    progressColor: Color = MaterialTheme.colorScheme.primary,
-    thumbColor: Color = MaterialTheme.colorScheme.primary,
+    progressColor: Color = Color(0xFF00E5FF),
+    thumbColor: Color = Color(0xFFD500F9),
     showTimeLabels: Boolean = true,
     enableHaptics: Boolean = true,
 ) {
@@ -151,6 +151,7 @@ fun PlayerSeekBar(
                         val fraction = ((offset.x - baseThumbRadiusPx) / trackWidth).coerceIn(0f, 1f)
                         val targetMs = (fraction * durationMs).roundToLong()
                         onSeek(targetMs)
+                        onSeekFinished?.invoke()
                     }
                 }
                 .pointerInput(durationMs) {
