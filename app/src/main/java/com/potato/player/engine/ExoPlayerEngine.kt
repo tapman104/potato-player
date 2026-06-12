@@ -85,8 +85,9 @@ class ExoPlayerEngine(
     private var lastSeekTimeMs: Long = 0L
     private var released: Boolean = false
     private val trackKeyById = mutableMapOf<String, TrackKey>()
-    // REF-3: Mutable polling rate; default 250ms, reduced to 100ms during scrub.
-    private var positionUpdateIntervalMs: Long = 1000L
+    // REF-3: Mutable polling rate; default 1000ms, 2000ms when controls are hidden, 100ms during scrub.
+    private var positionUpdateIntervalMs: Long = PLAYBACK_POSITION_UPDATE_INTERVAL_MS
+    private var controlsAreVisible: Boolean = false
 
 
     private data class TrackKey(
@@ -446,7 +447,7 @@ class ExoPlayerEngine(
         positionJob = null
     }
 
-    // REF-3: Allows callers to adjust polling rate (e.g., 100ms during scrub, 250ms idle).
+    // REF-3: Allows callers to adjust polling rate (e.g., 100ms during scrub, 1000ms idle, 2000ms controls-hidden).
     fun setPositionUpdateRate(intervalMs: Long) {
         if (intervalMs == positionUpdateIntervalMs) return // no-op: rate unchanged
         positionUpdateIntervalMs = intervalMs
@@ -454,6 +455,24 @@ class ExoPlayerEngine(
             stopPositionUpdates()
             startPositionUpdates()
         }
+    }
+
+    /**
+     * Notifies the engine whether the player controls overlay is currently visible.
+     *
+     * When controls are hidden there is no seek bar to animate, so the position
+     * polling rate is halved (2 s → 1 s) to reduce wake-ups and CPU load.
+     * Rate snaps back to [PLAYBACK_POSITION_UPDATE_INTERVAL_MS] when controls reappear.
+     */
+    fun setControlsVisible(visible: Boolean) {
+        if (controlsAreVisible == visible) return
+        controlsAreVisible = visible
+        val target = if (visible) {
+            PLAYBACK_POSITION_UPDATE_INTERVAL_MS
+        } else {
+            CONTROLS_HIDDEN_POSITION_UPDATE_INTERVAL_MS
+        }
+        setPositionUpdateRate(target)
     }
 
     private fun publishPosition() {
@@ -575,8 +594,12 @@ class ExoPlayerEngine(
     private companion object {
         // REF-5: Centralised log tag; replaces bare string literals.
         private const val TAG = "ExoPlayerEngine"
-        // REF-3: Mutable so callers can adjust the rate via setPositionUpdateRate().
+        // REF-3: Position update rates.
         private const val SEEK_LANDING_DELAY_MS = 100L
+        /** Normal polling rate while playing with controls visible. */
+        private const val PLAYBACK_POSITION_UPDATE_INTERVAL_MS = 1_000L
+        /** Slower polling while playing with controls hidden — saves ~50% position-poll wake-ups. */
+        private const val CONTROLS_HIDDEN_POSITION_UPDATE_INTERVAL_MS = 2_000L
         private const val EVENT_BUFFER_CAPACITY = 16
     }
 }

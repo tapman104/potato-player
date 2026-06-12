@@ -111,8 +111,8 @@ class MainActivity : ComponentActivity() {
                 } else {
                     val loadControl = androidx.media3.exoplayer.DefaultLoadControl.Builder()
                         .setBufferDurationsMs(
-                            30_000, // minBufferMs
-                            30_000, // maxBufferMs
+                            15_000, // minBufferMs — 15 s is enough to absorb small I/O hiccups
+                            30_000, // maxBufferMs — keep 30 s max for smooth playback
                             androidx.media3.exoplayer.DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
                             androidx.media3.exoplayer.DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
                         ).build()
@@ -248,13 +248,15 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         playerViewRef?.onResume() // re-enables PlayerView rendering
-        viewModelState?.onForeground()
+        viewModelState?.onForeground(backgroundPlayback = appPreferences.backgroundPlayback.value)
     }
 
     override fun onStop() {
         super.onStop()
         playerViewRef?.onPause()  // disables PlayerView rendering cleanly
-        
+
+        val backgroundPlayback = appPreferences.backgroundPlayback.value
+
         if (appPreferences.resumePlayback.value) {
             val uriStr = mediaUriState ?: intent?.data?.toString() ?: intent?.getStringExtra(EXTRA_MEDIA_URI)
             if (uriStr != null) {
@@ -264,7 +266,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        viewModelState?.onBackground()
+        viewModelState?.onBackground(backgroundPlayback = backgroundPlayback)
     }
 
     override fun onDestroy() {

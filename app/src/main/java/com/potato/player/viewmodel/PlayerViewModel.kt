@@ -165,10 +165,21 @@ class PlayerViewModel(
 
     /**
      * Sets the engine's position polling rate.
-     * Call with 100L during seek scrub, 250L on release.
+     * Call with 100L during seek scrub, 1000L on release.
      */
     fun setPositionUpdateRate(intervalMs: Long) {
         (engine as? ExoPlayerEngine)?.setPositionUpdateRate(intervalMs)
+    }
+
+    /**
+     * Notifies the engine whether the controls overlay is currently visible.
+     *
+     * When controls are hidden the seek bar is invisible, so the engine
+     * reduces its position-polling frequency from 1 s to 2 s, halving
+     * the number of coroutine wake-ups during undisturbed playback.
+     */
+    fun setControlsVisible(visible: Boolean) {
+        (engine as? ExoPlayerEngine)?.setControlsVisible(visible)
     }
 
     /**
@@ -309,22 +320,29 @@ class PlayerViewModel(
     private var wasPlayingBeforeBackground = false
 
     /**
-     * Called from [MainActivity.onStop]. Pauses playback.
+     * Called from [MainActivity.onStop].
+     *
+     * If [backgroundPlayback] is enabled the engine continues running and audio
+     * keeps playing (the service / MediaSession keeps the session alive).
+     * Otherwise playback is paused immediately to conserve battery.
+     *
      * Surface lifecycle is managed entirely by PlayerView via its own
      * SurfaceHolder.Callback — do not touch the surface here.
      */
-    fun onBackground() {
+    fun onBackground(backgroundPlayback: Boolean) {
         wasPlayingBeforeBackground = uiState.value.isPlaying
-        engine.pause()
+        if (!backgroundPlayback) {
+            engine.pause()
+        }
     }
 
     /**
      * Called from [MainActivity.onStart]. Resumes playback if the source
-     * has not yet ended. PlayerView re-attaches the surface automatically
-     * during its own onResume(), so no surface manipulation is needed here.
+     * has not yet ended AND we paused on background. If background playback
+     * is enabled the engine never paused, so we simply do nothing.
      */
-    fun onForeground() {
-        if (!uiState.value.isEnded && wasPlayingBeforeBackground) {
+    fun onForeground(backgroundPlayback: Boolean) {
+        if (!backgroundPlayback && !uiState.value.isEnded && wasPlayingBeforeBackground) {
             engine.play()
         }
     }

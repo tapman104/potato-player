@@ -332,6 +332,12 @@ fun PlayerScreen(
         }
     }
 
+    // Notify the engine about controls visibility so it can adjust position-poll frequency.
+    // When controls are hidden the seek bar is not visible, so polling can slow down.
+    LaunchedEffect(controlsVisible) {
+        viewModel.setControlsVisible(controlsVisible)
+    }
+
     // One-time event handling.
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
