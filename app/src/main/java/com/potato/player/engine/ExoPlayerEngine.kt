@@ -82,6 +82,7 @@ class ExoPlayerEngine(
 
     private var positionJob: Job? = null
     private var pendingSeekJob: Job? = null
+    private var lastSeekTimeMs: Long = 0L
     private var released: Boolean = false
     private val trackKeyById = mutableMapOf<String, TrackKey>()
     // REF-3: Mutable polling rate; default 250ms, reduced to 100ms during scrub.
@@ -169,11 +170,26 @@ class ExoPlayerEngine(
             positionMs.coerceIn(0L, duration)
         }
         val from = player.currentPosition.coerceAtLeast(0L)
+        val now = System.currentTimeMillis()
+        val timeSinceLastSeek = now - lastSeekTimeMs
+
         cancelPendingSeek()
-        pendingSeekJob = scope.launch {
+        if (timeSinceLastSeek >= 200L) {
+            lastSeekTimeMs = now
             player.seekTo(target)
-            delay(SEEK_LANDING_DELAY_MS)
-            if (isActive) emitEvent(MediaEvent.SeekCompleted(from, target))
+            pendingSeekJob = scope.launch {
+                delay(SEEK_LANDING_DELAY_MS)
+                if (isActive) emitEvent(MediaEvent.SeekCompleted(from, target))
+            }
+        } else {
+            val delayNeeded = 200L - timeSinceLastSeek
+            pendingSeekJob = scope.launch {
+                delay(delayNeeded)
+                lastSeekTimeMs = System.currentTimeMillis()
+                player.seekTo(target)
+                delay(SEEK_LANDING_DELAY_MS)
+                if (isActive) emitEvent(MediaEvent.SeekCompleted(from, target))
+            }
         }
     }
 
