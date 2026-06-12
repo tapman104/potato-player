@@ -612,6 +612,7 @@ fun PlayerScreen(
                             1f to Color.Black.copy(alpha = 0.65f),
                         )
                     )
+                    .navigationBarsPadding()           // clears gesture pill / soft nav bar
                     .padding(bottom = 4.dp, start = 16.dp, end = 16.dp),
             ) {
                 BottomControlBar(
