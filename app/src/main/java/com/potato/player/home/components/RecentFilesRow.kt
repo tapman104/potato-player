@@ -2,6 +2,7 @@ package com.potato.player.home.components
 
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import coil.size.Size
 import coil.decode.VideoFrameDecoder
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.Image
@@ -96,6 +97,7 @@ private fun RecentFileItem(file: MediaFile, onClick: () -> Unit) {
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(file.uri)
                             .decoderFactory(VideoFrameDecoder.Factory())
+                            .size(Size(480, 270))
                             .crossfade(true)
                             .build(),
                         contentDescription = "Thumbnail",

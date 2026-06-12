@@ -14,6 +14,7 @@ sealed interface HomeUiState {
     object PermissionRequired : HomeUiState
     data class Ready(
         val files: List<MediaFile>,
-        val recentFiles: List<MediaFile>
+        val recentFiles: List<MediaFile>,
+        val folders: List<FolderGroup>
     ) : HomeUiState
 }

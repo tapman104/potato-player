@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.potato.player.home.components.FolderCard
 import com.potato.player.home.components.MediaFileRow
 import com.potato.player.home.components.MediaSearchBar
 import com.potato.player.home.components.PermissionCard
@@ -133,14 +134,29 @@ fun HomeScreen(
                                 )
                             }
 
-                            items(
-                                items = state.files,
-                                key = { it.uri.toString() }
-                            ) { file ->
-                                MediaFileRow(
-                                    file = file,
-                                    onClick = { onFilePicked(file.uri) }
-                                )
+                            if (searchQuery.isBlank()) {
+                                // Grouped folder view — avoids decoding all thumbnails at once
+                                items(
+                                    items = state.folders,
+                                    key = { it.folderPath }
+                                ) { folderGroup ->
+                                    FolderCard(
+                                        folderGroup = folderGroup,
+                                        onToggleExpand = { viewModel.onToggleFolder(folderGroup.folderPath) },
+                                        onFilePicked = onFilePicked
+                                    )
+                                }
+                            } else {
+                                // Flat search-result view
+                                items(
+                                    items = state.files,
+                                    key = { it.uri.toString() }
+                                ) { file ->
+                                    MediaFileRow(
+                                        file = file,
+                                        onClick = { onFilePicked(file.uri) }
+                                    )
+                                }
                             }
                         }
                     } else {

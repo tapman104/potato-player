@@ -2,6 +2,7 @@ package com.potato.player.home.components
 
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import coil.size.Size
 import coil.decode.VideoFrameDecoder
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -79,9 +80,10 @@ fun MediaFileRow(
         ) {
             if (file.isVideo) {
                 AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
+                    model = ImageRequest.Builder(context)
                         .data(file.uri)
                         .decoderFactory(VideoFrameDecoder.Factory())
+                        .size(Size(420, 240))
                         .crossfade(true)
                         .build(),
                     contentDescription = "Thumbnail",

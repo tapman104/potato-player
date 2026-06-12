@@ -68,9 +68,25 @@ class HomeViewModel(
             files.filter { it.displayName.contains(query, ignoreCase = true) }
         }
 
+        // Group files by folder, preserving the order of first appearance
+        // (files are already sorted DATE_ADDED DESC by the repository query,
+        //  so the first group to appear has the most recently added file).
+        val folders = files
+            .groupBy { it.folderPath }
+            .entries
+            .map { (folderPath, groupFiles) ->
+                FolderGroup(
+                    folderName = groupFiles.first().folderName,
+                    folderPath = folderPath,
+                    files = groupFiles,
+                    isExpanded = folderPath in expandedFolders
+                )
+            }
+
         HomeUiState.Ready(
             files = filteredFiles,
-            recentFiles = recentFiles
+            recentFiles = recentFiles,
+            folders = folders
         )
     }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeUiState.Loading)
 
