@@ -1,9 +1,5 @@
 package com.potato.player.home.components
 
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import coil.size.Size
-import coil.decode.VideoFrameDecoder
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -12,7 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,9 +17,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ripple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,9 +42,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImagePainter
+import coil.compose.rememberAsyncImagePainter
+import coil.request.CachePolicy
+import coil.request.ImageRequest
+import coil.size.Size
 import com.potato.player.data.MediaFile
 import com.potato.player.data.toFormattedDuration
 import com.potato.player.data.toFormattedSize
+
+private val THUMB_WIDTH  = 140.dp
+private val THUMB_HEIGHT = 80.dp
 
 @Composable
 fun MediaFileRow(
@@ -57,8 +61,6 @@ fun MediaFileRow(
 ) {
     val context = LocalContext.current
     var menuExpanded by remember { mutableStateOf(false) }
-
-
 
     Row(
         modifier = Modifier
@@ -73,23 +75,54 @@ fun MediaFileRow(
     ) {
         Box(
             modifier = Modifier
-                .size(width = 140.dp, height = 80.dp)
+                .size(width = THUMB_WIDTH, height = THUMB_HEIGHT)
                 .clip(RoundedCornerShape(12.dp))
                 .background(Color(0xFF1E1E24)),
             contentAlignment = Alignment.Center
         ) {
             if (file.isVideo) {
-                AsyncImage(
+                // Phase 2B: stable cache keys + cache policies.
+                // Phase 2C: rememberAsyncImagePainter with state branching to
+                //           keep the row height stable and eliminate pop effect.
+                val painter = rememberAsyncImagePainter(
                     model = ImageRequest.Builder(context)
                         .data(file.uri)
-                        .decoderFactory(VideoFrameDecoder.Factory())
+                        // VideoFrameDecoder registered globally in PotatoPlayerApp — omitted here.
                         .size(Size(420, 240))
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = "Thumbnail",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
+                        .memoryCacheKey("thumb_${file.uri}")
+                        .diskCacheKey("thumb_${file.uri}")
+                        .memoryCachePolicy(CachePolicy.ENABLED)
+                        .diskCachePolicy(CachePolicy.ENABLED)
+                        .build()
                 )
+
+                when (painter.state) {
+                    is AsyncImagePainter.State.Loading,
+                    is AsyncImagePainter.State.Empty -> {
+                        // Fixed-size placeholder: row height never reflows when bitmap arrives.
+                        Box(
+                            modifier = Modifier
+                                .size(THUMB_WIDTH, THUMB_HEIGHT)
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                strokeWidth = 1.5.dp,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                    else -> {
+                        Image(
+                            painter = painter,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.size(THUMB_WIDTH, THUMB_HEIGHT)
+                        )
+                    }
+                }
+
+                // Play-arrow overlay (always visible once the outer Box is composed)
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -103,6 +136,7 @@ fun MediaFileRow(
                         modifier = Modifier.size(28.dp)
                     )
                 }
+                // Duration badge
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)

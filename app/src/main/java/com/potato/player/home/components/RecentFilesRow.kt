@@ -1,9 +1,9 @@
 package com.potato.player.home.components
 
 import coil.compose.AsyncImage
+import coil.request.CachePolicy
 import coil.request.ImageRequest
 import coil.size.Size
-import coil.decode.VideoFrameDecoder
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -96,9 +96,13 @@ private fun RecentFileItem(file: MediaFile, onClick: () -> Unit) {
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(file.uri)
-                            .decoderFactory(VideoFrameDecoder.Factory())
+                            // VideoFrameDecoder registered globally in PotatoPlayerApp.
                             .size(Size(480, 270))
-                            .crossfade(true)
+                            // Different prefix than MediaFileRow because 480×270 ≠ 420×240.
+                            .memoryCacheKey("recent_thumb_${file.uri}")
+                            .diskCacheKey("recent_thumb_${file.uri}")
+                            .memoryCachePolicy(CachePolicy.ENABLED)
+                            .diskCachePolicy(CachePolicy.ENABLED)
                             .build(),
                         contentDescription = "Thumbnail",
                         contentScale = ContentScale.Crop,

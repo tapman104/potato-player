@@ -118,7 +118,10 @@ fun HomeScreen(
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(bottom = 32.dp),
-                            verticalArrangement = Arrangement.spacedBy(0.dp)
+                            verticalArrangement = Arrangement.spacedBy(0.dp),
+                            // Pre-compose 1 item beyond the visible viewport in the flat search
+                            // view to reduce placeholder flicker on fast flings.
+                            beyondBoundsItemCount = 1
                         ) {
                             item {
                                 MediaSearchBar(
