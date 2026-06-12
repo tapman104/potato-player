@@ -146,8 +146,21 @@ class ExoPlayerEngine(
     override fun play() {
         if (released) return
         when (player.playbackState) {
-            Player.STATE_IDLE,
-            Player.STATE_ENDED -> return
+            Player.STATE_ENDED -> {
+                // Replay from the beginning
+                player.seekTo(0)
+                player.prepare()
+                player.playWhenReady = true
+                return
+            }
+            Player.STATE_IDLE -> {
+                // Re-prepare if there is already a media item queued
+                if (player.mediaItemCount > 0) {
+                    player.prepare()
+                    player.playWhenReady = true
+                }
+                return
+            }
         }
         player.playWhenReady = true
     }

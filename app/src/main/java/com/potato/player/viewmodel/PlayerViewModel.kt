@@ -127,9 +127,14 @@ class PlayerViewModel(
         engine.open(uri)
     }
 
-    /** Toggle between play and pause. */
+    /** Toggle between play and pause. When playback has ended, restarts from the beginning. */
     fun togglePlayPause() {
-        if (uiState.value.isPlaying) engine.pause() else engine.play()
+        val state = uiState.value
+        when {
+            state.isEnded   -> engine.play() // replay — engine seeks to 0 and re-prepares
+            state.isPlaying -> engine.pause()
+            else            -> engine.play()
+        }
     }
 
     /** Start playback explicitly. */
