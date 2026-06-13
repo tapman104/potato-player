@@ -382,164 +382,16 @@ fun PlayerScreen(
         )
 
         // ── Layer 2: Unified gesture state machine ──────────────────────────
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .pointerInput(viewModel) { // key=viewModel so it resets if VM changes
-                    // Android timing constants from the system ViewConfiguration
-                    val longPressMs = viewConfiguration.longPressTimeoutMillis
-                    val doubleTapMs = viewConfiguration.doubleTapTimeoutMillis
-                    val dragSlop    = viewConfiguration.touchSlop
-
-                    awaitEachGesture {
-                        // ── Phase 1: wait for finger down ────────────────────────
-                        val firstDown = awaitFirstDown(requireUnconsumed = false)
-                        val downX    = firstDown.position.x
-                        val downY    = firstDown.position.y
-                        val downTime = System.currentTimeMillis()
-
-                        var gestureCommitted = false
-                        var isDragging       = false
-                        var isLongPressHeld  = false
-                        var lastY            = downY
-
-                        // ── Phase 2: classify gesture ─────────────────────────────
-                        eventLoop@ while (true) {
-                            val elapsed   = System.currentTimeMillis() - downTime
-                            val remaining = longPressMs - elapsed
-
-                            val event: PointerEvent? = if (!gestureCommitted && remaining > 0) {
-                                withTimeoutOrNull(remaining) { awaitPointerEvent() }
-                            } else {
-                                awaitPointerEvent()
-                            }
-
-                            // Timeout — long-press fires
-                            if (event == null) {
-                                if (!gestureCommitted) {
-                                    gestureCommitted = true
-                                    isLongPressHeld  = true
-                                    isLongPressing   = true
-                                    handler.onLongPressStart()
-                                }
-                                continue@eventLoop
-                            }
-
-                            if (event.changes.size > 1) {
-                                // Multi-touch detected! Abandon single-touch gesture.
-                                if (isDragging) handler.onVerticalDragEnd()
-                                if (isLongPressHeld) {
-                                    isLongPressing = false
-                                    handler.onLongPressEnd()
-                                }
-                                break@eventLoop
-                            }
-
-                            val primary = event.changes.firstOrNull { it.id == firstDown.id }
-                                ?: break@eventLoop
-                            val dx       = primary.position.x - downX
-                            val dy       = primary.position.y - downY
-                            val distance = hypot(dx, dy)
-
-                            when {
-                                // ── Axis classification (pre-commit) ──────────────────
-                                // Once total movement exceeds dragSlop, determine whether
-                                // this is a vertical or horizontal drag:
-                                //   - |dy| > 24dp  AND  |dy| > |dx|*1.5 → vertical: commit
-                                //   - |dx| wins first                    → horizontal: abandon
-                                !gestureCommitted && distance > dragSlop -> {
-                                    val absDx = kotlin.math.abs(dx)
-                                    val absDy = kotlin.math.abs(dy)
-                                    when {
-                                        // Clearly vertical: cross dead zone AND steeper than 1.5:1 ratio
-                                        absDy >= deadZoneThresholdPx && absDy > absDx * 1.5f -> {
-                                            gestureCommitted = true
-                                            isDragging = true
-                                            firstDown.consume()
-                                            handler.onVerticalDragStart(downX, size.width.toFloat())
-                                            val firstDy = primary.position.y - lastY
-                                            lastY = primary.position.y
-                                            primary.consume()
-                                            handler.onVerticalDrag(firstDy)
-                                        }
-                                        // Horizontal wins first — abandon this gesture entirely
-                                        // so the horizontal seek handler can take over.
-                                        absDx > absDy * 1.5f -> {
-                                            gestureCommitted = true // prevents re-evaluation
-                                            // isDragging stays false, so onVerticalDragEnd is NOT called
-                                        }
-                                        // Ambiguous (diagonal) — keep waiting
-                                        else -> Unit
-                                    }
-                                }
-                                // ── Continuing vertical drag ────────────────────────
-                                isDragging -> {
-                                    val delta = primary.position.y - lastY
-                                    lastY = primary.position.y
-                                    primary.consume()
-                                    handler.onVerticalDrag(delta)
-                                }
-                            }
-
-                            // ── Pointer lifted ──────────────────────────────────────
-                            val allUp = event.changes.all { !it.pressed }
-                            if (allUp) {
-                                when {
-                                    isDragging -> handler.onVerticalDragEnd()
-                                    isLongPressHeld -> {
-                                        isLongPressing = false
-                                        handler.onLongPressEnd()
-                                    }
-                                    else -> {
-                                        // UP before slop/long-press → could be tap or first
-                                        // half of a double-tap. Wait for a second DOWN.
-                                        var secondDown = false
-
-                                        doubleTapLoop@ while (true) {
-                                            val dtEvent = withTimeoutOrNull(doubleTapMs) {
-                                                awaitPointerEvent()
-                                            }
-                                            if (dtEvent == null) break@doubleTapLoop
-
-                                            val dtPrimary = dtEvent.changes.firstOrNull { it.pressed }
-                                            if (dtPrimary != null) {
-                                                secondDown = true
-                                                val tapX  = dtPrimary.position.x
-                                                val third = size.width / 3f
-                                                when {
-                                                    tapX < third      -> handler.onDoubleTap(isForward = false)
-                                                    tapX > third * 2f -> handler.onDoubleTap(isForward = true)
-                                                    else              -> {
-                                                        if (zoomState.scale > 1f) {
-                                                            zoomHandler.resetZoom()
-                                                        } else {
-                                                            handler.onTap()
-                                                            controlsVisible = !controlsVisible
-                                                        }
-                                                    }
-                                                }
-                                                withTimeoutOrNull(500L) { awaitPointerEvent() } // drain UP
-                                                break@doubleTapLoop
-                                            }
-                                        }
-
-                                        if (!secondDown) {
-                                            // No second tap — plain single tap: toggle controls
-                                            controlsVisible = !controlsVisible
-                                        }
-                                    }
-                                }
-                                break@eventLoop
-                            }
-                        }
-                    }
-                }
-        )
-
-        // ── Layer 2b: Gesture overlay ─────────────────────────────────────────────
-        GestureOverlay(
-            gestureState = gestureState,
-            modifier = Modifier.fillMaxSize(),
+        PlayerGestureLayer(
+            viewModel = viewModel,
+            zoomHandler = zoomHandler,
+            gestureHandler = handler,
+            controlsVisible = controlsVisible,
+            onControlsVisibleChange = { controlsVisible = it },
+            isLongPressing = isLongPressing,
+            onIsLongPressingChange = { isLongPressing = it },
+            deadZoneThresholdPx = deadZoneThresholdPx,
+            modifier = Modifier,
         )
 
         // ────────────────────────────────────────────────────────────────────────────────
@@ -621,60 +473,23 @@ fun PlayerScreen(
             }
         }
 
-        // â”€â”€ Layer 6: Dialogs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        // Rendered as conditional composables (not inside a Box child slot) so
-        // they draw as AlertDialogs above the entire player surface naturally.
-
-        if (showAudioDialog) {
-            AudioTrackDialog(
-                tracks = uiState.audioTracks,
-                selectedId = uiState.selectedAudioTrackId,
-                onSelect = { id ->
-                    viewModel.selectAudioTrack(id)
-                    showAudioDialog = false
-                },
-                onDismiss = { showAudioDialog = false },
-            )
-        }
-
-        if (showSubtitleDialog) {
-            SubtitleTrackDialog(
-                tracks = uiState.subtitleTracks,
-                selectedId = uiState.selectedSubtitleTrackId,
-                onSelect = { id ->
-                    viewModel.selectSubtitleTrack(id)
-                    showSubtitleDialog = false
-                },
-                onDisable = {
-                    viewModel.disableSubtitles()
-                    showSubtitleDialog = false
-                },
-                onDismiss = { showSubtitleDialog = false },
-                onAppearanceClick = { showSubtitleSizeDialog = true },
-            )
-        }
-
-        if (showSubtitleSizeDialog) {
-            SubtitleSizeDialog(
-                settings = subtitleSettings,
-                onConfirm = { newSettings ->
-                    subtitleSettings = newSettings
-                    playerViewRef?.subtitleView?.let {
-                        applySubtitleSettings(it, newSettings)
-                    }
-                    showSubtitleSizeDialog = false
-                },
-                onDismiss = { showSubtitleSizeDialog = false },
-            )
-        }
-
-        if (showSpeedDialog) {
-            com.potato.player.player.ui.dialog.SpeedDialog(
-                currentSpeed = uiState.playbackSpeed,
-                onSpeedSelected = { speed -> viewModel.setPlaybackSpeed(speed) },
-                onDismiss = { showSpeedDialog = false }
-            )
-        }
+        // ── Layer 6: Dialogs ──────────────────────────────────────────────────
+        PlayerDialogs(
+            uiState = uiState,
+            subtitleSettings = subtitleSettings,
+            onSubtitleSettingsChange = { subtitleSettings = it },
+            playerViewRef = playerViewRef,
+            showAudioDialog = showAudioDialog,
+            showSubtitleDialog = showSubtitleDialog,
+            showSubtitleSizeDialog = showSubtitleSizeDialog,
+            showSpeedDialog = showSpeedDialog,
+            onAudioDialogDismiss = { showAudioDialog = false },
+            onSubtitleDialogDismiss = { showSubtitleDialog = false },
+            onSubtitleSizeDismiss = { showSubtitleSizeDialog = false },
+            onSpeedDialogDismiss = { showSpeedDialog = false },
+            viewModel = viewModel,
+            onShowSubtitleSizeDialog = { showSubtitleSizeDialog = true }
+        )
     }
 }
 
