@@ -70,10 +70,20 @@ fun BottomControlBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 0.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+            .padding(start = 12.dp, end = 12.dp, top = 0.dp, bottom = 0.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         val positionState by positionStateFlow.collectAsState()
+
+        PlayerSeekBar(
+            positionMs = positionState.positionMs,
+            durationMs = positionState.durationMs,
+            bufferedPositionMs = positionState.bufferedPositionMs,
+            onSeek = onSeek,
+            onSeekFinished = onSeekFinished,
+            modifier = Modifier.fillMaxWidth(),
+            enableHaptics = enableHaptics,
+        )
 
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
@@ -106,15 +116,5 @@ fun BottomControlBar(
                 )
             }
         }
-
-        PlayerSeekBar(
-            positionMs = positionState.positionMs,
-            durationMs = positionState.durationMs,
-            bufferedPositionMs = positionState.bufferedPositionMs,
-            onSeek = onSeek,
-            onSeekFinished = onSeekFinished,
-            modifier = Modifier.fillMaxWidth(),
-            enableHaptics = enableHaptics,
-        )
     }
 }

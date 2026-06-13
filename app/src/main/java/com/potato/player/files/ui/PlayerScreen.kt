@@ -469,7 +469,7 @@ fun PlayerScreen(
                         )
                     )
                     .navigationBarsPadding()
-                    .padding(bottom = 0.dp, start = 16.dp, end = 16.dp),
+                    .padding(bottom = 2.dp, start = 16.dp, end = 16.dp),
             ) {
                 BottomControlBar(
                     positionStateFlow = viewModel.positionState,
