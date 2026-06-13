@@ -1,11 +1,12 @@
 package com.potato.player.home.components
 
-import coil.compose.AsyncImage
-import coil.request.CachePolicy
-import coil.request.ImageRequest
-import coil.size.Size
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.foundation.Image
+import android.net.Uri
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,138 +22,233 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MusicNote
-import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import android.net.Uri
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.CachePolicy
+import coil.request.ImageRequest
+import coil.size.Size
+import coil.transition.CrossfadeTransition
 import com.potato.player.data.MediaFile
 import com.potato.player.data.toFormattedDuration
-
 
 @Composable
 fun RecentFilesRow(
     files: List<MediaFile>,
-    onFilePicked: (Uri) -> Unit
+    onFilePicked: (Uri) -> Unit,
+    // Optional: pass saved-position fractions per URI for the progress arc
+    positionFractions: Map<String, Float> = emptyMap()
 ) {
     if (files.isEmpty()) return
+
+    val lazyListState = rememberLazyListState()
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "Recently Played",
-            fontSize = 14.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
-            letterSpacing = 0.5.sp,
-            modifier = Modifier.padding(start = 20.dp, end = 16.dp, top = 24.dp, bottom = 12.dp)
+            color = Color(0xFFAAAAAA),
+            letterSpacing = 1.sp,
+            modifier = Modifier.padding(start = 20.dp, end = 16.dp, top = 28.dp, bottom = 14.dp)
         )
-        
+
         LazyRow(
+            state = lazyListState,
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxWidth()
-        ) {
-            items(files) { file ->
-                RecentFileItem(file = file, onClick = { onFilePicked(file.uri) })
+        )  {
+            items(files, key = { it.uri.toString() }) { file ->
+                RecentFileItem(
+                    file = file,
+                    progressFraction = positionFractions[file.uri.toString()] ?: 0f,
+                    onClick = { onFilePicked(file.uri) }
+                )
             }
         }
     }
 }
 
 @Composable
-private fun RecentFileItem(file: MediaFile, onClick: () -> Unit) {
+private fun RecentFileItem(
+    file: MediaFile,
+    progressFraction: Float,
+    onClick: () -> Unit
+) {
+    val context = LocalContext.current
 
+    // shimmer
+    val shimmerTransition = rememberInfiniteTransition(label = "recentShimmer")
+    val shimmerOffset by shimmerTransition.animateFloat(
+        initialValue = -1f,
+        targetValue  = 2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "recentShimmerOffset"
+    )
+    val shimmerBrush = Brush.linearGradient(
+        colors = listOf(Color(0xFF1E1E28), Color(0xFF2E2E3A), Color(0xFF1E1E28)),
+        start = Offset(shimmerOffset * 400f, 0f),
+        end   = Offset(shimmerOffset * 400f + 300f, 200f)
+    )
 
     Box(
         modifier = Modifier
-            .width(160.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFF1E1E24))
+            .width(162.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color(0xFF1A1A22))
             .clickable(onClick = onClick)
     ) {
         Column {
+            // ── Thumbnail area ────────────────────────────────────────
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(90.dp)
-                    .background(Color(0xFF1C1C1C)),
+                    .height(92.dp)
+                    .background(Color(0xFF161620)),
                 contentAlignment = Alignment.Center
             ) {
                 if (file.isVideo) {
                     AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
+                        model = ImageRequest.Builder(context)
                             .data(file.uri)
-                            // VideoFrameDecoder registered globally in PotatoPlayerApp.
                             .size(Size(480, 270))
-                            // Different prefix than MediaFileRow because 480×270 ≠ 420×240.
-                            .memoryCacheKey("recent_thumb_${file.uri}")
-                            .diskCacheKey("recent_thumb_${file.uri}")
+                            .memoryCacheKey("vthumb_${file.uri}_480x270")
+                            .diskCacheKey("vthumb_${file.uri}_480x270")
                             .memoryCachePolicy(CachePolicy.ENABLED)
                             .diskCachePolicy(CachePolicy.ENABLED)
+                            .transitionFactory(CrossfadeTransition.Factory(durationMillis = 300))
                             .build(),
                         contentDescription = "Thumbnail",
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxWidth().height(90.dp)
+                        modifier = Modifier.fillMaxSize()
                     )
+
+                    // Gradient scrim + play icon
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.2f)),
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(Color.Transparent, Color.Black.copy(alpha = 0.4f))
+                                )
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Rounded.PlayArrow,
-                            contentDescription = "Play",
-                            tint = Color.White.copy(alpha = 0.8f),
-                            modifier = Modifier.size(28.dp)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(50)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.PlayArrow,
+                                contentDescription = "Play",
+                                tint = Color.White.copy(alpha = 0.9f),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
+
+                    // Duration badge
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
-                            .padding(6.dp)
-                            .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(4.dp))
-                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                            .padding(5.dp)
+                            .background(Color.Black.copy(alpha = 0.72f), RoundedCornerShape(5.dp))
+                            .padding(horizontal = 5.dp, vertical = 2.dp)
                     ) {
                         Text(
                             text = file.durationMs.toFormattedDuration(),
                             color = Color.White,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Medium
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
+
+                    // Progress arc at the bottom edge
+                    if (progressFraction > 0f) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .fillMaxWidth()
+                                .height(3.dp)
+                                .background(Color.Black.copy(alpha = 0.4f))
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(progressFraction.coerceIn(0f, 1f))
+                                    .height(3.dp)
+                                    .background(
+                                        Brush.horizontalGradient(
+                                            listOf(Color(0xFF6C63FF), Color(0xFFAA77FF))
+                                        )
+                                    )
+                            )
+                        }
+                    }
                 } else {
-                    Icon(Icons.Outlined.MusicNote, contentDescription = "Audio", tint = Color(0xFF6C63FF), modifier = Modifier.size(28.dp))
+                    // Audio placeholder
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(Color(0xFF1A1035), Color(0xFF2A1A50))
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Outlined.MusicNote,
+                            contentDescription = "Audio",
+                            tint = Color(0xFF6C63FF).copy(alpha = 0.85f),
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
                 }
             }
 
+            // ── Title ─────────────────────────────────────────────────
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                    .padding(horizontal = 10.dp, vertical = 9.dp),
                 contentAlignment = Alignment.CenterStart
             ) {
                 Text(
                     text = file.displayName,
-                    fontSize = 12.sp,
+                    fontSize = 11.5.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.White,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 16.sp
                 )
             }
         }
