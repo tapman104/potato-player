@@ -385,16 +385,6 @@ fun PlayerScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(Unit) {
-                    detectTransformGestures { _, pan, zoom, _ ->
-                        zoomHandler.onZoom(zoom, size.width.toFloat(), size.height.toFloat())
-                        zoomHandler.onPan(pan.x, pan.y, size.width.toFloat(), size.height.toFloat())
-                    }
-                }
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
                 .pointerInput(viewModel) { // key=viewModel so it resets if VM changes
                     // Android timing constants from the system ViewConfiguration
                     val longPressMs = viewConfiguration.longPressTimeoutMillis
@@ -433,6 +423,16 @@ fun PlayerScreen(
                                     handler.onLongPressStart()
                                 }
                                 continue@eventLoop
+                            }
+
+                            if (event.changes.size > 1) {
+                                // Multi-touch detected! Abandon single-touch gesture.
+                                if (isDragging) handler.onVerticalDragEnd()
+                                if (isLongPressHeld) {
+                                    isLongPressing = false
+                                    handler.onLongPressEnd()
+                                }
+                                break@eventLoop
                             }
 
                             val primary = event.changes.firstOrNull { it.id == firstDown.id }
