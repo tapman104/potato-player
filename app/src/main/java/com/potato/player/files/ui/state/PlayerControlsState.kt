@@ -92,12 +92,14 @@ enum class OrientationMode {
 
 enum class ResizeMode(val value: Int) {
     FIT(AspectRatioFrameLayout.RESIZE_MODE_FIT),
-    FILL(AspectRatioFrameLayout.RESIZE_MODE_FILL),
-    ZOOM(AspectRatioFrameLayout.RESIZE_MODE_ZOOM);
+    FILL(AspectRatioFrameLayout.RESIZE_MODE_ZOOM),
+    STRETCH(AspectRatioFrameLayout.RESIZE_MODE_FILL),
+    FIXED_WIDTH(AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH);
 
     fun next(): ResizeMode = when (this) {
         FIT -> FILL
-        FILL -> ZOOM
-        ZOOM -> FIT
+        FILL -> STRETCH
+        STRETCH -> FIXED_WIDTH
+        FIXED_WIDTH -> FIT
     }
 }

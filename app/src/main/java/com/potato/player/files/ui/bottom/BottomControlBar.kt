@@ -15,6 +15,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.Text
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.text.style.TextAlign
+
+import com.potato.player.player.ui.state.ResizeMode
 
 import com.potato.player.player.ui.PlayerSeekBar
 import com.potato.player.player.ui.state.OrientationMode
@@ -24,7 +30,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.potato.player.player.ui.toTimeString
 
-import com.potato.player.player.ui.center.CenterControlsRow
+import com.potato.player.player.ui.toTimeString
 
 /**
  * Bottom control bar that assembles the full player transport UI.
@@ -53,12 +59,7 @@ import com.potato.player.player.ui.center.CenterControlsRow
 fun BottomControlBar(
     positionStateFlow: StateFlow<PlayerPositionState>,
     orientationMode: OrientationMode,
-    isPlaying: Boolean,
-    isLoading: Boolean,
-    isEnded: Boolean,
-    onPlayPauseClick: () -> Unit,
-    onSeekBackward: () -> Unit,
-    onSeekForward: () -> Unit,
+    resizeMode: ResizeMode,
     onSeek: (positionMs: Long) -> Unit,
     onCycleRotation: () -> Unit,
     onResizeModeClick: () -> Unit,
@@ -86,17 +87,25 @@ fun BottomControlBar(
                 size = 20.dp,
             )
             
-            CenterControlsRow(
-                isPlaying = isPlaying,
-                isLoading = isLoading,
-                isEnded = isEnded,
-                onPlayPauseClick = onPlayPauseClick,
-                onSeekBackward = onSeekBackward,
-                onSeekForward = onSeekForward,
-                enableHaptics = enableHaptics
-            )
-            
-            Spacer(modifier = Modifier.size(20.dp))
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clickable(onClick = onResizeModeClick),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = when (resizeMode) {
+                        ResizeMode.FIT -> "FIT"
+                        ResizeMode.FILL -> "CROP"
+                        ResizeMode.STRETCH -> "FILL"
+                        ResizeMode.FIXED_WIDTH -> "100%"
+                    },
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
 
         // Row 2: seek bar spans full width

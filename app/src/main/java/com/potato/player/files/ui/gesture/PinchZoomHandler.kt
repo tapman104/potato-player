@@ -4,24 +4,48 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class PinchZoomHandler {
-    private val _zoomScale = MutableStateFlow(1f)
-    val zoomScale: StateFlow<Float> = _zoomScale.asStateFlow()
+data class ZoomState(
+    val scale: Float = 1f,
+    val offsetX: Float = 0f,
+    val offsetY: Float = 0f,
+)
 
-    /** Called on every pinch gesture tick with the cumulative scale factor. */
-    fun onZoom(scaleFactor: Float, maxZoom: Float = MAX_ZOOM) {
-        val current = _zoomScale.value
-        val next = (current * scaleFactor).coerceIn(MIN_ZOOM, maxZoom)
-        _zoomScale.value = next
+class PinchZoomHandler {
+    private val _zoomState = MutableStateFlow(ZoomState())
+    val zoomState: StateFlow<ZoomState> = _zoomState.asStateFlow()
+
+    fun onZoom(scaleChange: Float, viewportWidth: Float, viewportHeight: Float) {
+        val current = _zoomState.value
+        val newScale = (current.scale * scaleChange).coerceIn(MIN_ZOOM, MAX_ZOOM)
+        
+        val maxOffsetX = (newScale - 1f) * viewportWidth / 2f
+        val maxOffsetY = (newScale - 1f) * viewportHeight / 2f
+        
+        val newOffsetX = current.offsetX.coerceIn(-maxOffsetX, maxOffsetX)
+        val newOffsetY = current.offsetY.coerceIn(-maxOffsetY, maxOffsetY)
+        
+        _zoomState.value = ZoomState(newScale, newOffsetX, newOffsetY)
     }
 
-    /** Reset to fit mode. */
+    fun onPan(dx: Float, dy: Float, viewportWidth: Float, viewportHeight: Float) {
+        val current = _zoomState.value
+        if (current.scale <= 1f) return
+        
+        val maxOffsetX = (current.scale - 1f) * viewportWidth / 2f
+        val maxOffsetY = (current.scale - 1f) * viewportHeight / 2f
+        
+        val newOffsetX = (current.offsetX + dx).coerceIn(-maxOffsetX, maxOffsetX)
+        val newOffsetY = (current.offsetY + dy).coerceIn(-maxOffsetY, maxOffsetY)
+        
+        _zoomState.value = current.copy(offsetX = newOffsetX, offsetY = newOffsetY)
+    }
+
     fun resetZoom() {
-        _zoomScale.value = 1f
+        _zoomState.value = ZoomState()
     }
 
     companion object {
-        const val MIN_ZOOM = 1f   // never smaller than fit
-        const val MAX_ZOOM = 3f   // 3× is generous ceiling, screen edge is visual cap
+        const val MIN_ZOOM = 1f
+        const val MAX_ZOOM = 4f
     }
 }

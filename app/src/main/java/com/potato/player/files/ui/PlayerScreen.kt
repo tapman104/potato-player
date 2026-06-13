@@ -140,7 +140,7 @@ fun PlayerScreen(
     var showSpeedDialog by remember { mutableStateOf(false) }
 
     val zoomHandler = remember { PinchZoomHandler() }
-    val zoomScale by zoomHandler.zoomScale.collectAsState()
+    val zoomState by zoomHandler.zoomState.collectAsState()
 
     val videoTrack = uiState.videoTracks.firstOrNull()
     val videoW = videoTrack?.width?.toFloat() ?: 0f
@@ -194,16 +194,8 @@ fun PlayerScreen(
     val screenW = configuration.screenWidthDp
     val screenH = configuration.screenHeightDp
     
-    val maxZoomScale = remember(screenW, screenH, videoW, videoH) {
-        if (videoW > 0f && videoH > 0f && screenW > 0f && screenH > 0f) {
-            val wRatio = screenW.toFloat() / videoW
-            val hRatio = screenH.toFloat() / videoH
-            val fillScale = maxOf(wRatio, hRatio)
-            val fitScale = minOf(wRatio, hRatio)
-            (fillScale / fitScale).coerceAtLeast(1f)
-        } else {
-            3f
-        }
+    LaunchedEffect(controlsState.resizeMode) {
+        zoomHandler.resetZoom()
     }
     var hasResumed by remember { mutableStateOf(false) }
 
@@ -376,23 +368,16 @@ fun PlayerScreen(
             },
             update = { pv ->
                 if (pv.player !== player) pv.player = player
-                pv.resizeMode = if (zoomScale > 1f) {
-                    AspectRatioFrameLayout.RESIZE_MODE_FIT
-                } else {
-                    controlsState.resizeMode.value
-                }
+                pv.resizeMode = controlsState.resizeMode.value
                 pv.keepScreenOn = uiState.isPlaying
             },
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer {
-                    if (zoomScale > 1f) {
-                        scaleX = zoomScale
-                        scaleY = zoomScale
-                    } else {
-                        scaleX = 1f
-                        scaleY = 1f
-                    }
+                    scaleX = zoomState.scale
+                    scaleY = zoomState.scale
+                    translationX = zoomState.offsetX
+                    translationY = zoomState.offsetY
                 },
         )
 
@@ -401,10 +386,15 @@ fun PlayerScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .pointerInput(Unit) {
-                    detectTransformGestures { _, _, zoom, _ ->
-                        zoomHandler.onZoom(zoom, maxZoomScale)
+                    detectTransformGestures { _, pan, zoom, _ ->
+                        zoomHandler.onZoom(zoom, size.width.toFloat(), size.height.toFloat())
+                        zoomHandler.onPan(pan.x, pan.y, size.width.toFloat(), size.height.toFloat())
                     }
                 }
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
                 .pointerInput(viewModel) { // key=viewModel so it resets if VM changes
                     // Android timing constants from the system ViewConfiguration
                     val longPressMs = viewConfiguration.longPressTimeoutMillis
@@ -520,7 +510,7 @@ fun PlayerScreen(
                                                     tapX < third      -> handler.onDoubleTap(isForward = false)
                                                     tapX > third * 2f -> handler.onDoubleTap(isForward = true)
                                                     else              -> {
-                                                        if (zoomScale > 1f) {
+                                                        if (zoomState.scale > 1f) {
                                                             zoomHandler.resetZoom()
                                                         } else {
                                                             handler.onTap()
@@ -580,9 +570,24 @@ fun PlayerScreen(
             }
         }
 
-        // Layer 4 removed (CenterControlsRow moved to BottomControlBar)
+        // ── Layer 4: Center Controls ────────────────────────────────────────────────
+        AnimatedVisibility(
+            visible = controlsVisible && !hideControlsForGesture,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.Center),
+        ) {
+            CenterControlsRow(
+                isPlaying = uiState.isPlaying,
+                isLoading = uiState.isLoading,
+                isEnded = uiState.isEnded,
+                onPlayPauseClick = viewModel::togglePlayPause,
+                onSeekBackward = viewModel::seekBackward10,
+                onSeekForward = viewModel::seekForward10,
+            )
+        }
 
-        // â”€â”€ Layer 5: Bottom control bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Layer 5: Bottom control bar ─────────────────────────────────────────
         AnimatedVisibility(
             visible = controlsVisible && !hideControlsForGesture,
             enter = fadeIn(),
@@ -604,12 +609,7 @@ fun PlayerScreen(
                 BottomControlBar(
                     positionStateFlow = viewModel.positionState,
                     orientationMode = controlsState.orientationMode,
-                    isPlaying = uiState.isPlaying,
-                    isLoading = uiState.isLoading,
-                    isEnded = uiState.isEnded,
-                    onPlayPauseClick = viewModel::togglePlayPause,
-                    onSeekBackward = viewModel::seekBackward10,
-                    onSeekForward = viewModel::seekForward10,
+                    resizeMode = controlsState.resizeMode,
                     onSeek = { positionMs ->
                         viewModel.setPositionUpdateRate(100L)
                         viewModel.seekTo(positionMs)
