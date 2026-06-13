@@ -149,6 +149,51 @@ class PlayerGestureHandler(
         }
     }
 
+    // GESTURE: horizontal-drag-start (seek scrub)
+    /** Called when a horizontal drag is classified as a seek-scrub gesture. */
+    fun onHorizontalDragStart() {
+        val currentPos = viewModel.positionState.value.positionMs
+        val duration = viewModel.positionState.value.durationMs
+        _gestureState.update { it.copy(
+            active = ActiveGesture.SeekScrub(currentPos),
+            seekStartPositionMs = currentPos,
+            seekAccumulator = 0f,
+            seekDuration = duration,
+        )}
+    }
+
+    // GESTURE: horizontal-drag (seek scrub)
+    /**
+     * Called for each pointer-move event during a horizontal seek-scrub drag.
+     *
+     * A full swipe across the screen maps to 90 seconds of seek distance.
+     *
+     * @param deltaX        Change in X since the last call, in pixels (positive = right).
+     * @param viewportWidth Width of the gesture area in pixels.
+     */
+    fun onHorizontalDrag(deltaX: Float, viewportWidth: Float) {
+        val state = _gestureState.value
+        if (state.active !is ActiveGesture.SeekScrub) return
+        val duration = state.seekDuration
+        if (duration <= 0L) return
+        // Full swipe across screen = 90 seconds seek
+        val secondsPerPixel = 90f / viewportWidth
+        val newAccumulator = state.seekAccumulator + deltaX * secondsPerPixel
+        val targetMs = (state.seekStartPositionMs + (newAccumulator * 1000f).toLong())
+            .coerceIn(0L, duration)
+        _gestureState.update { it.copy(
+            active = ActiveGesture.SeekScrub(targetMs),
+            seekAccumulator = newAccumulator,
+        )}
+        viewModel.seekTo(targetMs)
+    }
+
+    // GESTURE: horizontal-drag-end (seek scrub)
+    /** Called when the horizontal seek-scrub drag ends or is cancelled. */
+    fun onHorizontalDragEnd() {
+        _gestureState.update { it.copy(active = ActiveGesture.None) }
+    }
+
     // ── Private helpers ───────────────────────────────────────────────────────
 
     private fun handleVolumeDrag(fractionalDelta: Float) {

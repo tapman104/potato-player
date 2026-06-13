@@ -59,7 +59,9 @@ fun PlayerGestureLayer(
                     var gestureCommitted = false
                     var isDragging       = false
                     var isLongPressHeld  = false
+                    var isHorizontalDragging = false
                     var lastY            = downY
+                    var lastX            = downX
 
                     // ── Phase 2: classify gesture ─────────────────────────────
                     eventLoop@ while (true) {
@@ -89,6 +91,7 @@ fun PlayerGestureLayer(
                         if (event.changes.size > 1) {
                             // Multi-touch detected! Abandon single-touch gesture.
                             if (isDragging) gestureHandler.onVerticalDragEnd()
+                            if (isHorizontalDragging) gestureHandler.onHorizontalDragEnd()
                             if (isLongPressHeld) {
                                 onIsLongPressingChange(false)
                                 gestureHandler.onLongPressEnd()
@@ -123,11 +126,16 @@ fun PlayerGestureLayer(
                                         primary.consume()
                                         gestureHandler.onVerticalDrag(firstDy)
                                     }
-                                    // Horizontal wins first — abandon this gesture entirely
-                                    // so the horizontal seek handler can take over.
+                                    // Horizontal wins first — commit as horizontal drag.
+                                    // If zoomed, horizontal drag = pan; otherwise = seek scrub.
                                     absDx > absDy * 1.5f -> {
-                                        gestureCommitted = true // prevents re-evaluation
-                                        // isDragging stays false, so onVerticalDragEnd is NOT called
+                                        gestureCommitted = true
+                                        isHorizontalDragging = true
+                                        if (zoomState.scale <= 1f) {
+                                            gestureHandler.onHorizontalDragStart()
+                                        }
+                                        lastX = primary.position.x
+                                        lastY = primary.position.y
                                     }
                                     // Ambiguous (diagonal) — keep waiting
                                     else -> Unit
@@ -140,6 +148,20 @@ fun PlayerGestureLayer(
                                 primary.consume()
                                 gestureHandler.onVerticalDrag(delta)
                             }
+                            // ── Continuing horizontal drag (seek or pan) ────────
+                            isHorizontalDragging -> {
+                                val deltaX = primary.position.x - lastX
+                                lastX = primary.position.x
+                                primary.consume()
+                                if (zoomState.scale > 1f) {
+                                    // Pan mode: route both X and Y movement to pan
+                                    val deltaY = primary.position.y - lastY
+                                    lastY = primary.position.y
+                                    zoomHandler.onPan(deltaX, deltaY, size.width.toFloat(), size.height.toFloat())
+                                } else {
+                                    gestureHandler.onHorizontalDrag(deltaX, size.width.toFloat())
+                                }
+                            }
                         }
 
                         // ── Pointer lifted ──────────────────────────────────────
@@ -147,6 +169,7 @@ fun PlayerGestureLayer(
                         if (allUp) {
                             when {
                                 isDragging -> gestureHandler.onVerticalDragEnd()
+                                isHorizontalDragging -> gestureHandler.onHorizontalDragEnd()
                                 isLongPressHeld -> {
                                     onIsLongPressingChange(false)
                                     gestureHandler.onLongPressEnd()

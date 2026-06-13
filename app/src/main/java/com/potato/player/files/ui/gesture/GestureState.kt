@@ -30,6 +30,13 @@ sealed interface ActiveGesture {
      * Double tap to seek forward or backward.
      */
     data class DoubleTapSeek(val isForward: Boolean) : ActiveGesture
+
+    /**
+     * Horizontal swipe to scrub to a target position.
+     *
+     * @param targetMs Target seek position in milliseconds.
+     */
+    data class SeekScrub(val targetMs: Long) : ActiveGesture
 }
 
 /**
@@ -48,4 +55,7 @@ data class GestureState(
     val speedBeforeLongPress: Float = 1f,
     val volumeAccumulator: Float = 0f,
     val brightnessAccumulator: Float = 0f,
+    val seekStartPositionMs: Long = 0L,
+    val seekAccumulator: Float = 0f,
+    val seekDuration: Long = 0L,
 )
