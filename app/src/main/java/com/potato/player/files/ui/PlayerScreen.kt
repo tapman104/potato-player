@@ -128,6 +128,7 @@ fun PlayerScreen(
     // ── State collection ──────────────────────────────────────────────────────────
     val uiState by viewModel.uiState.collectAsState()
     val controlsState by viewModel.controlsState.collectAsState()
+    val enableHaptics by appPreferences.enableHaptics.collectAsState()
 
     // Controls visibility — local UI state, auto-hides after idle period.
     var controlsVisible by remember { mutableStateOf(false) }
@@ -461,6 +462,7 @@ fun PlayerScreen(
                 onPlayPauseClick = viewModel::togglePlayPause,
                 onSeekBackward = viewModel::seekBackward10,
                 onSeekForward = viewModel::seekForward10,
+                enableHaptics = enableHaptics,
             )
         }
 
@@ -494,6 +496,7 @@ fun PlayerScreen(
                     onSeekFinished = { viewModel.setPositionUpdateRate(1000L) },
                     onCycleRotation = viewModel::cycleRotationMode,
                     onResizeModeClick = viewModel::cycleResizeMode,
+                    enableHaptics = enableHaptics,
                 )
             }
         }
