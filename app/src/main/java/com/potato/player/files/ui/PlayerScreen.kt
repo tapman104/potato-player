@@ -182,11 +182,7 @@ fun PlayerScreen(
     var isLongPressing by remember { mutableStateOf(false) }
 
     BackHandler {
-        if (controlsVisible) {
-            controlsVisible = false
-        } else {
-            onBack()
-        }
+        onBack()
     }
 
     // ── Effects ──────────────────────────────────────────────────────────────────
