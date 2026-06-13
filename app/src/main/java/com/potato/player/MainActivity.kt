@@ -38,6 +38,7 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.background
 import com.potato.player.PlaybackService
 import com.potato.player.files.preferences.AppPreferences
@@ -182,53 +183,59 @@ class MainActivity : ComponentActivity() {
                         BackHandler(enabled = settingsRoute == null) {
                             moveTaskToBack(true)
                         }
-                        HomeScreen(
-                            viewModel = homeViewModel,
-                            onFilePicked = { uri -> mediaUriState = uri.toString() },
-                            onSettingsClick = { settingsRoute = "settings" },
-                        )
+                        Box(modifier = Modifier.systemBarsPadding().fillMaxSize()) {
+                            HomeScreen(
+                                viewModel = homeViewModel,
+                                onFilePicked = { uri -> mediaUriState = uri.toString() },
+                                onSettingsClick = { settingsRoute = "settings" },
+                            )
+                        }
                     }
 
                     BackHandler(enabled = settingsRoute != null) {
                         if (settingsRoute == "settings") settingsRoute = null else settingsRoute = "settings"
                     }
 
-                    when (settingsRoute) {
-                        "about" -> AboutScreen(onBack = { settingsRoute = "settings" })
-                        "appearance" -> AppearanceSettingsScreen(
-                            onBack = { settingsRoute = "settings" },
-                            appPreferences = appPreferences
-                        )
-                        "subtitle_appearance" -> com.potato.player.files.ui.settings.SubtitleAppearanceSettingsScreen(
-                            onBack = { settingsRoute = "settings" },
-                            appPreferences = appPreferences,
-                        )
-                        "gestures" -> GestureSettingsScreen(
-                            onBack = { settingsRoute = "settings" },
-                            appPreferences = appPreferences
-                        )
-                        "home_screen_settings" -> com.potato.player.files.ui.settings.HomeScreenSettingsScreen(
-                            onBack = { settingsRoute = "settings" },
-                            appPreferences = appPreferences
-                        )
-                        "playback_settings" -> PlaybackSettingsScreen(
-                            onBack = { settingsRoute = "settings" },
-                            appPreferences = appPreferences
-                        )
-                        "misc_settings" -> com.potato.player.files.ui.settings.MiscSettingsScreen(
-                            onBack = { settingsRoute = "settings" },
-                            appPreferences = appPreferences
-                        )
-                        "settings" -> SettingsScreen(
-                            onBack = { settingsRoute = null },
-                            onGesturesClick = { settingsRoute = "gestures" },
-                            onPlaybackClick = { settingsRoute = "playback_settings" },
-                            onAppearanceClick = { settingsRoute = "appearance" },
-                            onSubtitleAppearanceClick = { settingsRoute = "subtitle_appearance" },
-                            onHomeScreenClick = { settingsRoute = "home_screen_settings" },
-                            onMiscClick = { settingsRoute = "misc_settings" },
-                            onAboutClick = { settingsRoute = "about" },
-                        )
+                    if (settingsRoute != null) {
+                        Box(modifier = Modifier.systemBarsPadding().fillMaxSize()) {
+                            when (settingsRoute) {
+                                "about" -> AboutScreen(onBack = { settingsRoute = "settings" })
+                                "appearance" -> AppearanceSettingsScreen(
+                                    onBack = { settingsRoute = "settings" },
+                                    appPreferences = appPreferences
+                                )
+                                "subtitle_appearance" -> com.potato.player.files.ui.settings.SubtitleAppearanceSettingsScreen(
+                                    onBack = { settingsRoute = "settings" },
+                                    appPreferences = appPreferences,
+                                )
+                                "gestures" -> GestureSettingsScreen(
+                                    onBack = { settingsRoute = "settings" },
+                                    appPreferences = appPreferences
+                                )
+                                "home_screen_settings" -> com.potato.player.files.ui.settings.HomeScreenSettingsScreen(
+                                    onBack = { settingsRoute = "settings" },
+                                    appPreferences = appPreferences
+                                )
+                                "playback_settings" -> PlaybackSettingsScreen(
+                                    onBack = { settingsRoute = "settings" },
+                                    appPreferences = appPreferences
+                                )
+                                "misc_settings" -> com.potato.player.files.ui.settings.MiscSettingsScreen(
+                                    onBack = { settingsRoute = "settings" },
+                                    appPreferences = appPreferences
+                                )
+                                "settings" -> SettingsScreen(
+                                    onBack = { settingsRoute = null },
+                                    onGesturesClick = { settingsRoute = "gestures" },
+                                    onPlaybackClick = { settingsRoute = "playback_settings" },
+                                    onAppearanceClick = { settingsRoute = "appearance" },
+                                    onSubtitleAppearanceClick = { settingsRoute = "subtitle_appearance" },
+                                    onHomeScreenClick = { settingsRoute = "home_screen_settings" },
+                                    onMiscClick = { settingsRoute = "misc_settings" },
+                                    onAboutClick = { settingsRoute = "about" },
+                                )
+                            }
+                        }
                     }
                 }
             }

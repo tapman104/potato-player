@@ -24,20 +24,18 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.potato.player.player.ui.toTimeString
 
+import com.potato.player.player.ui.center.CenterControlsRow
+
 /**
  * Bottom control bar that assembles the full player transport UI.
  *
  * Layout:
  * ```
  * ┌─────────────────────────────────────────────────────┐
+ * │ [RotationLock]    [CenterControls]    [Placeholder] │
  * │ [SeekBar ───────────────────────────────────────────]│
- * │ [RotationLock]                                      │
  * └─────────────────────────────────────────────────────┘
  * ```
- *
- * This composable is the intended **replacement for [ControlsRow]** at the
- * bottom of [PlayerScreen]. It adds the rotation-lock toggle on the leading
- * edge while preserving the existing seek bar and play/pause layout verbatim.
  *
  * The composable is stateless: all state arrives as parameters and all intents
  * propagate up through lambdas. No ViewModel references are held here.
@@ -55,7 +53,12 @@ import com.potato.player.player.ui.toTimeString
 fun BottomControlBar(
     positionStateFlow: StateFlow<PlayerPositionState>,
     orientationMode: OrientationMode,
-    // [CHANGE 1] onTogglePlayPause removed — play/pause no longer lives here
+    isPlaying: Boolean,
+    isLoading: Boolean,
+    isEnded: Boolean,
+    onPlayPauseClick: () -> Unit,
+    onSeekBackward: () -> Unit,
+    onSeekForward: () -> Unit,
     onSeek: (positionMs: Long) -> Unit,
     onCycleRotation: () -> Unit,
     onResizeModeClick: () -> Unit,
@@ -66,26 +69,14 @@ fun BottomControlBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 12.dp), // Added bottom padding to move up
-        verticalArrangement = Arrangement.spacedBy(16.dp), // Increased gap between seekbar and bottom buttons
+            .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 4.dp), // Reduced bottom padding
+        verticalArrangement = Arrangement.spacedBy(8.dp), // Reduced gap
     ) {
         val positionState by positionStateFlow.collectAsState()
 
-        // Row 1: seek bar spans full width
-        PlayerSeekBar(
-            positionMs = positionState.positionMs,
-            durationMs = positionState.durationMs,
-            bufferedPositionMs = positionState.bufferedPositionMs,
-            onSeek = onSeek,
-            onSeekFinished = onSeekFinished,
-            modifier = Modifier.fillMaxWidth(),
-            enableHaptics = enableHaptics,
-            // Using default attractive sizes
-        )
-
-        // Row 2: rotation lock and placeholder
+        // Row 1: rotation lock and center controls
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -94,7 +85,29 @@ fun BottomControlBar(
                 onClick = onCycleRotation,
                 size = 20.dp,
             )
-            Spacer(modifier = Modifier)
+            
+            CenterControlsRow(
+                isPlaying = isPlaying,
+                isLoading = isLoading,
+                isEnded = isEnded,
+                onPlayPauseClick = onPlayPauseClick,
+                onSeekBackward = onSeekBackward,
+                onSeekForward = onSeekForward,
+                enableHaptics = enableHaptics
+            )
+            
+            Spacer(modifier = Modifier.size(20.dp))
         }
+
+        // Row 2: seek bar spans full width
+        PlayerSeekBar(
+            positionMs = positionState.positionMs,
+            durationMs = positionState.durationMs,
+            bufferedPositionMs = positionState.bufferedPositionMs,
+            onSeek = onSeek,
+            onSeekFinished = onSeekFinished,
+            modifier = Modifier.fillMaxWidth(),
+            enableHaptics = enableHaptics,
+        )
     }
 }

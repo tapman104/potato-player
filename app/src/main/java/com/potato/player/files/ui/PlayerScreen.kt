@@ -580,26 +580,7 @@ fun PlayerScreen(
             }
         }
 
-        // â”€â”€ Layer 4: Center controls â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        AnimatedVisibility(
-            visible = controlsVisible && !hideControlsForGesture,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier.align(Alignment.Center),
-        ) {
-            Box(
-                modifier = Modifier
-            ) {
-                CenterControlsRow(
-                    isPlaying = uiState.isPlaying,
-                    isLoading = uiState.isLoading,
-                    isEnded = uiState.isEnded,
-                    onPlayPauseClick = viewModel::togglePlayPause,
-                    onSeekBackward = viewModel::seekBackward10,
-                    onSeekForward = viewModel::seekForward10,
-                )
-            }
-        }
+        // Layer 4 removed (CenterControlsRow moved to BottomControlBar)
 
         // â”€â”€ Layer 5: Bottom control bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         AnimatedVisibility(
@@ -618,12 +599,17 @@ fun PlayerScreen(
                             1f to Color.Black.copy(alpha = 0.65f),
                         )
                     )
-                    .navigationBarsPadding()           // clears gesture pill / soft nav bar
-                    .padding(bottom = 4.dp, start = 16.dp, end = 16.dp),
+                    .padding(bottom = 12.dp, start = 16.dp, end = 16.dp),
             ) {
                 BottomControlBar(
                     positionStateFlow = viewModel.positionState,
                     orientationMode = controlsState.orientationMode,
+                    isPlaying = uiState.isPlaying,
+                    isLoading = uiState.isLoading,
+                    isEnded = uiState.isEnded,
+                    onPlayPauseClick = viewModel::togglePlayPause,
+                    onSeekBackward = viewModel::seekBackward10,
+                    onSeekForward = viewModel::seekForward10,
                     onSeek = { positionMs ->
                         viewModel.setPositionUpdateRate(100L)
                         viewModel.seekTo(positionMs)
