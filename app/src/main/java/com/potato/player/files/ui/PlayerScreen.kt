@@ -411,12 +411,27 @@ fun PlayerScreen(
                         )
                     ),
             ) {
-                val displayTitle = title
-                    ?.takeIf { it.isNotBlank() }
-                    ?: uri.lastPathSegment
+                val displayTitle = remember(title, uri) {
+                    var resolvedTitle = title?.takeIf { it.isNotBlank() }
+                    if (resolvedTitle == null && uri.scheme == "content") {
+                        val projection = arrayOf(android.provider.MediaStore.MediaColumns.DISPLAY_NAME)
+                        try {
+                            context.contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
+                                if (cursor.moveToFirst()) {
+                                    val nameIndex = cursor.getColumnIndexOrThrow(android.provider.MediaStore.MediaColumns.DISPLAY_NAME)
+                                    resolvedTitle = cursor.getString(nameIndex)
+                                }
+                            }
+                        } catch (e: Exception) {
+                            // ignore
+                        }
+                    }
+                    (resolvedTitle ?: uri.lastPathSegment)
                         ?.substringBeforeLast(".")
                         ?.replace("_", " ")
                         ?.replace("%20", " ")
+                        ?: ""
+                }
 
                 PlayerTopBar(
                     title = displayTitle,
