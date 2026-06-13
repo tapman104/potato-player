@@ -393,6 +393,7 @@ fun PlayerScreen(
             isLongPressing = isLongPressing,
             onIsLongPressingChange = { isLongPressing = it },
             deadZoneThresholdPx = deadZoneThresholdPx,
+            appPreferences = appPreferences,
             modifier = Modifier,
         )
 

@@ -17,6 +17,7 @@ import com.potato.player.player.ui.gesture.GestureOverlay
 import com.potato.player.player.ui.gesture.PinchZoomHandler
 import com.potato.player.player.ui.gesture.PlayerGestureHandler
 import com.potato.player.viewmodel.PlayerViewModel
+import com.potato.player.files.preferences.AppPreferences
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.hypot
 
@@ -30,10 +31,12 @@ fun PlayerGestureLayer(
     isLongPressing: Boolean,
     onIsLongPressingChange: (Boolean) -> Unit,
     deadZoneThresholdPx: Float,
+    appPreferences: AppPreferences,
     modifier: Modifier = Modifier,
 ) {
     val zoomState by zoomHandler.zoomState.collectAsState()
     val gestureState by gestureHandler.gestureState.collectAsState()
+    val enableHaptics by appPreferences.enableHaptics.collectAsState()
     val viewConfiguration = LocalViewConfiguration.current
     val haptic = LocalHapticFeedback.current
 
@@ -75,7 +78,9 @@ fun PlayerGestureLayer(
                                 gestureCommitted = true
                                 isLongPressHeld  = true
                                 onIsLongPressingChange(true)
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                if (enableHaptics) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                }
                                 gestureHandler.onLongPressStart()
                             }
                             continue@eventLoop
@@ -164,11 +169,11 @@ fun PlayerGestureLayer(
                                             val third = size.width / 3f
                                             when {
                                                 tapX < third      -> {
-                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                    if (enableHaptics) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                     gestureHandler.onDoubleTap(isForward = false)
                                                 }
                                                 tapX > third * 2f -> {
-                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                    if (enableHaptics) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                     gestureHandler.onDoubleTap(isForward = true)
                                                 }
                                                 else              -> {
