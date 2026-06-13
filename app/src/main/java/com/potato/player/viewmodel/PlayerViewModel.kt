@@ -183,11 +183,25 @@ class PlayerViewModel(
     }
 
     /**
+     * Seek forward by [ms] milliseconds, clamped to the end of the source.
+     */
+    fun seekForwardBy(ms: Long) {
+        engine.seekRelative(ms)
+    }
+
+    /**
+     * Seek backward by [ms] milliseconds, clamped to 0.
+     */
+    fun seekBackwardBy(ms: Long) {
+        engine.seekRelative(-ms)
+    }
+
+    /**
      * Seek forward by [SEEK_INTERVAL_MS] (10 seconds), clamped to the end
      * of the source so the engine never receives an out-of-range position.
      */
     fun seekForward10() {
-        engine.seekRelative(SEEK_INTERVAL_MS)
+        seekForwardBy(SEEK_INTERVAL_MS)
     }
 
     /**
@@ -195,7 +209,7 @@ class PlayerViewModel(
      * so the engine never receives a negative position.
      */
     fun seekBackward10() {
-        engine.seekRelative(-SEEK_INTERVAL_MS)
+        seekBackwardBy(SEEK_INTERVAL_MS)
     }
 
     /**

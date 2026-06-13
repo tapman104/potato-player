@@ -129,10 +129,11 @@ class PlayerGestureHandler(
 
     fun onDoubleTap(isForward: Boolean) {
         if (!appPreferences.doubleTapToSeek.value) return
+        val incrementMs = appPreferences.seekIncrementSeconds.value * 1000L
         if (isForward) {
-            viewModel.seekForward10()
+            viewModel.seekForwardBy(incrementMs)
         } else {
-            viewModel.seekBackward10()
+            viewModel.seekBackwardBy(incrementMs)
         }
 
         _gestureState.update { it.copy(active = ActiveGesture.DoubleTapSeek(isForward)) }

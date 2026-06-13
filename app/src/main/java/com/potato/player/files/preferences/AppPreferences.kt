@@ -55,6 +55,9 @@ class AppPreferences(context: Context) {
     private val _doubleTapToSeek = MutableStateFlow(prefs.getBoolean("double_tap_to_seek", true))
     val doubleTapToSeek: StateFlow<Boolean> = _doubleTapToSeek.asStateFlow()
 
+    private val _seekIncrementSeconds = MutableStateFlow(prefs.getInt("seek_increment_seconds", 10))
+    val seekIncrementSeconds: StateFlow<Int> = _seekIncrementSeconds.asStateFlow()
+
     private val _longPressForSpeed = MutableStateFlow(prefs.getBoolean("long_press_for_speed", true))
     val longPressForSpeed: StateFlow<Boolean> = _longPressForSpeed.asStateFlow()
 
@@ -134,6 +137,11 @@ class AppPreferences(context: Context) {
     fun setDoubleTapToSeek(enabled: Boolean) {
         prefs.edit().putBoolean("double_tap_to_seek", enabled).apply()
         _doubleTapToSeek.value = enabled
+    }
+
+    fun saveSeekIncrementSeconds(seconds: Int) {
+        prefs.edit().putInt("seek_increment_seconds", seconds).apply()
+        _seekIncrementSeconds.value = seconds
     }
 
     fun setLongPressForSpeed(enabled: Boolean) {

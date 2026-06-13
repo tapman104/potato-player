@@ -25,6 +25,7 @@ fun GestureSettingsScreen(
     appPreferences: AppPreferences
 ) {
     val doubleTapToSeek by appPreferences.doubleTapToSeek.collectAsState()
+    val seekIncrementSeconds by appPreferences.seekIncrementSeconds.collectAsState()
     val longPressForSpeed by appPreferences.longPressForSpeed.collectAsState()
     val swipeForVolume by appPreferences.swipeForVolume.collectAsState()
     val enableHaptics by appPreferences.enableHaptics.collectAsState()
@@ -75,7 +76,7 @@ fun GestureSettingsScreen(
                             Text("Double-tap to seek", fontWeight = FontWeight.SemiBold) 
                         },
                         supportingContent = { 
-                            Text("Double-tap left/right edge to seek 10s") 
+                            Text("Double-tap left/right edge to seek") 
                         },
                         leadingContent = {
                             Icon(
@@ -89,6 +90,41 @@ fun GestureSettingsScreen(
                         },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                     )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+                    )
+                    // Seek increment slider
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Seek increment",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text(
+                                text = "${seekIncrementSeconds}s",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                        Slider(
+                            value = seekIncrementSeconds.toFloat(),
+                            onValueChange = { appPreferences.saveSeekIncrementSeconds(it.toInt()) },
+                            valueRange = 5f..30f,
+                            steps = 4, // 5 steps between 5 and 30 exclusive → values 10,15,20,25
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                     HorizontalDivider(
                         modifier = Modifier.padding(horizontal = 16.dp),
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
