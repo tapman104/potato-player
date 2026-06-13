@@ -149,6 +149,25 @@ fun PlayerScreen(
     val videoW = videoTrack?.width?.toFloat() ?: 0f
     val videoH = videoTrack?.height?.toFloat() ?: 0f
 
+    val density = LocalDensity.current
+    val configuration = LocalConfiguration.current
+    val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
+    val screenHeightPx = with(density) { configuration.screenHeightDp.dp.toPx() }
+
+    LaunchedEffect(videoW, videoH, screenWidthPx, screenHeightPx) {
+        if (videoW > 0f && videoH > 0f) {
+            val scaleToFitWidth  = screenWidthPx  / videoW
+            val scaleToFitHeight = screenHeightPx / videoH
+            // The video is letterboxed/pillarboxed at scale=1 (RESIZE_MODE_FIT).
+            // The smaller fit scale is the baseline; we need to scale UP from that
+            // fitted size to fill the screen — so divide the larger by the smaller.
+            val fitScale  = minOf(scaleToFitWidth, scaleToFitHeight)
+            val fillScale = maxOf(scaleToFitWidth, scaleToFitHeight)
+            zoomHandler.maxZoom = (fillScale / fitScale).coerceAtLeast(1f)
+        }
+        // If video dimensions are unknown, leave maxZoom at its current value (4f default).
+    }
+
     LaunchedEffect(Unit) {
         appPreferences.getSubtitleSettings().first().let { 
             subtitleSettings = it 
@@ -162,7 +181,6 @@ fun PlayerScreen(
     }
 
     // ── Gesture handler ───────────────────────────────────────────────────────────
-    val density = LocalDensity.current
     val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     val handler = remember(viewModel, appPreferences) {
         PlayerGestureHandler(viewModel, audioManager, context, appPreferences)
@@ -188,7 +206,6 @@ fun PlayerScreen(
     // ── Effects ──────────────────────────────────────────────────────────────────
 
     // Open the URI once (or when it changes).
-    val configuration = LocalConfiguration.current
     val screenW = configuration.screenWidthDp
     val screenH = configuration.screenHeightDp
     

@@ -11,12 +11,14 @@ data class ZoomState(
 )
 
 class PinchZoomHandler {
+    var maxZoom: Float = 4f
+
     private val _zoomState = MutableStateFlow(ZoomState())
     val zoomState: StateFlow<ZoomState> = _zoomState.asStateFlow()
 
     fun onZoom(scaleChange: Float, viewportWidth: Float, viewportHeight: Float) {
         val current = _zoomState.value
-        val newScale = (current.scale * scaleChange).coerceIn(MIN_ZOOM, MAX_ZOOM)
+        val newScale = (current.scale * scaleChange).coerceIn(MIN_ZOOM, maxZoom)
         
         val maxOffsetX = (newScale - 1f) * viewportWidth / 2f
         val maxOffsetY = (newScale - 1f) * viewportHeight / 2f
@@ -46,6 +48,5 @@ class PinchZoomHandler {
 
     companion object {
         const val MIN_ZOOM = 1f
-        const val MAX_ZOOM = 4f
     }
 }
