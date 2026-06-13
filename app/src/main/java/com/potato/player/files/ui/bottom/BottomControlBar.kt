@@ -75,18 +75,6 @@ fun BottomControlBar(
     ) {
         val positionState by positionStateFlow.collectAsState()
 
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "${positionState.positionMs.toTimeString()} / ${positionState.durationMs.toTimeString()}",
-                color = Color.White,
-                fontSize = 12.sp
-            )
-        }
-
         PlayerSeekBar(
             positionMs = positionState.positionMs,
             durationMs = positionState.durationMs,
