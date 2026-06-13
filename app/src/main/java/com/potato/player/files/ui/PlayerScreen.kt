@@ -307,12 +307,14 @@ fun PlayerScreen(
     }
 
     // Show/hide system bars whenever controls visibility toggles.
-    // LaunchedEffect re-runs only when controlsVisible changes, not on every recompose.
+    // Status bar stays hidden always — transient swipe is handled by BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE.
+    // Only the navigation bar is toggled with the controls.
     LaunchedEffect(controlsVisible) {
         val activity = activityContext as? android.app.Activity ?: return@LaunchedEffect
         val insetsCtrl = WindowInsetsControllerCompat(activity.window, activity.window.decorView)
         if (controlsVisible) {
-            insetsCtrl.show(WindowInsetsCompat.Type.systemBars())
+            insetsCtrl.show(WindowInsetsCompat.Type.navigationBars())
+            insetsCtrl.hide(WindowInsetsCompat.Type.statusBars())
         } else {
             insetsCtrl.hide(WindowInsetsCompat.Type.systemBars())
         }
