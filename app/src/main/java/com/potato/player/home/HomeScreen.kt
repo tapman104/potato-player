@@ -4,6 +4,9 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -152,12 +155,15 @@ private fun ReadyContent(
     }
     val headerElevation by animateDpAsState(
         targetValue = if (hasScrolled) 8.dp else 0.dp,
-        animationSpec = tween(200),
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
         label = "headerElevation"
     )
     val headerAlpha by animateFloatAsState(
         targetValue = if (hasScrolled) 0.97f else 1f,
-        animationSpec = tween(200),
+        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
         label = "headerAlpha"
     )
 

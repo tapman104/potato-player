@@ -7,13 +7,14 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
+
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -34,19 +35,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter
+import coil.compose.rememberAsyncImagePainter
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import coil.size.Size
@@ -100,23 +99,6 @@ private fun RecentFileItem(
 ) {
     val context = LocalContext.current
 
-    // shimmer
-    val shimmerTransition = rememberInfiniteTransition(label = "recentShimmer")
-    val shimmerOffset by shimmerTransition.animateFloat(
-        initialValue = -1f,
-        targetValue  = 2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "recentShimmerOffset"
-    )
-    val shimmerBrush = Brush.linearGradient(
-        colors = listOf(Color(0xFF1E1E28), Color(0xFF2E2E3A), Color(0xFF1E1E28)),
-        start = Offset(shimmerOffset * 400f, 0f),
-        end   = Offset(shimmerOffset * 400f + 300f, 200f)
-    )
-
     Box(
         modifier = Modifier
             .width(162.dp)
@@ -134,7 +116,7 @@ private fun RecentFileItem(
                 contentAlignment = Alignment.Center
             ) {
                 if (file.isVideo) {
-                    AsyncImage(
+                    val painter = rememberAsyncImagePainter(
                         model = ImageRequest.Builder(context)
                             .data(file.uri)
                             .size(Size(480, 270))
@@ -143,19 +125,53 @@ private fun RecentFileItem(
                             .memoryCachePolicy(CachePolicy.ENABLED)
                             .diskCachePolicy(CachePolicy.ENABLED)
                             .transitionFactory(CrossfadeTransition.Factory(durationMillis = 300))
-                            .build(),
-                        contentDescription = "Thumbnail",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+                            .build()
                     )
 
-                    // Gradient scrim + play icon
+                    when (painter.state) {
+                        is AsyncImagePainter.State.Loading,
+                        is AsyncImagePainter.State.Empty -> {
+                            // Shimmer only runs while loading — stops automatically
+                            // when bitmap arrives, saving CPU/GPU.
+                            val shimmerTransition = rememberInfiniteTransition(label = "recentShimmer")
+                            val shimmerOffset by shimmerTransition.animateFloat(
+                                initialValue = -1f,
+                                targetValue  = 2f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(900, easing = LinearEasing),
+                                    repeatMode = RepeatMode.Restart
+                                ),
+                                label = "recentShimmerOffset"
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.linearGradient(
+                                            colors = listOf(Color(0xFF1E1E28), Color(0xFF2A2A38), Color(0xFF1E1E28)),
+                                            start = Offset(shimmerOffset * 400f, 0f),
+                                            end   = Offset(shimmerOffset * 400f + 300f, 200f)
+                                        )
+                                    )
+                            )
+                        }
+                        else -> {
+                            Image(
+                                painter = painter,
+                                contentDescription = "Thumbnail",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    }
+
+                    // Gradient scrim + play icon (always on top of thumbnail/shimmer)
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(
                                 Brush.verticalGradient(
-                                    listOf(Color.Transparent, Color.Black.copy(alpha = 0.4f))
+                                    listOf(Color.Transparent, Color.Black.copy(alpha = 0.38f))
                                 )
                             ),
                         contentAlignment = Alignment.Center
@@ -191,7 +207,7 @@ private fun RecentFileItem(
                         )
                     }
 
-                    // Progress arc at the bottom edge
+                    // Progress bar (only rendered when position is known)
                     if (progressFraction > 0f) {
                         Box(
                             modifier = Modifier
@@ -213,7 +229,7 @@ private fun RecentFileItem(
                         }
                     }
                 } else {
-                    // Audio placeholder
+                    // Audio placeholder — static, no animation cost
                     Box(
                         modifier = Modifier
                             .fillMaxSize()

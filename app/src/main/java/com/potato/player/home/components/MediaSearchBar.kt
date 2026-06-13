@@ -1,7 +1,8 @@
 package com.potato.player.home.components
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -50,12 +51,12 @@ fun MediaSearchBar(
 
     val borderColor by animateColorAsState(
         targetValue = if (isFocused) Color(0xFF6C63FF).copy(alpha = 0.7f) else Color.Transparent,
-        animationSpec = tween(durationMillis = 200),
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "searchBorderColor"
     )
     val bgColor by animateColorAsState(
         targetValue = if (isFocused) Color(0xFF22222E) else Color(0xFF1A1A22),
-        animationSpec = tween(durationMillis = 200),
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "searchBgColor"
     )
 
