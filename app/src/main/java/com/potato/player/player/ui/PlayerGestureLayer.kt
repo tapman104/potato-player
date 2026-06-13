@@ -124,7 +124,7 @@ fun PlayerGestureLayer(
                                         val firstDy = primary.position.y - lastY
                                         lastY = primary.position.y
                                         primary.consume()
-                                        gestureHandler.onVerticalDrag(firstDy)
+                                        gestureHandler.onVerticalDrag(firstDy, size.height.toFloat())
                                     }
                                     // Horizontal wins first — commit as horizontal drag.
                                     // If zoomed, horizontal drag = pan; otherwise = seek scrub.
@@ -146,7 +146,7 @@ fun PlayerGestureLayer(
                                 val delta = primary.position.y - lastY
                                 lastY = primary.position.y
                                 primary.consume()
-                                gestureHandler.onVerticalDrag(delta)
+                                gestureHandler.onVerticalDrag(delta, size.height.toFloat())
                             }
                             // ── Continuing horizontal drag (seek or pan) ────────
                             isHorizontalDragging -> {

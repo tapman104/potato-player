@@ -21,8 +21,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -165,15 +163,9 @@ fun PlayerScreen(
 
     // ── Gesture handler ───────────────────────────────────────────────────────────
     val density = LocalDensity.current
-    val windowInsets = WindowInsets.systemBars
-    val statusBarPx = windowInsets.getTop(density)
-    val navBarPx = windowInsets.getBottom(density)
-    val screenHeightPx = with(density) {
-        LocalConfiguration.current.screenHeightDp.dp.toPx()
-    } - statusBarPx - navBarPx
     val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     val handler = remember(viewModel, appPreferences) {
-        PlayerGestureHandler(viewModel, audioManager, screenHeightPx, context, appPreferences)
+        PlayerGestureHandler(viewModel, audioManager, context, appPreferences)
     }
     val gestureState by handler.gestureState.collectAsState()
     

@@ -25,13 +25,11 @@ import kotlinx.coroutines.launch
  *
  * @param viewModel      The player ViewModel. Used for speed and playback control.
  * @param audioManager   System [AudioManager] for volume stream queries/changes.
- * @param screenHeightPx Physical screen height in pixels. Injected for testability.
  * @param context        Application/activity context used for brightness Settings access.
  */
 class PlayerGestureHandler(
     private val viewModel: PlayerViewModel,
     private val audioManager: AudioManager,
-    private val screenHeightPx: Float,
     private val context: Context,
     private val appPreferences: com.potato.player.files.preferences.AppPreferences,
 ) {
@@ -98,11 +96,12 @@ class PlayerGestureHandler(
      * Left side  → brightness ([Settings.System.SCREEN_BRIGHTNESS], 0-255)
      * Right side → media volume
      *
-     * @param deltaY Change in Y since the last call, in pixels (positive = down).
+     * @param deltaY       Change in Y since the last call, in pixels (positive = down).
+     * @param areaHeightPx Live measured height of the gesture area in pixels.
      */
-    fun onVerticalDrag(deltaY: Float) {
+    fun onVerticalDrag(deltaY: Float, areaHeightPx: Float) {
         if (!appPreferences.swipeForVolume.value) return
-        val fractionalDelta = deltaY / screenHeightPx * -1f // drag up = positive
+        val fractionalDelta = deltaY / areaHeightPx * -1f // drag up = positive
         if (dragOnLeftSide) {
             handleBrightnessDrag(fractionalDelta)
         } else {
