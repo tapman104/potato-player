@@ -1,14 +1,8 @@
 package com.potato.player.home.components
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -43,7 +37,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -66,7 +59,6 @@ import com.potato.player.data.toFormattedSize
 private val THUMB_WIDTH  = 140.dp
 private val THUMB_HEIGHT = 80.dp
 
-// Derive a short codec/container label from the MIME type
 private fun MediaFile.codecLabel(): String = when {
     mimeType.contains("mkv")  || mimeType.contains("matroska") -> "MKV"
     mimeType.contains("mp4")  || mimeType.contains("mpeg4")    -> "MP4"
@@ -75,37 +67,12 @@ private fun MediaFile.codecLabel(): String = when {
     mimeType.contains("mov")  || mimeType.contains("quicktime") -> "MOV"
     mimeType.contains("3gp")                                    -> "3GP"
     mimeType.contains("flv")                                    -> "FLV"
-    mimeType.contains("ts")                                     -> "TS"
     mimeType.contains("aac")                                    -> "AAC"
     mimeType.contains("mp3")  || mimeType.contains("mpeg")      -> "MP3"
     mimeType.contains("flac")                                   -> "FLAC"
     mimeType.contains("ogg")                                    -> "OGG"
     mimeType.contains("wav")                                    -> "WAV"
     else -> mimeType.substringAfterLast('/').uppercase().take(5)
-}
-
-@Composable
-private fun ShimmerBox(modifier: Modifier = Modifier) {
-    val transition = rememberInfiniteTransition(label = "shimmer")
-    val shimmerOffset by transition.animateFloat(
-        initialValue = -1f,
-        targetValue  = 2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "shimmerOffset"
-    )
-    val shimmerBrush = Brush.linearGradient(
-        colors = listOf(
-            Color(0xFF1E1E28),
-            Color(0xFF2E2E3A),
-            Color(0xFF1E1E28),
-        ),
-        start = Offset(shimmerOffset * 400f, 0f),
-        end   = Offset(shimmerOffset * 400f + 300f, 200f)
-    )
-    Box(modifier = modifier.background(shimmerBrush))
 }
 
 @Composable
@@ -121,7 +88,7 @@ fun MediaFileRow(
         targetValue = if (isPressed) 0.965f else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessHigh
+            stiffness    = Spring.StiffnessHigh
         ),
         label = "rowScale"
     )
@@ -151,17 +118,21 @@ fun MediaFileRow(
                     model = ImageRequest.Builder(context)
                         .data(file.uri)
                         .size(Size(420, 240))
+                        // Hardware bitmaps live on the GPU — no CPU→GPU upload every frame.
+                        .allowHardware(true)
                         .memoryCacheKey("vthumb_${file.uri}_420x240")
                         .diskCacheKey("vthumb_${file.uri}_420x240")
                         .memoryCachePolicy(CachePolicy.ENABLED)
                         .diskCachePolicy(CachePolicy.ENABLED)
-                        .transitionFactory(CrossfadeTransition.Factory(durationMillis = 300))
+                        .transitionFactory(CrossfadeTransition.Factory(durationMillis = 250))
                         .build()
                 )
 
                 when (painter.state) {
                     is AsyncImagePainter.State.Loading,
                     is AsyncImagePainter.State.Empty -> {
+                        // Driven by the single shared ShimmerHost animation —
+                        // zero additional InfiniteTransition cost here.
                         ShimmerBox(modifier = Modifier.size(THUMB_WIDTH, THUMB_HEIGHT))
                     }
                     else -> {
@@ -174,7 +145,7 @@ fun MediaFileRow(
                     }
                 }
 
-                // Dark gradient overlay + play icon
+                // Radial gradient overlay + frosted play button
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -201,7 +172,7 @@ fun MediaFileRow(
                     }
                 }
 
-                // Duration badge — bottom-end
+                // Duration badge
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
@@ -217,7 +188,6 @@ fun MediaFileRow(
                     )
                 }
             } else {
-                // Audio placeholder
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -255,7 +225,6 @@ fun MediaFileRow(
             )
             Spacer(modifier = Modifier.height(6.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Codec badge
                 Box(
                     modifier = Modifier
                         .background(Color(0xFF6C63FF).copy(alpha = 0.18f), RoundedCornerShape(4.dp))
@@ -294,10 +263,7 @@ fun MediaFileRow(
             ) {
                 DropdownMenuItem(
                     text = { Text("Play", color = Color.White, fontSize = 14.sp) },
-                    onClick = {
-                        menuExpanded = false
-                        onClick()
-                    }
+                    onClick = { menuExpanded = false; onClick() }
                 )
                 DropdownMenuItem(
                     text = { Text("Details", color = Color(0xFFAAAAAA), fontSize = 14.sp) },

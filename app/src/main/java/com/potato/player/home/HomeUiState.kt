@@ -1,7 +1,9 @@
 package com.potato.player.home
 
+import androidx.compose.runtime.Immutable
 import com.potato.player.data.MediaFile
 
+@Immutable
 data class FolderGroup(
     val folderName: String,
     val folderPath: String,

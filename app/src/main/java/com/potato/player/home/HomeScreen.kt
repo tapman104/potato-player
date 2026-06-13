@@ -54,6 +54,7 @@ import com.potato.player.home.components.MediaFileRow
 import com.potato.player.home.components.MediaSearchBar
 import com.potato.player.home.components.PermissionCard
 import com.potato.player.home.components.RecentFilesRow
+import com.potato.player.home.components.ShimmerHost
 
 @Composable
 fun HomeScreen(
@@ -167,6 +168,10 @@ private fun ReadyContent(
         label = "headerAlpha"
     )
 
+    // Wrap the entire list in ShimmerHost so all visible shimmer boxes
+    // share a single InfiniteTransition — O(1) animation cost regardless
+    // of how many items are loading thumbnails simultaneously.
+    ShimmerHost {
     Box(modifier = Modifier.fillMaxSize()) {
         // ── Main flat list ────────────────────────────────────────────
         LazyColumn(
@@ -205,7 +210,8 @@ private fun ReadyContent(
                     item(key = "folder_header_${folderGroup.folderPath}") {
                         FolderCard(
                             folderGroup = folderGroup,
-                            onToggleExpand = { onToggleFolder(folderGroup.folderPath) }
+                            onToggleExpand = { onToggleFolder(folderGroup.folderPath) },
+                            modifier = Modifier.animateItem()
                         )
                     }
 
@@ -218,6 +224,7 @@ private fun ReadyContent(
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .animateItem()
                                     .background(Color(0xFF131318))
                                     .padding(horizontal = 16.dp)
                             ) {
@@ -312,4 +319,5 @@ private fun ReadyContent(
             }
         }
     }
+} // end ShimmerHost
 }

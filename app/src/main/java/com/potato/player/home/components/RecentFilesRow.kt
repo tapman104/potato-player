@@ -1,12 +1,6 @@
 package com.potato.player.home.components
 
 import android.net.Uri
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -14,7 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -35,7 +28,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -57,7 +49,6 @@ import com.potato.player.data.toFormattedDuration
 fun RecentFilesRow(
     files: List<MediaFile>,
     onFilePicked: (Uri) -> Unit,
-    // Optional: pass saved-position fractions per URI for the progress arc
     positionFractions: Map<String, Float> = emptyMap()
 ) {
     if (files.isEmpty()) return
@@ -79,7 +70,7 @@ fun RecentFilesRow(
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxWidth()
-        )  {
+        ) {
             items(files, key = { it.uri.toString() }) { file ->
                 RecentFileItem(
                     file = file,
@@ -120,40 +111,21 @@ private fun RecentFileItem(
                         model = ImageRequest.Builder(context)
                             .data(file.uri)
                             .size(Size(480, 270))
+                            // Hardware bitmap — lives on GPU, no upload overhead per draw.
+                            .allowHardware(true)
                             .memoryCacheKey("vthumb_${file.uri}_480x270")
                             .diskCacheKey("vthumb_${file.uri}_480x270")
                             .memoryCachePolicy(CachePolicy.ENABLED)
                             .diskCachePolicy(CachePolicy.ENABLED)
-                            .transitionFactory(CrossfadeTransition.Factory(durationMillis = 300))
+                            .transitionFactory(CrossfadeTransition.Factory(durationMillis = 250))
                             .build()
                     )
 
                     when (painter.state) {
                         is AsyncImagePainter.State.Loading,
                         is AsyncImagePainter.State.Empty -> {
-                            // Shimmer only runs while loading — stops automatically
-                            // when bitmap arrives, saving CPU/GPU.
-                            val shimmerTransition = rememberInfiniteTransition(label = "recentShimmer")
-                            val shimmerOffset by shimmerTransition.animateFloat(
-                                initialValue = -1f,
-                                targetValue  = 2f,
-                                animationSpec = infiniteRepeatable(
-                                    animation = tween(900, easing = LinearEasing),
-                                    repeatMode = RepeatMode.Restart
-                                ),
-                                label = "recentShimmerOffset"
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(
-                                        Brush.linearGradient(
-                                            colors = listOf(Color(0xFF1E1E28), Color(0xFF2A2A38), Color(0xFF1E1E28)),
-                                            start = Offset(shimmerOffset * 400f, 0f),
-                                            end   = Offset(shimmerOffset * 400f + 300f, 200f)
-                                        )
-                                    )
-                            )
+                            // Driven by the parent ShimmerHost — no extra animation here.
+                            ShimmerBox(modifier = Modifier.fillMaxSize())
                         }
                         else -> {
                             Image(
@@ -165,7 +137,7 @@ private fun RecentFileItem(
                         }
                     }
 
-                    // Gradient scrim + play icon (always on top of thumbnail/shimmer)
+                    // Gradient scrim + play icon
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -207,7 +179,7 @@ private fun RecentFileItem(
                         )
                     }
 
-                    // Progress bar (only rendered when position is known)
+                    // Progress bar
                     if (progressFraction > 0f) {
                         Box(
                             modifier = Modifier
@@ -229,7 +201,6 @@ private fun RecentFileItem(
                         }
                     }
                 } else {
-                    // Audio placeholder — static, no animation cost
                     Box(
                         modifier = Modifier
                             .fillMaxSize()

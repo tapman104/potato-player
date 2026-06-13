@@ -1,7 +1,9 @@
 package com.potato.player.data
 
 import android.net.Uri
+import androidx.compose.runtime.Immutable
 
+@Immutable
 data class MediaFile(
     val uri: Uri,
     val displayName: String,

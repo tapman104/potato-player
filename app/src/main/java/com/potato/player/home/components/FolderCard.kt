@@ -47,7 +47,7 @@ import com.potato.player.data.toFormattedDuration
 fun FolderCard(
     folderGroup: FolderGroup,
     onToggleExpand: () -> Unit,
-    // onFilePicked is no longer used here; kept for API compat if needed
+    modifier: Modifier = Modifier,
     onFilePicked: (Uri) -> Unit = {}
 ) {
     val rotation by animateFloatAsState(
@@ -64,7 +64,7 @@ fun FolderCard(
     val totalDurationText = if (totalDurationMs > 0) totalDurationMs.toFormattedDuration() else ""
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .padding(top = 6.dp)
