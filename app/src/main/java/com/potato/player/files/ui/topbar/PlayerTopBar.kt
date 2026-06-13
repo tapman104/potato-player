@@ -90,6 +90,7 @@ fun PlayerTopBar(
         modifier = modifier
             .fillMaxWidth()
             .statusBarsPadding()              // clears system status bar
+            .padding(top = 12.dp)
             .padding(horizontal = 8.dp, vertical = 6.dp),
     ) {
         // ── Left section ──────────────────────────────────────────────────────────
