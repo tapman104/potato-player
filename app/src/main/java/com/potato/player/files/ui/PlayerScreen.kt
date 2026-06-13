@@ -411,8 +411,15 @@ fun PlayerScreen(
                         )
                     ),
             ) {
+                val displayTitle = title
+                    ?.takeIf { it.isNotBlank() }
+                    ?: uri.lastPathSegment
+                        ?.substringBeforeLast(".")
+                        ?.replace("_", " ")
+                        ?.replace("%20", " ")
+
                 PlayerTopBar(
-                    title = title,
+                    title = displayTitle,
                     isSubtitleActive = uiState.selectedSubtitleTrackId != null,
                     onBack = onBack,
                     onSubtitleClick = { showSubtitleDialog = true },
