@@ -16,6 +16,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.media3.ui.SubtitleView
 
 /**
@@ -40,11 +49,19 @@ fun SubtitleSizeDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1E1E1E),
+        shape = RoundedCornerShape(16.dp),
         title = {
-            Text(
-                text = "Subtitle Appearance",
-                style = MaterialTheme.typography.titleLarge,
-            )
+            androidx.compose.foundation.layout.Column {
+                Text(
+                    text = "Subtitle Appearance",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                )
+                HorizontalDivider(color = Color.White.copy(alpha = 0.08f))
+            }
         },
         text = {
             androidx.compose.foundation.layout.Column {
@@ -111,12 +128,18 @@ fun SubtitleSizeDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text("Cancel", color = Color(0xFFAAAAAA))
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(draft) }) {
-                Text("Apply")
+            Box(
+                modifier = Modifier
+                    .background(Color(0xFF7B2FBE), RoundedCornerShape(8.dp))
+                    .clickable { onConfirm(draft) }
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Apply", color = Color.White)
             }
         },
     )

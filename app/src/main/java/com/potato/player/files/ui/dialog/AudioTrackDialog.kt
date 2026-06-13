@@ -21,6 +21,11 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import com.potato.player.engine.AudioTrack
 
 /**
@@ -64,11 +69,19 @@ fun AudioTrackDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1E1E1E),
+        shape = RoundedCornerShape(16.dp),
         title = {
-            Text(
-                text = "Audio Track",
-                style = MaterialTheme.typography.titleLarge,
-            )
+            Column {
+                Text(
+                    text = "Audio Track",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                )
+                HorizontalDivider(color = Color.White.copy(alpha = 0.08f))
+            }
         },
         text = {
             AudioTrackList(
@@ -80,7 +93,7 @@ fun AudioTrackDialog(
         confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text("Cancel", color = Color(0xFFAAAAAA))
             }
         },
     )
