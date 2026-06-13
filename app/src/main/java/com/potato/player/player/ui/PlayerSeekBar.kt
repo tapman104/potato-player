@@ -138,7 +138,7 @@ fun PlayerSeekBar(
         Canvas(
             modifier = Modifier
                 .weight(1f)
-                .height(48.dp) // Minimum recommended touch target size
+                .height(28.dp) // Minimum recommended touch target size
                 .semantics {
                     contentDescription = "Seek bar, position ${positionMs.toTimeString()} of ${durationMs.toTimeString()}"
                 }
