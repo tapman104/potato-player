@@ -10,6 +10,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalViewConfiguration
 import com.potato.player.player.ui.gesture.GestureOverlay
 import com.potato.player.player.ui.gesture.PinchZoomHandler
@@ -33,6 +35,7 @@ fun PlayerGestureLayer(
     val zoomState by zoomHandler.zoomState.collectAsState()
     val gestureState by gestureHandler.gestureState.collectAsState()
     val viewConfiguration = LocalViewConfiguration.current
+    val haptic = LocalHapticFeedback.current
 
     Box(
         modifier = modifier
@@ -72,6 +75,7 @@ fun PlayerGestureLayer(
                                 gestureCommitted = true
                                 isLongPressHeld  = true
                                 onIsLongPressingChange(true)
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 gestureHandler.onLongPressStart()
                             }
                             continue@eventLoop
@@ -159,8 +163,14 @@ fun PlayerGestureLayer(
                                             val tapX  = dtPrimary.position.x
                                             val third = size.width / 3f
                                             when {
-                                                tapX < third      -> gestureHandler.onDoubleTap(isForward = false)
-                                                tapX > third * 2f -> gestureHandler.onDoubleTap(isForward = true)
+                                                tapX < third      -> {
+                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                    gestureHandler.onDoubleTap(isForward = false)
+                                                }
+                                                tapX > third * 2f -> {
+                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                    gestureHandler.onDoubleTap(isForward = true)
+                                                }
                                                 else              -> {
                                                     if (zoomState.scale > 1f) {
                                                         zoomHandler.resetZoom()

@@ -7,6 +7,8 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -397,8 +399,8 @@ fun PlayerScreen(
         // ────────────────────────────────────────────────────────────────────────────────
         AnimatedVisibility(
             visible = controlsVisible && !hideControlsForGesture,
-            enter = fadeIn(),
-            exit = fadeOut(),
+            enter = fadeIn() + slideInVertically(initialOffsetY = { -it }),
+            exit = fadeOut() + slideOutVertically(targetOffsetY = { -it }),
             modifier = Modifier.align(Alignment.TopCenter),
         ) {
             Box(
@@ -464,8 +466,8 @@ fun PlayerScreen(
         // ── Layer 5: Bottom control bar ─────────────────────────────────────────
         AnimatedVisibility(
             visible = controlsVisible && !hideControlsForGesture,
-            enter = fadeIn(),
-            exit = fadeOut(),
+            enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
+            exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
             Box(
