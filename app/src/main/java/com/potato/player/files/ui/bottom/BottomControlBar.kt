@@ -75,7 +75,28 @@ fun BottomControlBar(
     ) {
         val positionState by positionStateFlow.collectAsState()
 
-        // Row 1: rotation lock and center controls
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.Start,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "${positionState.positionMs.toTimeString()} / ${positionState.durationMs.toTimeString()}",
+                color = Color.White,
+                fontSize = 12.sp
+            )
+        }
+
+        PlayerSeekBar(
+            positionMs = positionState.positionMs,
+            durationMs = positionState.durationMs,
+            bufferedPositionMs = positionState.bufferedPositionMs,
+            onSeek = onSeek,
+            onSeekFinished = onSeekFinished,
+            modifier = Modifier.fillMaxWidth(),
+            enableHaptics = enableHaptics,
+        )
+
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -107,16 +128,5 @@ fun BottomControlBar(
                 )
             }
         }
-
-        // Row 2: seek bar spans full width
-        PlayerSeekBar(
-            positionMs = positionState.positionMs,
-            durationMs = positionState.durationMs,
-            bufferedPositionMs = positionState.bufferedPositionMs,
-            onSeek = onSeek,
-            onSeekFinished = onSeekFinished,
-            modifier = Modifier.fillMaxWidth(),
-            enableHaptics = enableHaptics,
-        )
     }
 }
