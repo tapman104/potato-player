@@ -70,8 +70,8 @@ fun BottomControlBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 4.dp), // Increased top padding to move seekbar down
-        verticalArrangement = Arrangement.spacedBy(0.dp), // Reduced gap to keep total height the same
+            .padding(start = 12.dp, end = 12.dp, top = 24.dp, bottom = 4.dp), // Increased top padding to move seekbar down
+        verticalArrangement = Arrangement.spacedBy(12.dp), // Reduced gap to keep total height the same
     ) {
         val positionState by positionStateFlow.collectAsState()
 
