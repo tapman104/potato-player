@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -409,6 +410,7 @@ fun PlayerScreen(
         ) {
             Box(
                 modifier = Modifier
+                    .statusBarsPadding()
                     .background(
                         Brush.verticalGradient(
                             0f to Color.Black.copy(alpha = 0.80f),
@@ -473,6 +475,7 @@ fun PlayerScreen(
                             1f to Color.Black.copy(alpha = 0.65f),
                         )
                     )
+                    .navigationBarsPadding()
                     .padding(bottom = 12.dp, start = 16.dp, end = 16.dp),
             ) {
                 BottomControlBar(
