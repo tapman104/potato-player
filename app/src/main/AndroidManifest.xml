@@ -20,7 +20,6 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:hardwareAccelerated="true"
-        android:largeHeap="true"
         android:theme="@style/Theme.MyApplication">
         <activity
             android:name="com.potato.player.player.MainActivity"
@@ -56,7 +55,8 @@
         <service
             android:name=".PlaybackService"
             android:foregroundServiceType="mediaPlayback"
-            android:exported="true">
+            android:exported="true"
+            android:stopWithTask="true">
             <intent-filter>
                 <action android:name="androidx.media3.session.MediaSessionService" />
             </intent-filter>

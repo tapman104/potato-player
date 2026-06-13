@@ -172,6 +172,17 @@ class PlayerViewModel(
     }
 
     /**
+     * Restores the position polling rate to the appropriate idle rate after a seek scrub.
+     *
+     * Delegates to [ExoPlayerEngine.restoreIdlePositionUpdateRate] which picks 1 s when
+     * controls are visible and 2 s when they are hidden, preserving the controls-hidden
+     * battery optimisation that a hardcoded `setPositionUpdateRate(1000L)` would overwrite.
+     */
+    fun onSeekFinished() {
+        (engine as? ExoPlayerEngine)?.restoreIdlePositionUpdateRate()
+    }
+
+    /**
      * Notifies the engine whether the controls overlay is currently visible.
      *
      * When controls are hidden the seek bar is invisible, so the engine

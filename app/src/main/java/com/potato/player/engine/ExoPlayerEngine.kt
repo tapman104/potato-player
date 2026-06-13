@@ -448,6 +448,23 @@ class ExoPlayerEngine(
     }
 
     // REF-3: Allows callers to adjust polling rate (e.g., 100ms during scrub, 1000ms idle, 2000ms controls-hidden).
+    /**
+     * Restores the position polling rate to the correct idle rate based on whether the
+     * controls overlay is currently visible.
+     *
+     * Call this on seek-scrub release instead of hardcoding `setPositionUpdateRate(1000L)`,
+     * so that the controls-hidden 2 s optimisation is not silently overwritten every time
+     * the user drags the seek bar.
+     */
+    fun restoreIdlePositionUpdateRate() {
+        val target = if (controlsAreVisible) {
+            PLAYBACK_POSITION_UPDATE_INTERVAL_MS
+        } else {
+            CONTROLS_HIDDEN_POSITION_UPDATE_INTERVAL_MS
+        }
+        setPositionUpdateRate(target)
+    }
+
     fun setPositionUpdateRate(intervalMs: Long) {
         if (intervalMs == positionUpdateIntervalMs) return // no-op: rate unchanged
         positionUpdateIntervalMs = intervalMs
