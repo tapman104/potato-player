@@ -49,7 +49,10 @@ class MpvWrapper(val context: Context) : MPVLib.EventObserver {
         }
     }
 
+    private var currentSurface: Surface? = null
+
     fun attachSurface(surface: Surface) {
+        currentSurface = surface
         MPVLib.attachSurface(surface)
         MPVLib.setOptionString("force-window", "yes")
         MPVLib.setPropertyString("vo", "gpu")
@@ -59,6 +62,7 @@ class MpvWrapper(val context: Context) : MPVLib.EventObserver {
         MPVLib.setPropertyString("vo", "null")
         MPVLib.setPropertyString("force-window", "no")
         MPVLib.detachSurface()
+        currentSurface = null
     }
 
     fun play(uri: String) {
@@ -75,8 +79,6 @@ class MpvWrapper(val context: Context) : MPVLib.EventObserver {
     }
 
     fun resume() {
-        MPVLib.setOptionString("force-window", "yes")
-        MPVLib.setPropertyString("vo", "gpu")
         MPVLib.setPropertyBoolean(MpvProp.PAUSE, false)
     }
 
