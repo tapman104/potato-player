@@ -1,41 +1,30 @@
-# Built application files
-*.apk
-*.aab
-*.ap_
-*.dex
-*.class
-
-# Gradle files & directories
-.gradle/
+# Android build outputs
 build/
+app/build/
 */build/
-captures/
-.externalNativeBuild/
-.cxx/
-*.hprof
-*.log
 
-# Local configuration & secrets
-local.properties
+# Large binary/library files
+*.aar
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+libs/
+*.so
 
-# IntelliJ IDEA / Android Studio
+# Android Studio and IDE files
 .idea/
 *.iml
-*.ipr
-*.iws
-
-# Visual Studio Code
-.vscode/
-
-# OS generated files
+local.properties
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
 
-# Kotlin
-.kotlin/
-*.kotlin_module
+# Gradle cache and wrapper binaries
+.gradle/
+
+# Keystore and signing files
+*.jks
+*.keystore
+keystore.properties
+
+# Logs and temp files
+*.log
+log-*.txt
+log_*.txt
