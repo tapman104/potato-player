@@ -1,6 +1,6 @@
 package com.potato.player.feature.player
 
-import com.potato.player.engine.TrackInfo
+
 
 enum class ActiveSheet { NONE, MORE_MENU, SPEED, AUDIO, SUBTITLE, DECODER }
 
@@ -15,6 +15,7 @@ data class PlaybackProgressState(
 )
 
 data class PlayerUiState(
+    val fileName:        String = "",
     val isPlaying:       Boolean = false,
     val playbackSpeed:   Double  = 1.0,
     val isFastForwarding: Boolean = false,
@@ -22,7 +23,8 @@ data class PlayerUiState(
     val isLoading:       Boolean = false,
     val error:           String? = null,
     val hwdecCurrent:    String  = "HW+",
-    val tracks:          List<TrackInfo> = emptyList(),
+    val audioTracks:     List<TrackUiModel> = emptyList(),
+    val subtitleTracks:  List<TrackUiModel> = emptyList(),
     val currentAudioTrackId: Int = -1,
     val currentSubtitleTrackId: Int = -1,
     val subScale: Double = 1.0,

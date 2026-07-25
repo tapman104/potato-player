@@ -9,7 +9,9 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
-class MpvWrapper(val context: Context) : MPVLib.EventObserver {
+class MpvWrapper(context: Context) : MPVLib.EventObserver {
+
+    val appContext: Context = context.applicationContext
 
     private val _events = MutableSharedFlow<MpvEvent>(extraBufferCapacity = 64)
     val events: SharedFlow<MpvEvent> = _events.asSharedFlow()
@@ -18,11 +20,11 @@ class MpvWrapper(val context: Context) : MPVLib.EventObserver {
     @Volatile private var cachedPause: Boolean = false
 
     init {
-        configurator.copyFontAssets(context)
-        MPVLib.create(context)
+        configurator.copyFontAssets(appContext)
+        MPVLib.create(appContext)
         MPVLib.addObserver(this)
         
-        configurator.initOptions(context)
+        configurator.initOptions(appContext)
         
         configurator.postInitOptions()
         configurator.registerPropertyObservers()

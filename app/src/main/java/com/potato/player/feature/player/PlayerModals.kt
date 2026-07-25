@@ -2,7 +2,6 @@ package com.potato.player.feature.player
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
-import com.potato.player.engine.TrackType
 import com.potato.player.feature.player.controls.AudioTrackDialog
 import com.potato.player.feature.player.controls.PlayerDecoderDialog
 import com.potato.player.feature.player.controls.PlayerRightSideSheet
@@ -26,7 +25,7 @@ fun PlayerModals(
         }
         ActiveSheet.AUDIO -> {
             AudioTrackDialog(
-                tracks = uiState.tracks.filter { it.type == TrackType.AUDIO },
+                tracks = uiState.audioTracks,
                 currentTrackId = uiState.currentAudioTrackId,
                 onSelectTrack = { viewModel.onSelectAudioTrack(it) },
                 onDismiss = { viewModel.onDismissAudioDialog() }
@@ -34,7 +33,7 @@ fun PlayerModals(
         }
         ActiveSheet.SUBTITLE -> {
             SubtitleTrackDialog(
-                tracks = uiState.tracks.filter { it.type == TrackType.SUBTITLE },
+                tracks = uiState.subtitleTracks,
                 currentTrackId = uiState.currentSubtitleTrackId,
                 onSelectTrack = { viewModel.onSelectSubtitleTrack(it) },
                 onLoadExternal = { uri -> viewModel.onLoadExternalSubtitle(uri, context) },

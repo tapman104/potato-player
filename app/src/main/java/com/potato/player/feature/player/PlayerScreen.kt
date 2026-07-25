@@ -3,8 +3,6 @@ package com.potato.player.feature.player
 import android.os.Build
 import android.app.PictureInPictureParams
 import androidx.compose.animation.*
-import android.view.SurfaceView
-import com.potato.player.util.MediaMetadataRepository
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -62,14 +60,6 @@ fun PlayerScreen(
     // ponytail: orientation + insets boilerplate extracted for readability
     PlayerLifecycleEffect(activity = activity, uiState = uiState, viewModel = viewModel)
 
-    // Derive accurate display name or use provided title
-    var fileName by remember(videoUri, title) { mutableStateOf(if (title.isNotBlank()) title else "Video") }
-    LaunchedEffect(videoUri, title, context) {
-        if (title.isBlank()) {
-            fileName = MediaMetadataRepository.resolveFileName(context, videoUri)
-        }
-    }
-
     val controlsState = rememberControlsVisibilityState(
         isPlaying = uiState.isPlaying,
         dragPositionSec = progressState.dragPositionSec,
@@ -102,13 +92,8 @@ fun PlayerScreen(
     ) {
 
         // ── Video surface ────────────────────────────────────────────────────
-        AndroidView(
-            factory = { ctx ->
-                SurfaceView(ctx).also { sv ->
-                    sv.keepScreenOn = true
-                    sv.holder.addCallback(viewModel.surfaceCallback)
-                }
-            },
+        PlayerSurface(
+            callback = viewModel.surfaceCallback,
             modifier = Modifier.fillMaxSize()
         )
 
@@ -199,7 +184,7 @@ fun PlayerScreen(
                     .windowInsetsPadding(WindowInsets.displayCutout)
             ) {
                 PlayerTopBar(
-                    fileName              = fileName,
+                    fileName              = uiState.fileName,
                     currentDecoder        = uiState.hwdecCurrent,
                     onBack                = onBack,
                     onSelectAudioTrack    = { viewModel.onShowAudioDialog() },

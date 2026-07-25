@@ -2,20 +2,20 @@ package com.potato.player.feature.player
 
 import android.content.Context
 import android.net.Uri
-import android.view.SurfaceView
-import android.view.View
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.potato.player.data.AppDatabase
 import com.potato.player.data.UserPreferencesRepository
 import com.potato.player.data.VideoHistory
+import com.potato.player.data.VideoHistoryRepository
 import com.potato.player.engine.MpvWrapper
 import com.potato.player.engine.MpvEvent
 import com.potato.player.engine.MpvEventId
 import com.potato.player.engine.MpvProp
 import com.potato.player.engine.TrackInfo
+import com.potato.player.engine.TrackListParser
 import com.potato.player.engine.TrackType
 import com.potato.player.feature.player.PlayerUiConstants
+import com.potato.player.feature.player.toUiModel
 import com.potato.player.util.MediaMetadataRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,10 +27,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import android.view.SurfaceHolder
 
-class PlayerViewModel(private val wrapper: MpvWrapper) : ViewModel() {
+class PlayerViewModel(
+    private val appContext: Context,
+    private val wrapper: MpvWrapper,
+    private val historyRepository: VideoHistoryRepository
+) : ViewModel() {
 
-    private val prefsRepository by lazy { UserPreferencesRepository(wrapper.context) }
-    private val database by lazy { AppDatabase.getInstance(wrapper.context) }
+    private val prefsRepository by lazy { UserPreferencesRepository(appContext) }
 
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
@@ -43,18 +46,68 @@ class PlayerViewModel(private val wrapper: MpvWrapper) : ViewModel() {
     
     private var normalPlaybackSpeed = 1.0
     private var isSliderSeeking = false
-    @Volatile private var pendingResumePosition: Long = 0L
+    private var pendingResumePosition: Long = 0L
+
+    private val eventProcessor = MpvEventProcessor(
+        onPlaybackStarted = { _uiState.update { it.copy(isLoading = false, isPlaying = true) } },
+        onPlaybackPaused = { _uiState.update { it.copy(isPlaying = false) } },
+        onDurationChanged = { ms -> _progressState.update { it.copy(durationSec = ms / 1000.0) } },
+        onPositionChanged = { ms -> 
+            if (!isSliderSeeking) _progressState.update { it.copy(positionSec = ms / 1000.0) } 
+        },
+        onTracksChanged = { json ->
+            val tracks = TrackListParser.parse(json)
+            if (tracks.isNotEmpty()) {
+                val audioTracks = tracks.filter { it.type == TrackType.AUDIO }.map { it.toUiModel() }
+                val subtitleTracks = tracks.filter { it.type == TrackType.SUBTITLE }.map { it.toUiModel() }
+                _uiState.update { it.copy(audioTracks = audioTracks, subtitleTracks = subtitleTracks) }
+            } else {
+                loadTracks()
+            }
+        },
+        onHwdecChanged = { value ->
+            val hwdec = when {
+                value == "no" || value.isEmpty() -> "SW"
+                value.contains("copy") -> "HW+"
+                else -> "HW"
+            }
+            _uiState.update { it.copy(hwdecCurrent = hwdec) }
+        },
+        onIdleEntered = { },
+        onEndFileReached = {
+            _uiState.update { it.copy(isPlaying = false) }
+            saveHistoryIfNeeded()
+            if (_uiState.value.isFastForwarding) {
+                _uiState.update { it.copy(isFastForwarding = false) }
+                wrapper.setSpeed(normalPlaybackSpeed)
+            }
+        },
+        onFileLoaded = {
+            _uiState.update { it.copy(fileLoaded = true, isLoading = false) }
+            loadTracks()
+            if (pendingResumePosition > 0L) {
+                wrapper.seekTo(pendingResumePosition)
+                pendingResumePosition = 0L
+            }
+        },
+        onCacheTimeChanged = { sec -> _progressState.update { it.copy(cachedSec = sec) } },
+        onCacheDurationChanged = { sec -> _progressState.update { it.copy(cacheDurationSec = sec) } },
+        onSpeedChanged = { speed ->
+            if (!_uiState.value.isFastForwarding) {
+                _uiState.update { it.copy(playbackSpeed = speed) }
+                normalPlaybackSpeed = speed
+            }
+        },
+        onSubScaleChanged = { scale -> _uiState.update { it.copy(subScale = scale) } },
+        onSubPosChanged = { pos -> _uiState.update { it.copy(subPos = pos) } },
+        onVideoWidthChanged = { w -> _uiState.update { it.copy(videoWidth = w) } },
+        onVideoHeightChanged = { h -> _uiState.update { it.copy(videoHeight = h) } }
+    )
 
     init {
         viewModelScope.launch {
             wrapper.events.collect { event ->
-                when (event) {
-                    is MpvEvent.Id -> handleMpvEventId(event.id)
-                    is MpvEvent.PropertyBool -> handlePropertyBool(event.name, event.value)
-                    is MpvEvent.PropertyDouble -> handlePropertyDouble(event.name, event.value)
-                    is MpvEvent.PropertyLong -> handlePropertyLong(event.name, event.value)
-                    is MpvEvent.PropertyString -> handlePropertyString(event.name, event.value)
-                }
+                eventProcessor.process(event)
             }
         }
 
@@ -73,104 +126,9 @@ class PlayerViewModel(private val wrapper: MpvWrapper) : ViewModel() {
         }
     }
 
-    private fun handleMpvEventId(id: Int) {
-        when (id) {
-            MpvEventId.FILE_LOADED -> {
-                _uiState.update { it.copy(fileLoaded = true, isLoading = false) }
-                loadTracks()
-                if (pendingResumePosition > 0L) {
-                    wrapper.seekTo(pendingResumePosition)
-                    pendingResumePosition = 0L
-                }
-            }
-            MpvEventId.PLAYBACK_RESTART -> {
-                _uiState.update { it.copy(isLoading = false, isPlaying = true) }
-            }
-            MpvEventId.END_FILE -> {
-                _uiState.update { it.copy(isPlaying = false) }
-                saveHistoryIfNeeded()
-                if (_uiState.value.isFastForwarding) {
-                    _uiState.update { it.copy(isFastForwarding = false) }
-                    wrapper.setSpeed(normalPlaybackSpeed)
-                }
-            }
-        }
-    }
 
-    private fun handlePropertyBool(name: String, value: Boolean) {
-        if (name == MpvProp.PAUSE) {
-            _uiState.update { it.copy(isPlaying = !value) }
-        }
-    }
 
-    private fun handlePropertyDouble(name: String, value: Double) {
-        when (name) {
-            MpvProp.TIME_POS -> {
-                if (!isSliderSeeking) _progressState.update { it.copy(positionSec = value) }
-            }
-            MpvProp.DURATION -> _progressState.update { it.copy(durationSec = value) }
-            MpvProp.DEMUXER_CACHE_TIME -> _progressState.update { it.copy(cachedSec = value) }
-            MpvProp.DEMUXER_CACHE_DURATION -> _progressState.update { it.copy(cacheDurationSec = value) }
-            MpvProp.SPEED -> {
-                if (!_uiState.value.isFastForwarding) {
-                    _uiState.update { it.copy(playbackSpeed = value) }
-                    normalPlaybackSpeed = value
-                }
-            }
-            MpvProp.SUB_SCALE -> _uiState.update { it.copy(subScale = value) }
-        }
-    }
 
-    private fun handlePropertyLong(name: String, value: Long) {
-        when (name) {
-            MpvProp.SUB_POS -> _uiState.update { it.copy(subPos = value.toInt()) }
-            MpvProp.VIDEO_PARAMS_W -> _uiState.update { it.copy(videoWidth = value.toInt()) }
-            MpvProp.VIDEO_PARAMS_H -> _uiState.update { it.copy(videoHeight = value.toInt()) }
-        }
-    }
-
-    private fun handlePropertyString(name: String, value: String) {
-        when (name) {
-            MpvProp.HWDEC_CURRENT -> {
-                val hwdec = when {
-                    value == "no" || value.isEmpty() -> "SW"
-                    value.contains("copy") -> "HW+"
-                    else -> "HW"
-                }
-                _uiState.update { it.copy(hwdecCurrent = hwdec) }
-            }
-            "track-list" -> {
-                val tracks = parseTrackList(value)
-                if (tracks.isNotEmpty()) {
-                    _uiState.update { it.copy(tracks = tracks) }
-                } else {
-                    loadTracks()
-                }
-            }
-        }
-    }
-
-    private fun parseTrackList(raw: String): List<TrackInfo> {
-        return try {
-            val arr = org.json.JSONArray(raw)
-            (0 until arr.length()).mapNotNull { i ->
-                val obj = arr.getJSONObject(i)
-                val typeStr = obj.optString("type", "")
-                val type = when (typeStr) {
-                    "audio" -> TrackType.AUDIO
-                    "sub" -> TrackType.SUBTITLE
-                    else -> return@mapNotNull null
-                }
-                TrackInfo(
-                    id = obj.getInt("id"),
-                    type = type,
-                    title = obj.optString("title", "").takeIf { it.isNotBlank() },
-                    lang = obj.optString("lang", "").takeIf { it.isNotBlank() },
-                    isExternal = obj.optBoolean("external", false)
-                )
-            }
-        } catch (e: Exception) { emptyList() }
-    }
 
     private fun loadTracks() {
         val count = wrapper.getPropertyInt(MpvProp.TRACK_LIST_COUNT) ?: 0
@@ -189,14 +147,23 @@ class PlayerViewModel(private val wrapper: MpvWrapper) : ViewModel() {
         }
         val aid = wrapper.getPropertyString(MpvProp.AID)?.toIntOrNull() ?: -1
         val sid = wrapper.getPropertyString(MpvProp.SID)?.toIntOrNull() ?: -1
-        _uiState.update { it.copy(tracks = list, currentAudioTrackId = aid, currentSubtitleTrackId = sid) }
+        val audioTracks = list.filter { it.type == TrackType.AUDIO }.map { it.toUiModel() }
+        val subtitleTracks = list.filter { it.type == TrackType.SUBTITLE }.map { it.toUiModel() }
+        _uiState.update { it.copy(audioTracks = audioTracks, subtitleTracks = subtitleTracks, currentAudioTrackId = aid, currentSubtitleTrackId = sid) }
     }
 
     val surfaceCallback: SurfaceHolder.Callback get() = wrapper.surfaceCallback
 
     fun onSurfaceReady(uri: String, title: String = "") {
         if (currentUri != uri) {
-            loadFile(uri, title)
+            viewModelScope.launch(Dispatchers.IO) {
+                val history = historyRepository.getByUri(uri)
+                val resumePos = if (history != null && history.lastPlayedPositionSec > 0)
+                    (history.lastPlayedPositionSec * 1000).toLong() else 0L
+                withContext(Dispatchers.Main) {
+                    loadFile(uri, title, resumePos)
+                }
+            }
         }
     }
 
@@ -215,19 +182,19 @@ class PlayerViewModel(private val wrapper: MpvWrapper) : ViewModel() {
         wrapper.onSurfaceReady = null
     }
 
-    fun loadFile(uri: String, title: String = "") {
+    fun loadFile(uri: String, title: String = "", resumePosition: Long = 0L) {
         currentUri = uri
         currentTitle = title
-        _uiState.update { it.copy(isLoading = true, isPlaying = false, fileLoaded = false, error = null) }
-        viewModelScope.launch(Dispatchers.IO) {
-            val history = database.videoHistoryDao().getByUri(uri)
-            pendingResumePosition = if (history != null && history.lastPlayedPositionSec > 0)
-                (history.lastPlayedPositionSec * 1000).toLong() else 0L
-            
-            withContext(Dispatchers.Main) {
-                wrapper.play(uri)
+        pendingResumePosition = resumePosition
+        val initialName = if (title.isNotBlank()) title else "Video"
+        _uiState.update { it.copy(fileName = initialName, isLoading = true, isPlaying = false, fileLoaded = false, error = null) }
+        if (title.isBlank()) {
+            viewModelScope.launch {
+                val resolvedName = MediaMetadataRepository.resolveFileName(appContext, uri)
+                _uiState.update { it.copy(fileName = resolvedName) }
             }
         }
+        wrapper.play(uri)
     }
 
     fun togglePlay() {
@@ -409,7 +376,7 @@ class PlayerViewModel(private val wrapper: MpvWrapper) : ViewModel() {
             lastSubtitleTrackId = _uiState.value.currentSubtitleTrackId,
             lastPlayedTimestamp = System.currentTimeMillis()
         )
-        viewModelScope.launch(Dispatchers.IO) { database.videoHistoryDao().upsert(entry) }
+        viewModelScope.launch(Dispatchers.IO) { historyRepository.upsert(entry) }
     }
 
     override fun onCleared() {

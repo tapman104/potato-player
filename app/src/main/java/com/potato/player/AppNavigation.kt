@@ -56,8 +56,11 @@ fun AppNavigation(
                 }
             }
 
+            val db = com.potato.player.data.AppDatabase.getInstance(LocalContext.current)
+            val historyRepository = com.potato.player.data.VideoHistoryRepository(db.videoHistoryDao())
+
             val playerViewModel: PlayerViewModel = viewModel(
-                factory = PlayerViewModelFactory(wrapper)
+                factory = PlayerViewModelFactory(LocalContext.current.applicationContext, wrapper, historyRepository)
             )
 
             PlayerScreen(

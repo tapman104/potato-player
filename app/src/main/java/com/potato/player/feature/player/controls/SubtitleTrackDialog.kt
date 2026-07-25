@@ -20,14 +20,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.potato.player.engine.TrackInfo
+import com.potato.player.feature.player.TrackUiModel
 import com.potato.player.feature.player.PlayerUiState
 import kotlin.math.roundToInt
 
 
 @Composable
 fun SubtitleTrackDialog(
-    tracks: List<TrackInfo>,
+    tracks: List<TrackUiModel>,
     currentTrackId: Int,
     onSelectTrack: (Int) -> Unit,
     onLoadExternal: (Uri) -> Unit,
