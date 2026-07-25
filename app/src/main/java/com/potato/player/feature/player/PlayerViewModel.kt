@@ -27,6 +27,24 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import android.view.SurfaceHolder
 
+class PlayerDialogStateHolder {
+    private val _activeSheet = MutableStateFlow(ActiveSheet.NONE)
+    val activeSheet: StateFlow<ActiveSheet> = _activeSheet.asStateFlow()
+
+    fun onMoreMenuToggle() {
+        _activeSheet.update { if (it == ActiveSheet.MORE_MENU) ActiveSheet.NONE else ActiveSheet.MORE_MENU }
+    }
+    fun onMoreMenuDismiss() { _activeSheet.value = ActiveSheet.NONE }
+    fun onShowAudioDialog() { _activeSheet.value = ActiveSheet.AUDIO }
+    fun onDismissAudioDialog() { _activeSheet.value = ActiveSheet.NONE }
+    fun onShowSubtitleDialog() { _activeSheet.value = ActiveSheet.SUBTITLE }
+    fun onDismissSubtitleDialog() { _activeSheet.value = ActiveSheet.NONE }
+    fun onShowSpeedDialog() { _activeSheet.value = ActiveSheet.SPEED }
+    fun onDismissSpeedDialog() { _activeSheet.value = ActiveSheet.NONE }
+    fun onShowDecoderDialog() { _activeSheet.value = ActiveSheet.DECODER }
+    fun onDismissDecoderDialog() { _activeSheet.value = ActiveSheet.NONE }
+}
+
 class PlayerViewModel(
     private val appContext: Context,
     private val wrapper: MpvWrapper,
@@ -34,6 +52,8 @@ class PlayerViewModel(
 ) : ViewModel() {
 
     private val prefsRepository by lazy { UserPreferencesRepository(appContext) }
+    
+    val dialogs = PlayerDialogStateHolder()
 
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
@@ -272,48 +292,6 @@ class PlayerViewModel(
         _progressState.update { it.copy(dragPositionSec = null) }
     }
 
-    fun onMoreMenuToggle() {
-        _uiState.update {
-            it.copy(activeSheet = if (it.activeSheet == ActiveSheet.MORE_MENU) ActiveSheet.NONE else ActiveSheet.MORE_MENU)
-        }
-    }
-
-    fun onMoreMenuDismiss() {
-        _uiState.update { it.copy(activeSheet = ActiveSheet.NONE) }
-    }
-
-    fun onShowAudioDialog() {
-        _uiState.update { it.copy(activeSheet = ActiveSheet.AUDIO) }
-    }
-
-    fun onDismissAudioDialog() {
-        _uiState.update { it.copy(activeSheet = ActiveSheet.NONE) }
-    }
-
-    fun onShowSubtitleDialog() {
-        _uiState.update { it.copy(activeSheet = ActiveSheet.SUBTITLE) }
-    }
-
-    fun onDismissSubtitleDialog() {
-        _uiState.update { it.copy(activeSheet = ActiveSheet.NONE) }
-    }
-
-    fun onShowSpeedDialog() {
-        _uiState.update { it.copy(activeSheet = ActiveSheet.SPEED) }
-    }
-
-    fun onDismissSpeedDialog() {
-        _uiState.update { it.copy(activeSheet = ActiveSheet.NONE) }
-    }
-
-    fun onShowDecoderDialog() {
-        _uiState.update { it.copy(activeSheet = ActiveSheet.DECODER) }
-    }
-
-    fun onDismissDecoderDialog() {
-        _uiState.update { it.copy(activeSheet = ActiveSheet.NONE) }
-    }
-
     fun setPlaybackSpeed(speed: Double) {
         val clamped = speed.coerceIn(0.25, 4.0)
         normalPlaybackSpeed = clamped
@@ -326,13 +304,13 @@ class PlayerViewModel(
     fun onSelectAudioTrack(id: Int) {
         wrapper.setAudioTrack(id)
         _uiState.update { it.copy(currentAudioTrackId = id) }
-        onDismissAudioDialog()
+        dialogs.onDismissAudioDialog()
     }
 
     fun onSelectSubtitleTrack(id: Int) {
         wrapper.setSubTrack(id)
         _uiState.update { it.copy(currentSubtitleTrackId = id) }
-        onDismissSubtitleDialog()
+        dialogs.onDismissSubtitleDialog()
     }
 
     fun onLoadExternalSubtitle(uri: Uri, context: Context) {
@@ -342,7 +320,7 @@ class PlayerViewModel(
             // Reload tracks to reflect new subtitle
             loadTracks()
         }
-        onDismissSubtitleDialog()
+        dialogs.onDismissSubtitleDialog()
     }
 
     fun setSubScale(scale: Double) { wrapper.setSubScale(scale) }

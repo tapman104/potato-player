@@ -6,6 +6,8 @@ import com.potato.player.feature.player.controls.AudioTrackDialog
 import com.potato.player.feature.player.controls.PlayerDecoderDialog
 import com.potato.player.feature.player.controls.PlayerRightSideSheet
 import com.potato.player.feature.player.controls.SubtitleTrackDialog
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 // ponytail: move only, zero new logic
 @Composable
@@ -14,13 +16,14 @@ fun PlayerModals(
     viewModel: PlayerViewModel
 ) {
     val context = LocalContext.current
+    val activeSheet by viewModel.dialogs.activeSheet.collectAsStateWithLifecycle()
 
-    when (uiState.activeSheet) {
+    when (activeSheet) {
         ActiveSheet.DECODER -> {
             PlayerDecoderDialog(
                 currentDecoder = uiState.hwdecCurrent,
                 onSelectDecoder = { mode -> viewModel.setDecoder(mode) },
-                onDismiss = { viewModel.onDismissDecoderDialog() }
+                onDismiss = { viewModel.dialogs.onDismissDecoderDialog() }
             )
         }
         ActiveSheet.AUDIO -> {
@@ -28,7 +31,7 @@ fun PlayerModals(
                 tracks = uiState.audioTracks,
                 currentTrackId = uiState.currentAudioTrackId,
                 onSelectTrack = { viewModel.onSelectAudioTrack(it) },
-                onDismiss = { viewModel.onDismissAudioDialog() }
+                onDismiss = { viewModel.dialogs.onDismissAudioDialog() }
             )
         }
         ActiveSheet.SUBTITLE -> {
@@ -37,7 +40,7 @@ fun PlayerModals(
                 currentTrackId = uiState.currentSubtitleTrackId,
                 onSelectTrack = { viewModel.onSelectSubtitleTrack(it) },
                 onLoadExternal = { uri -> viewModel.onLoadExternalSubtitle(uri, context) },
-                onDismiss = { viewModel.onDismissSubtitleDialog() },
+                onDismiss = { viewModel.dialogs.onDismissSubtitleDialog() },
                 uiState = uiState,
                 onSetSubtitleAppearance = { scale, pos -> viewModel.setSubtitleAppearance(scale, pos) },
                 onResetSubtitleAppearance = { viewModel.resetSubtitleAppearance() }
@@ -49,15 +52,15 @@ fun PlayerModals(
     // ponytail: gate sheet on fileLoaded so it never appears on an empty player
     if (uiState.fileLoaded) {
         PlayerRightSideSheet(
-            visible = uiState.activeSheet == ActiveSheet.MORE_MENU || uiState.activeSheet == ActiveSheet.SPEED,
+            visible = activeSheet == ActiveSheet.MORE_MENU || activeSheet == ActiveSheet.SPEED,
             currentSpeed = uiState.playbackSpeed,
             onSelectSpeed = { viewModel.setPlaybackSpeed(it) },
-            onShowAudioDialog = { viewModel.onShowAudioDialog() },
-            onShowSubtitleDialog = { viewModel.onShowSubtitleDialog() },
+            onShowAudioDialog = { viewModel.dialogs.onShowAudioDialog() },
+            onShowSubtitleDialog = { viewModel.dialogs.onShowSubtitleDialog() },
             onDismiss = {
-                if (uiState.activeSheet == ActiveSheet.MORE_MENU) viewModel.onMoreMenuDismiss()
-                else if (uiState.activeSheet == ActiveSheet.SPEED) viewModel.onDismissSpeedDialog()
-                else viewModel.onMoreMenuDismiss()
+                if (activeSheet == ActiveSheet.MORE_MENU) viewModel.dialogs.onMoreMenuDismiss()
+                else if (activeSheet == ActiveSheet.SPEED) viewModel.dialogs.onDismissSpeedDialog()
+                else viewModel.dialogs.onMoreMenuDismiss()
             }
         )
     }
