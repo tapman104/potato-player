@@ -7,6 +7,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -47,6 +49,7 @@ fun PlayerScreen(
     title: String = "",
     viewModel: PlayerViewModel,
     onBack: () -> Unit,
+    onBrightnessChange: (Float) -> Unit = {}
 ) {
     BackHandler {
         viewModel.pause()
@@ -67,6 +70,22 @@ fun PlayerScreen(
     )
     var doubleTapSeekState by remember { mutableStateOf<DoubleTapSeekState?>(null) }
     var isLongPressActive by remember { mutableStateOf(false) }
+
+    var brightnessLevel by remember { mutableStateOf(0.5f) }
+    var showBrightnessIndicator by remember { mutableStateOf(false) }
+    var showVolumeIndicator by remember { mutableStateOf(false) }
+    var tempVolume by remember { mutableStateOf(100f) }
+    var currentZoom by remember { mutableStateOf(1.0f) }
+    var currentPanX by remember { mutableStateOf(0f) }
+    var currentPanY by remember { mutableStateOf(0f) }
+
+    LaunchedEffect(uiState.fileLoaded) {
+        if (uiState.fileLoaded) {
+            currentZoom = 1.0f
+            currentPanX = 0f
+            currentPanY = 0f
+        }
+    }
 
     // Clear double-tap seek overlay after animation
     LaunchedEffect(doubleTapSeekState?.triggerId) {
@@ -116,6 +135,13 @@ fun PlayerScreen(
                             viewModel.startFastForward()
                         },
                         onDoubleTap = { offset ->
+                            if (currentZoom > 1.0f) {
+                                viewModel.resetZoom()
+                                currentZoom = 1.0f
+                                currentPanX = 0f
+                                currentPanY = 0f
+                                return@detectTapGestures
+                            }
                             val current = doubleTapSeekState // ponytail: one snapshot variable eliminates the crash
                             val screenWidth = size.width
                             if (offset.x < screenWidth / 2f) {
@@ -137,7 +163,68 @@ fun PlayerScreen(
                         }
                     )
                 }
+                .pointerInput(activity?.isInPictureInPictureMode == true) {
+                    if (activity?.isInPictureInPictureMode == true) return@pointerInput
+                    detectVerticalDragGestures(
+                        onDragStart = { offset ->
+                            if (offset.x > size.width / 2f) {
+                                showVolumeIndicator = true
+                                tempVolume = uiState.volume.toFloat()
+                            } else {
+                                showBrightnessIndicator = true
+                            }
+                        },
+                        onDragEnd = { showVolumeIndicator = false; showBrightnessIndicator = false },
+                        onDragCancel = { showVolumeIndicator = false; showBrightnessIndicator = false }
+                    ) { change, dragAmount ->
+                        change.consume()
+                        val screenHeight = size.height.toFloat()
+                        val screenWidth = size.width.toFloat()
+                        if (change.position.x > screenWidth / 2f) {
+                            tempVolume += -(dragAmount / screenHeight) * 150f
+                            viewModel.setVolume(tempVolume.toInt())
+                        } else {
+                            val brightnessDelta = -(dragAmount / screenHeight) * 1.0f
+                            brightnessLevel = (brightnessLevel + brightnessDelta).coerceIn(0.01f, 1.0f)
+                            onBrightnessChange(brightnessLevel)
+                        }
+                    }
+                }
+                .pointerInput(activity?.isInPictureInPictureMode == true) {
+                    if (activity?.isInPictureInPictureMode == true) return@pointerInput
+                    detectTransformGestures { _, pan, zoomChange, _ ->
+                        currentZoom = (currentZoom * zoomChange).coerceIn(1.0f, 4.0f)
+                        if (currentZoom > 1.0f) {
+                            val screenWidth = size.width.toFloat()
+                            val screenHeight = size.height.toFloat()
+                            currentPanX += pan.x / screenWidth
+                            currentPanY += pan.y / screenHeight
+                        } else {
+                            currentPanX = 0f
+                            currentPanY = 0f
+                        }
+                        viewModel.setVideoZoom(currentZoom, currentPanX, currentPanY)
+                    }
+                }
         )
+
+        // ── Zoom and Gesture Overlays ─────────────────────────────────────────
+        if (!(activity?.isInPictureInPictureMode == true)) {
+            VolumeIndicator(
+                volume = uiState.volume,
+                visible = showVolumeIndicator,
+                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 32.dp)
+            )
+            BrightnessIndicator(
+                brightness = brightnessLevel,
+                visible = showBrightnessIndicator,
+                modifier = Modifier.align(Alignment.CenterStart).padding(start = 32.dp)
+            )
+            ZoomIndicator(
+                zoom = currentZoom,
+                modifier = Modifier.align(Alignment.TopEnd).padding(top = 32.dp, end = 32.dp)
+            )
+        }
 
         // ── Double-Tap Seek Overlay ──────────────────────────────────────────
         if (!(activity?.isInPictureInPictureMode == true)) {

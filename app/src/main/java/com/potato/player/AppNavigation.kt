@@ -1,7 +1,9 @@
 package com.potato.player
 
+import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.os.Build
+import android.view.WindowManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalContext
@@ -69,6 +71,14 @@ fun AppNavigation(
                 viewModel = playerViewModel,
                 onBack    = {
                     navController.popBackStack()
+                },
+                onBrightnessChange = { brightness ->
+                    val window = activity?.window
+                    if (window != null) {
+                        val lp = window.attributes
+                        lp.screenBrightness = brightness
+                        window.attributes = lp
+                    }
                 }
             )
         }

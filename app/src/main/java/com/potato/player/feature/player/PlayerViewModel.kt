@@ -101,7 +101,8 @@ class PlayerViewModel(
         onSubScaleChanged = { scale -> _uiState.update { it.copy(subScale = scale) } },
         onSubPosChanged = { pos -> _uiState.update { it.copy(subPos = pos) } },
         onVideoWidthChanged = { w -> _uiState.update { it.copy(videoWidth = w) } },
-        onVideoHeightChanged = { h -> _uiState.update { it.copy(videoHeight = h) } }
+        onVideoHeightChanged = { h -> _uiState.update { it.copy(videoHeight = h) } },
+        onVolumeChanged = { v -> _uiState.update { it.copy(volume = v) } }
     )
 
     init {
@@ -383,5 +384,28 @@ class PlayerViewModel(
         super.onCleared()
         saveHistoryIfNeeded()
         wrapper.destroy()
+    }
+
+    fun setVolume(volume: Int) {
+        val clamped = volume.coerceIn(0, 150)
+        wrapper.setPropertyInt("volume", clamped)
+        _uiState.update { it.copy(volume = clamped) }
+    }
+
+    fun setVideoZoom(zoom: Float, panX: Float, panY: Float) {
+        val clampedZoom = zoom.coerceIn(1.0f, 4.0f)
+        val finalPanX = if (clampedZoom == 1.0f) 0f else panX
+        val finalPanY = if (clampedZoom == 1.0f) 0f else panY
+        
+        val mpvZoom = kotlin.math.ln(clampedZoom.toDouble()) / kotlin.math.ln(2.0)
+        wrapper.setPropertyDouble("video-zoom", mpvZoom)
+        wrapper.setPropertyDouble("video-pan-x", finalPanX.toDouble())
+        wrapper.setPropertyDouble("video-pan-y", finalPanY.toDouble())
+        
+        _uiState.update { it.copy(videoZoom = clampedZoom, videoPanX = finalPanX, videoPanY = finalPanY) }
+    }
+
+    fun resetZoom() {
+        setVideoZoom(1.0f, 0f, 0f)
     }
 }

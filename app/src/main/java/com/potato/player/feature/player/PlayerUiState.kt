@@ -34,5 +34,9 @@ data class PlayerUiState(
     val videoHeight: Int = 0,
     val orientationMode: OrientationMode = OrientationMode.AUTO,
     val isAutoRotation: Boolean = false,
-    val isInPipMode: Boolean = false
+    val isInPipMode: Boolean = false,
+    val volume: Int = 100,
+    val videoZoom: Float = 1.0f,
+    val videoPanX: Float = 0f,
+    val videoPanY: Float = 0f
 )

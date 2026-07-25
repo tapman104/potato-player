@@ -20,7 +20,8 @@ class MpvEventProcessor(
     private val onSubScaleChanged: (scale: Double) -> Unit,
     private val onSubPosChanged: (pos: Int) -> Unit,
     private val onVideoWidthChanged: (w: Int) -> Unit,
-    private val onVideoHeightChanged: (h: Int) -> Unit
+    private val onVideoHeightChanged: (h: Int) -> Unit,
+    private val onVolumeChanged: (v: Int) -> Unit
 ) {
     fun process(event: MpvEvent) {
         when (event) {
@@ -45,6 +46,7 @@ class MpvEventProcessor(
                     MpvProp.DEMUXER_CACHE_DURATION -> onCacheDurationChanged(event.value)
                     MpvProp.SPEED -> onSpeedChanged(event.value)
                     MpvProp.SUB_SCALE -> onSubScaleChanged(event.value)
+                    "volume" -> onVolumeChanged(event.value.toInt())
                 }
             }
             is MpvEvent.PropertyLong -> {
@@ -52,6 +54,7 @@ class MpvEventProcessor(
                     MpvProp.SUB_POS -> onSubPosChanged(event.value.toInt())
                     MpvProp.VIDEO_PARAMS_W -> onVideoWidthChanged(event.value.toInt())
                     MpvProp.VIDEO_PARAMS_H -> onVideoHeightChanged(event.value.toInt())
+                    "volume" -> onVolumeChanged(event.value.toInt())
                 }
             }
             is MpvEvent.PropertyString -> {

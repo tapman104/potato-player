@@ -125,6 +125,14 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
     fun getPropertyInt(name: String): Int? = MPVLib.getPropertyInt(name)
     fun getPropertyString(name: String): String? = MPVLib.getPropertyString(name)
 
+    fun setPropertyInt(name: String, value: Int) {
+        MPVLib.setPropertyInt(name, value)
+    }
+
+    fun setPropertyDouble(name: String, value: Double) {
+        MPVLib.setPropertyDouble(name, value)
+    }
+
     private var destroyed = false
 
     fun destroy() {
