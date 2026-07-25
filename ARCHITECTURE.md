@@ -1,6 +1,6 @@
 # Potato Player Architecture
 
-```text
+```text tt
 ┌───────────────────────────── UI LAYER ──────────────────────────────────────┐
 │  ┌──────────────┐    ┌──────────────┐    ┌───────────────┐   ┌────────────┐ │
 │  │PlayerSurface │ ←─ │ PlayerScreen │ ←─ │ AppNavigation │ ← │MainActivity│ │
