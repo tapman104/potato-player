@@ -294,23 +294,9 @@ private fun PlayerLifecycleEffect(
             controller.hide(WindowInsetsCompat.Type.systemBars())
         }
 
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                updateOrientation()
-                // We notify the engine to reattach the surface on resume.
-                // The new simple attach sequence in MpvSurface will safely tear down the old 
-                // context and rebuild it, ensuring the GPU context is fully restored even on 
-                // OEM devices where the Surface object survives lock/background.
-                if (uiState.fileLoaded) {
-                    viewModel.onSurfaceReattached()
-                }
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
         updateOrientation()
         
         onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
             if (activity?.isInPictureInPictureMode == false && window != null) {
                 val controller = androidx.core.view.WindowCompat.getInsetsController(window, view)
                 controller.show(WindowInsetsCompat.Type.systemBars())

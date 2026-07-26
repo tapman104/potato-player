@@ -123,7 +123,6 @@ class MainActivity : ComponentActivity() {
         // Don't pause playback when transitioning into PiP mode
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && isInPictureInPictureMode) return
         mpvWrapper.pause()
-        mpvWrapper.detachSurface()
     }
 
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {

@@ -188,13 +188,7 @@ class PlayerViewModel(
         }
     }
 
-    fun onSurfaceReattached() {
-        if (!_uiState.value.fileLoaded) return
-        wrapper.reattachSurface()
-        if (_uiState.value.isPlaying) {
-            wrapper.resume()
-        }
-    }
+
 
     fun setSurfaceReadyCallback(cb: (() -> Unit)?) {
         wrapper.onSurfaceReady = cb
