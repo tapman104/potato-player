@@ -41,16 +41,18 @@ fun AppNavigation(
         composable<HomeRoute> {
             HomeScreen(
                 onNavigateToPlayer = { uri, title ->
-                    navController.navigate(PlayerRoute(videoUri = uri, title = title))
+                    navController.navigate(PlayerRoute(videoUri = android.net.Uri.encode(uri), title = android.net.Uri.encode(title)))
                 }
             )
         }
 
         composable<PlayerRoute> { backStackEntry ->
             val route: PlayerRoute = backStackEntry.toRoute()
+            val videoUri = android.net.Uri.decode(route.videoUri)
+            val title = android.net.Uri.decode(route.title)
             val activity = LocalContext.current.findActivity()
 
-            DisposableEffect(route.videoUri) {
+            DisposableEffect(videoUri) {
                 onDispose {
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || activity?.isInPictureInPictureMode != true) {
                         activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
@@ -66,8 +68,8 @@ fun AppNavigation(
             )
 
             PlayerScreen(
-                videoUri  = route.videoUri,
-                title     = route.title,
+                videoUri  = videoUri,
+                title     = title,
                 viewModel = playerViewModel,
                 onBack    = {
                     navController.popBackStack()
