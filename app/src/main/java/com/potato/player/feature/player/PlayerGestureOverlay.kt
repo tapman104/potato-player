@@ -210,12 +210,12 @@ fun PlayerGestureBox(
             VolumeIndicator(
                 volume = uiState.volume,
                 visible = showVolumeIndicator,
-                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 32.dp)
+                modifier = Modifier.align(Alignment.CenterStart).padding(start = 32.dp)
             )
             BrightnessIndicator(
                 brightness = brightnessLevel,
                 visible = showBrightnessIndicator,
-                modifier = Modifier.align(Alignment.CenterStart).padding(start = 32.dp)
+                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 32.dp)
             )
             ZoomIndicator(
                 zoom = currentZoom,
