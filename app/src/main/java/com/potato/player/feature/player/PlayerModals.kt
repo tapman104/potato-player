@@ -19,16 +19,12 @@ fun PlayerModals(
     val context = LocalContext.current
     val activeSheet by viewModel.dialogs.activeSheet.collectAsStateWithLifecycle()
 
-    when (activeSheet) {
-        ActiveSheet.DECODER -> {
-            PlayerDecoderDialog(
-                currentDecoder = uiState.hwdecCurrent,
-                onSelectDecoder = { mode -> viewModel.setDecoder(mode) },
-                onDismiss = { viewModel.dialogs.onDismissDecoderDialog() }
-            )
-        }
-        else -> Unit
-    }
+    PlayerDecoderDialog(
+        visible = activeSheet == ActiveSheet.DECODER,
+        currentDecoder = uiState.hwdecCurrent,
+        onSelectDecoder = { mode -> viewModel.setDecoder(mode) },
+        onDismiss = { viewModel.dialogs.onDismissDecoderDialog() }
+    )
 
     AudioTrackDialog(
         visible = activeSheet == ActiveSheet.AUDIO,

@@ -6,14 +6,19 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.*
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,7 +27,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 
 data class DecoderOption(
     val title: String,
@@ -58,9 +62,11 @@ private val decoderOptions = listOf(
 
 @Composable
 fun PlayerDecoderDialog(
+    visible: Boolean,
     currentDecoder: String,
     onSelectDecoder: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val expandedStates = remember {
         mutableStateMapOf<String, Boolean>().apply {
@@ -71,21 +77,48 @@ fun PlayerDecoderDialog(
         }
     }
 
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = Color(0xFF1E1E1E)
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+    val scrimAlpha by animateFloatAsState(
+        targetValue = if (visible) 0.45f else 0f,
+        label = "scrimAlpha"
+    )
+
+    val onDismissRef = rememberUpdatedState(onDismiss)
+
+    val transitionState = remember { androidx.compose.animation.core.MutableTransitionState(visible) }
+    transitionState.targetState = visible
+
+    if (transitionState.currentState || transitionState.targetState || scrimAlpha > 0f) {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = scrimAlpha))
+                .pointerInput(visible || scrimAlpha > 0f) {
+                    detectTapGestures(onTap = { _ -> onDismissRef.value() })
+                }
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp)
+            AnimatedVisibility(
+                visibleState = transitionState,
+                enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(),
+                exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut(),
+                modifier = Modifier.align(Alignment.CenterEnd)
             ) {
+                Surface(
+                    shape = RoundedCornerShape(topStart = 24.dp, bottomStart = 24.dp),
+                    color = Color(0xFF1E1E1E).copy(alpha = 0.90f),
+                    tonalElevation = 8.dp,
+                    shadowElevation = 16.dp,
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(380.dp)
+                        .pointerInput(Unit) {
+                            detectTapGestures {}
+                        }
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(20.dp)
+                    ) {
                 // Header — never scrolls
                 Text(
                     text = "Select Video Decoder",
@@ -197,6 +230,8 @@ fun PlayerDecoderDialog(
                     }
                 }
             }
+        }
+    }
         }
     }
 }
