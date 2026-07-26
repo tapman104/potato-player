@@ -150,6 +150,10 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
         MPVLib.setPropertyDouble(name, value)
     }
 
+    fun setPropertyString(name: String, value: String) {
+        MPVLib.setPropertyString(name, value)
+    }
+
     // AtomicBoolean makes the check-then-set atomic, preventing two concurrent
     // destroy() calls from both passing the guard before either sets the flag.
     private val destroyed = AtomicBoolean(false)
