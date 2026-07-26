@@ -11,7 +11,7 @@ import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,13 +30,18 @@ fun DoubleTapSeekOverlay(
     seekState: DoubleTapSeekState?,
     modifier: Modifier = Modifier
 ) {
+    val lastState = remember { mutableStateOf(seekState) }
+    if (seekState != null) {
+        lastState.value = seekState
+    }
+
     AnimatedVisibility(
         visible = seekState != null,
         enter = fadeIn() + scaleIn(initialScale = 0.85f),
         exit = fadeOut() + scaleOut(targetScale = 0.85f),
         modifier = modifier.fillMaxSize()
     ) {
-        seekState?.let { state ->
+        lastState.value?.let { state ->
             Box(
                 modifier = Modifier.fillMaxSize()
             ) {

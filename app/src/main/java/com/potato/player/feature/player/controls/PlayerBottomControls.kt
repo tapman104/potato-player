@@ -40,6 +40,11 @@ fun PlayerBottomControls(
     // dragFraction: -1f means "not dragging"; any >= 0f means actively scrubbing
     var dragFraction by remember { mutableFloatStateOf(-1f) }
 
+    var lastDragFraction by remember { mutableFloatStateOf(0f) }
+    if (dragFraction >= 0f) {
+        lastDragFraction = dragFraction
+    }
+
     val sliderValue = if (durationMs > 0L) currentPositionMs.toFloat() / durationMs else 0f
     val displayFraction = if (dragFraction >= 0f) dragFraction else sliderValue
 
@@ -55,6 +60,7 @@ fun PlayerBottomControls(
     val onDragStartRef    = rememberUpdatedState(onDragStart)
     val onDragEndRef      = rememberUpdatedState(onDragEnd)
     val durationMsRef     = rememberUpdatedState(durationMs)
+    val sliderValueRef    = rememberUpdatedState(sliderValue)
 
     val onValueChange = remember {
         { fraction: Float ->
@@ -70,7 +76,7 @@ fun PlayerBottomControls(
 
     val onValueChangeFinished = remember {
         {
-            val finalFraction = if (dragFraction >= 0f) dragFraction else sliderValue
+            val finalFraction = if (dragFraction >= 0f) dragFraction else sliderValueRef.value
             val targetMs = (finalFraction.coerceIn(0f, 1f) * durationMsRef.value).toLong()
             onSeekCommitRef.value(targetMs)
             onDragEndRef.value()
@@ -119,7 +125,7 @@ fun PlayerBottomControls(
         ) {
             SeekPreviewBubble(
                 durationMs = durationMs,
-                displayFraction = displayFraction
+                displayFraction = lastDragFraction
             )
         }
 
