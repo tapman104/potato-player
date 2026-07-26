@@ -27,28 +27,28 @@ fun PlayerModals(
                 onDismiss = { viewModel.dialogs.onDismissDecoderDialog() }
             )
         }
-        ActiveSheet.AUDIO -> {
-            AudioTrackDialog(
-                tracks = uiState.audioTracks,
-                currentTrackId = uiState.currentAudioTrackId,
-                onSelectTrack = { viewModel.onSelectAudioTrack(it) },
-                onDismiss = { viewModel.dialogs.onDismissAudioDialog() }
-            )
-        }
-        ActiveSheet.SUBTITLE -> {
-            SubtitleTrackDialog(
-                tracks = uiState.subtitleTracks,
-                currentTrackId = uiState.currentSubtitleTrackId,
-                onSelectTrack = { viewModel.onSelectSubtitleTrack(it) },
-                onLaunchFilePicker = onLaunchFilePicker,
-                onDismiss = { viewModel.dialogs.onDismissSubtitleDialog() },
-                uiState = uiState,
-                onSetSubtitleAppearance = { scale, pos -> viewModel.setSubtitleAppearance(scale, pos) },
-                onResetSubtitleAppearance = { viewModel.resetSubtitleAppearance() }
-            )
-        }
         else -> Unit
     }
+
+    AudioTrackDialog(
+        visible = activeSheet == ActiveSheet.AUDIO,
+        tracks = uiState.audioTracks,
+        currentTrackId = uiState.currentAudioTrackId,
+        onSelectTrack = { viewModel.onSelectAudioTrack(it) },
+        onDismiss = { viewModel.dialogs.onDismissAudioDialog() }
+    )
+
+    SubtitleTrackDialog(
+        visible = activeSheet == ActiveSheet.SUBTITLE,
+        tracks = uiState.subtitleTracks,
+        currentTrackId = uiState.currentSubtitleTrackId,
+        onSelectTrack = { viewModel.onSelectSubtitleTrack(it) },
+        onLaunchFilePicker = onLaunchFilePicker,
+        onDismiss = { viewModel.dialogs.onDismissSubtitleDialog() },
+        uiState = uiState,
+        onSetSubtitleAppearance = { scale, pos -> viewModel.setSubtitleAppearance(scale, pos) },
+        onResetSubtitleAppearance = { viewModel.resetSubtitleAppearance() }
+    )
 
     // ponytail: gate sheet on fileLoaded so it never appears on an empty player
     if (uiState.fileLoaded) {
@@ -66,4 +66,3 @@ fun PlayerModals(
         )
     }
 }
-
