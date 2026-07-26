@@ -6,8 +6,15 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -20,6 +27,7 @@ import androidx.compose.ui.window.Dialog
 data class DecoderOption(
     val title: String,
     val badge: String,
+    val summary: String,
     val description: String,
     val mpvValue: String
 )
@@ -28,19 +36,22 @@ private val decoderOptions = listOf(
     DecoderOption(
         title = "Hardware+ (HW+)",
         badge = "HW+",
-        description = "Recommended auto-copy mode. Supports video filters and shaders while keeping high hardware efficiency.",
+        summary = "Recommended auto-copy mode.",
+        description = "Supports video filters and shaders while keeping high hardware efficiency.",
         mpvValue = "mediacodec,mediacodec-copy,no"
     ),
     DecoderOption(
         title = "Hardware Direct (HW)",
         badge = "HW",
-        description = "Direct hardware decoding. Maximum playback speed and lowest battery consumption.",
+        summary = "Direct hardware decoding.",
+        description = "Maximum playback speed and lowest battery consumption.",
         mpvValue = "mediacodec"
     ),
     DecoderOption(
         title = "Software (SW)",
         badge = "SW",
-        description = "CPU-based software decoding. Highest compatibility for rare or complex codecs.",
+        summary = "CPU-based software decoding.",
+        description = "Highest compatibility for rare or complex codecs.",
         mpvValue = "no"
     )
 )
@@ -51,6 +62,15 @@ fun PlayerDecoderDialog(
     onSelectDecoder: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val expandedStates = remember {
+        mutableStateMapOf<String, Boolean>().apply {
+            val selectedOption = decoderOptions.find { it.badge == currentDecoder }
+            if (selectedOption != null) {
+                put(selectedOption.mpvValue, true)
+            }
+        }
+    }
+
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(16.dp),
@@ -91,6 +111,8 @@ fun PlayerDecoderDialog(
                 ) {
                     decoderOptions.forEach { option ->
                         val isSelected = currentDecoder == option.badge
+                        val isExpanded = expandedStates[option.mpvValue] == true
+
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -127,9 +149,31 @@ fun PlayerDecoderDialog(
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = option.description,
+                                    text = option.summary,
                                     color = Color.White.copy(alpha = 0.65f),
-                                    fontSize = 12.sp
+                                    fontSize = 12.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                AnimatedVisibility(visible = isExpanded) {
+                                    Column {
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = option.description,
+                                            color = Color.White.copy(alpha = 0.5f),
+                                            fontSize = 12.sp
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            IconButton(
+                                onClick = { expandedStates[option.mpvValue] = !isExpanded }
+                            ) {
+                                Icon(
+                                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                    contentDescription = "Toggle description",
+                                    tint = Color.White.copy(alpha = 0.5f)
                                 )
                             }
                         }
