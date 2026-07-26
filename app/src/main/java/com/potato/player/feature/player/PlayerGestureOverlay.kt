@@ -16,7 +16,6 @@ import android.app.Activity
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.fillMaxSize
@@ -42,10 +41,14 @@ fun PlayerGestureBox(
     activity: Activity?
 ) {
     var isLongPressActive by remember { mutableStateOf(false) }
-    var brightnessLevel by remember { mutableStateOf(0.5f) }
+    var brightnessLevel by remember { mutableStateOf(activity?.window?.attributes?.screenBrightness?.takeIf { it >= 0f } ?: 0.5f) }
     var showBrightnessIndicator by remember { mutableStateOf(false) }
     var showVolumeIndicator by remember { mutableStateOf(false) }
     var tempVolume by remember { mutableStateOf(100f) }
+    
+    val updatedZoom by rememberUpdatedState(currentZoom)
+    val updatedPanX by rememberUpdatedState(currentPanX)
+    val updatedPanY by rememberUpdatedState(currentPanY)
 
     Box(
         modifier = Modifier
@@ -65,7 +68,7 @@ fun PlayerGestureBox(
                         viewModel.startFastForward()
                     },
                     onDoubleTap = { offset ->
-                        if (currentZoom > 1.0f) {
+                        if (updatedZoom > 1.0f) {
                             viewModel.resetZoom()
                             onZoomChange(1.0f)
                             onPanXChange(0f)
@@ -120,7 +123,13 @@ fun PlayerGestureBox(
                     
                     do {
                         val event = awaitPointerEvent()
-                        if (event.changes.size > 1) return@awaitEachGesture
+                        if (event.changes.size > 1) {
+                            if (isLongPressActive) {
+                                isLongPressActive = false
+                                viewModel.stopFastForward()
+                            }
+                            return@awaitEachGesture
+                        }
                         val change = event.changes.firstOrNull() ?: break
                         totalDragY += change.positionChange().y
                         totalDragX += change.positionChange().x
@@ -131,7 +140,7 @@ fun PlayerGestureBox(
                             gestureStarted = true
                             if (isRightSide) {
                                 showVolumeIndicator = true
-                                tempVolume = uiState.volume.toFloat()
+                                tempVolume = viewModel.uiState.value.volume.toFloat()
                             } else {
                                 showBrightnessIndicator = true
                             }
@@ -163,6 +172,10 @@ fun PlayerGestureBox(
                         if (event.changes.size >= 2) break
                     } while (event.changes.any { it.pressed })
                     
+                    var localZoom = updatedZoom
+                    var localPanX = updatedPanX
+                    var localPanY = updatedPanY
+                    
                     do {
                         val event = awaitPointerEvent()
                         val zoomChange = event.calculateZoom()
@@ -174,18 +187,22 @@ fun PlayerGestureBox(
                             }
                         }
 
-                        val newZoom = (currentZoom * zoomChange).coerceIn(1.0f, 4.0f)
-                        onZoomChange(newZoom)
-                        if (newZoom > 1.0f) {
+                        localZoom = (localZoom * zoomChange).coerceIn(1.0f, 4.0f)
+                        onZoomChange(localZoom)
+                        if (localZoom > 1.0f) {
                             val screenWidth = size.width.toFloat()
                             val screenHeight = size.height.toFloat()
-                            onPanXChange(currentPanX + pan.x / screenWidth)
-                            onPanYChange(currentPanY + pan.y / screenHeight)
+                            localPanX += pan.x / screenWidth
+                            localPanY += pan.y / screenHeight
+                            onPanXChange(localPanX)
+                            onPanYChange(localPanY)
                         } else {
+                            localPanX = 0f
+                            localPanY = 0f
                             onPanXChange(0f)
                             onPanYChange(0f)
                         }
-                        viewModel.setVideoZoom(newZoom, currentPanX, currentPanY)
+                        viewModel.setVideoZoom(localZoom, localPanX, localPanY)
                     } while (event.changes.any { it.pressed } && event.changes.size >= 2)
                 }
             }
