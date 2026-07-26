@@ -103,7 +103,8 @@ class PlayerViewModel(
             }
         },
         onFileLoaded = {
-            _uiState.update { it.copy(fileLoaded = true, isLoading = false) }
+            val isPaused = wrapper.getPropertyBoolean(MpvProp.PAUSE) ?: false
+            _uiState.update { it.copy(fileLoaded = true, isLoading = false, isPlaying = !isPaused) }
             loadTracks()
             if (pendingResumePosition > 0L) {
                 wrapper.seekTo(pendingResumePosition)

@@ -28,7 +28,7 @@ class MpvEventProcessor(
             is MpvEvent.Id -> {
                 when (event.id) {
                     MpvEventId.FILE_LOADED -> onFileLoaded()
-                    MpvEventId.PLAYBACK_RESTART -> onPlaybackStarted()
+                    MpvEventId.PLAYBACK_RESTART, MpvEventId.PLAYBACK_RESTART_21 -> onPlaybackStarted()
                     MpvEventId.END_FILE -> onEndFileReached()
                     // If IDLE was a valid MpvEventId, we could map it to onIdleEntered
                 }

@@ -140,6 +140,7 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
 
     fun getPropertyInt(name: String): Int? = MPVLib.getPropertyInt(name)
     fun getPropertyString(name: String): String? = MPVLib.getPropertyString(name)
+    fun getPropertyBoolean(name: String): Boolean? = MPVLib.getPropertyBoolean(name)
 
     fun setPropertyInt(name: String, value: Int) {
         MPVLib.setPropertyInt(name, value)
