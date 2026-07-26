@@ -121,16 +121,13 @@ fun PlayerGestureBox(
                     var gestureStarted = false
                     val isRightSide = startX > screenW / 2f
                     
+                    var pointerId = down.id
+                    
                     do {
                         val event = awaitPointerEvent()
-                        if (event.changes.size > 1) {
-                            if (isLongPressActive) {
-                                isLongPressActive = false
-                                viewModel.stopFastForward()
-                            }
-                            return@awaitEachGesture
-                        }
-                        val change = event.changes.firstOrNull() ?: break
+                        val change = event.changes.firstOrNull { it.id == pointerId }
+                        if (change == null || !change.pressed) break
+
                         totalDragY += change.positionChange().y
                         totalDragX += change.positionChange().x
                         
@@ -147,8 +144,8 @@ fun PlayerGestureBox(
                         }
                         
                         if (gestureStarted) {
-                            change.consume()
                             val delta = change.positionChange().y
+                            change.consume()
                             if (isRightSide) {
                                 tempVolume += -(delta / screenH) * 150f
                                 viewModel.setVolume(tempVolume.toInt())
@@ -158,7 +155,8 @@ fun PlayerGestureBox(
                                 onBrightnessChange(brightnessLevel)
                             }
                         }
-                    } while (event.changes.any { it.pressed })
+                    } while (true)
+
                     
                     showVolumeIndicator = false
                     showBrightnessIndicator = false
@@ -168,9 +166,10 @@ fun PlayerGestureBox(
                 if (activity?.isInPictureInPictureMode == true) return@pointerInput
                 awaitEachGesture {
                     do {
-                        val event = awaitPointerEvent()
-                        if (event.changes.size >= 2) break
+                        val event = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Final)
+                        if (event.changes.size >= 2 && !event.changes.any { it.isConsumed }) break
                     } while (event.changes.any { it.pressed })
+
                     
                     var localZoom = updatedZoom
                     var localPanX = updatedPanX
