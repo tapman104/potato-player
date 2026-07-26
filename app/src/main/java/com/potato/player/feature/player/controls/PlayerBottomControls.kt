@@ -8,6 +8,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PictureInPicture
 import androidx.compose.material.icons.filled.ScreenLockLandscape
 import androidx.compose.material.icons.filled.ScreenRotation
+import androidx.compose.material.icons.filled.FitScreen
+import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,16 +22,19 @@ import android.os.Build
 import com.potato.player.util.TimeFormatter
 
 import com.potato.player.feature.player.PlaybackProgressState
+import com.potato.player.feature.player.VideoFitMode
 
 @Composable
 fun PlayerBottomControls(
     progressState: PlaybackProgressState,
     isAutoRotation: Boolean = false,
+    currentFitMode: VideoFitMode = VideoFitMode.FIT,
     onSeekGesture: (Long) -> Unit,    // called continuously during drag
     onSeekCommit: (Long) -> Unit,     // called once on finger lift
     onDragStart: () -> Unit,          // tells repository to suppress echo-backs
     onDragEnd: () -> Unit,            // tells repository to re-enable echo-backs
     onToggleAutoRotation: () -> Unit = {},
+    onToggleFitMode: () -> Unit = {},
     onEnterPip: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -149,6 +155,23 @@ fun PlayerBottomControls(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment     = Alignment.CenterVertically
             ) {
+                val onToggleFitModeRef = rememberUpdatedState(onToggleFitMode)
+                val handleToggleFitMode = remember { { onToggleFitModeRef.value() } }
+
+                IconButton(onClick = handleToggleFitMode, modifier = buttonModifier) {
+                    val icon = when (currentFitMode) {
+                        VideoFitMode.FIT -> Icons.Default.FitScreen
+                        VideoFitMode.FILL -> Icons.Default.Fullscreen
+                        VideoFitMode.STRETCH -> Icons.Default.AspectRatio
+                    }
+                    Icon(
+                        imageVector        = icon,
+                        contentDescription = "Video Fit Mode",
+                        tint               = if (currentFitMode != VideoFitMode.FIT) Color(0xFF90CAF9) else Color.White
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+
                 IconButton(onClick = handleToggleAutoRotation, modifier = buttonModifier) {
                     Icon(
                         imageVector        = if (isAutoRotation) Icons.Default.ScreenRotation else Icons.Default.ScreenLockLandscape,

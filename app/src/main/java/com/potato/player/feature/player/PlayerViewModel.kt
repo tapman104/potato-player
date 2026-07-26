@@ -27,6 +27,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import android.view.SurfaceHolder
 
+enum class VideoFitMode { FIT, FILL, STRETCH }
+
 class PlayerViewModel(
     private val appContext: Context,
     private val wrapper: MpvWrapper,
@@ -42,6 +44,9 @@ class PlayerViewModel(
 
     private val _progressState = MutableStateFlow(PlaybackProgressState())
     val progressState: StateFlow<PlaybackProgressState> = _progressState.asStateFlow()
+
+    private val _fitMode = MutableStateFlow(VideoFitMode.FIT)
+    val fitMode: StateFlow<VideoFitMode> = _fitMode.asStateFlow()
 
     private var currentUri = ""
     private var currentTitle = ""
@@ -87,6 +92,7 @@ class PlayerViewModel(
         onFileLoaded = {
             val isPaused = wrapper.getPropertyBoolean(MpvProp.PAUSE) ?: false
             _uiState.update { it.copy(fileLoaded = true, isLoading = false, isPlaying = !isPaused) }
+            _fitMode.value = VideoFitMode.FIT
             loadTracks()
             if (pendingResumePosition > 0L) {
                 wrapper.seekTo(pendingResumePosition)
@@ -217,6 +223,32 @@ class PlayerViewModel(
         val next = !_uiState.value.isAutoRotation
         _uiState.update { it.copy(isAutoRotation = next) }
         viewModelScope.launch { prefsRepository.setAutoRotation(next) }
+    }
+
+    fun cycleFitMode() {
+        val next = when (_fitMode.value) {
+            VideoFitMode.FIT -> VideoFitMode.FILL
+            VideoFitMode.FILL -> VideoFitMode.STRETCH
+            VideoFitMode.STRETCH -> VideoFitMode.FIT
+        }
+        _fitMode.value = next
+        when (next) {
+            VideoFitMode.FIT -> {
+                wrapper.setPropertyString("video-aspect-override", "-1")
+                wrapper.setPropertyString("panscan", "0.0")
+            }
+            VideoFitMode.FILL -> {
+                wrapper.setPropertyString("panscan", "1.0")
+                wrapper.setPropertyString("video-aspect-override", "-1")
+            }
+            VideoFitMode.STRETCH -> {
+                wrapper.setPropertyString("panscan", "0.0")
+                val metrics = appContext.resources.displayMetrics
+                val screenWidth = metrics.widthPixels
+                val screenHeight = metrics.heightPixels
+                wrapper.setPropertyString("video-aspect-override", "${screenWidth}/${screenHeight}")
+            }
+        }
     }
 
     fun setDecoder(mode: String) {

@@ -57,6 +57,7 @@ fun PlayerScreen(
     }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val progressState by viewModel.progressState.collectAsStateWithLifecycle()
+    val fitMode by viewModel.fitMode.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
 
@@ -226,11 +227,13 @@ fun PlayerScreen(
                 PlayerBottomControls(
                     progressState     = progressState,
                     isAutoRotation    = uiState.isAutoRotation,
+                    currentFitMode    = fitMode,
                     onSeekGesture     = { ms -> viewModel.onSliderDragChange(ms / 1000.0) },
                     onSeekCommit      = { ms -> viewModel.onSliderDragEnd(ms / 1000.0) },
                     onDragStart       = { viewModel.onSliderDragStart(progressState.positionSec) },
                     onDragEnd         = { /* already handled inside onSeekCommit path */ },
                     onToggleAutoRotation = { viewModel.toggleAutoRotation() },
+                    onToggleFitMode   = { viewModel.cycleFitMode() },
                     onEnterPip        = {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                             activity?.enterPictureInPictureMode(
