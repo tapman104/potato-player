@@ -55,16 +55,19 @@ fun AppNavigation(
             DisposableEffect(videoUri) {
                 onDispose {
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || activity?.isInPictureInPictureMode != true) {
-                        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                     }
                 }
             }
 
-            val db = com.potato.player.data.AppDatabase.getInstance(LocalContext.current)
-            val historyRepository = com.potato.player.data.VideoHistoryRepository(db.videoHistoryDao())
+            val context = LocalContext.current
+            val historyRepository = androidx.compose.runtime.remember(context) {
+                val db = com.potato.player.data.AppDatabase.getInstance(context)
+                com.potato.player.data.VideoHistoryRepository(db.videoHistoryDao())
+            }
 
             val playerViewModel: PlayerViewModel = viewModel(
-                factory = PlayerViewModelFactory(LocalContext.current.applicationContext, wrapper, historyRepository)
+                factory = PlayerViewModelFactory(context.applicationContext, wrapper, historyRepository)
             )
 
             PlayerScreen(

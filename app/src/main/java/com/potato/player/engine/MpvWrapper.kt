@@ -44,8 +44,11 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
 
     var onSurfaceReady: (() -> Unit)? = null
 
+    private var currentHolder: SurfaceHolder? = null
+
     val surfaceCallback = object : SurfaceHolder.Callback {
         override fun surfaceCreated(holder: SurfaceHolder) {
+            currentHolder = holder
             attachSurface(holder.surface)
             onSurfaceReady?.invoke()
         }
@@ -57,6 +60,7 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
         }
 
         override fun surfaceDestroyed(holder: SurfaceHolder) {
+            currentHolder = null
             detachSurface()
         }
     }
@@ -69,6 +73,13 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
         MPVLib.attachSurface(surface)
         MPVLib.setOptionString("force-window", "yes")
         MPVLib.setPropertyString("vo", "gpu")
+    }
+
+    fun reattachSurface() {
+        val surface = currentHolder?.surface ?: return
+        if (surface.isValid) {
+            attachSurface(surface)
+        }
     }
 
     fun detachSurface() {
