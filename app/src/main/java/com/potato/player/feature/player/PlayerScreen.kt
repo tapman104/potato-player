@@ -60,6 +60,15 @@ fun PlayerScreen(
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
 
+    // FIX (Bug 1): rememberLauncherForActivityResult registered inside a conditional composable.
+    // What was wrong: The launcher was inside SubtitleTrackDialog (a conditional overlay). If the process died while the file picker was open, the result was dropped upon recreation because the dialog wasn't initially composed.
+    // Fix: Hoist the launcher to the screen level where it is unconditionally composed, so it can always receive the file picker result.
+    val subtitleLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { viewModel.onLoadExternalSubtitle(it, context) }
+    }
+
     // ponytail: orientation + insets boilerplate extracted for readability
     PlayerLifecycleEffect(activity = activity, uiState = uiState, viewModel = viewModel)
 
@@ -237,7 +246,8 @@ fun PlayerScreen(
         if (!(activity?.isInPictureInPictureMode == true)) {
             PlayerModals(
                 uiState = uiState,
-                viewModel = viewModel
+                viewModel = viewModel,
+                onLaunchFilePicker = { subtitleLauncher.launch(arrayOf("*/*")) }
             )
         }
     }

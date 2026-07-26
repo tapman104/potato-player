@@ -13,7 +13,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun PlayerModals(
     uiState: PlayerUiState,
-    viewModel: PlayerViewModel
+    viewModel: PlayerViewModel,
+    onLaunchFilePicker: () -> Unit
 ) {
     val context = LocalContext.current
     val activeSheet by viewModel.dialogs.activeSheet.collectAsStateWithLifecycle()
@@ -39,7 +40,7 @@ fun PlayerModals(
                 tracks = uiState.subtitleTracks,
                 currentTrackId = uiState.currentSubtitleTrackId,
                 onSelectTrack = { viewModel.onSelectSubtitleTrack(it) },
-                onLoadExternal = { uri -> viewModel.onLoadExternalSubtitle(uri, context) },
+                onLaunchFilePicker = onLaunchFilePicker,
                 onDismiss = { viewModel.dialogs.onDismissSubtitleDialog() },
                 uiState = uiState,
                 onSetSubtitleAppearance = { scale, pos -> viewModel.setSubtitleAppearance(scale, pos) },

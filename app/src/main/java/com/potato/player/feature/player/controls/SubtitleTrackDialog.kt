@@ -30,7 +30,7 @@ fun SubtitleTrackDialog(
     tracks: List<TrackUiModel>,
     currentTrackId: Int,
     onSelectTrack: (Int) -> Unit,
-    onLoadExternal: (Uri) -> Unit,
+    onLaunchFilePicker: () -> Unit,
     onDismiss: () -> Unit,
     uiState: PlayerUiState,
     onSetSubtitleAppearance: (Double, Int) -> Unit,
@@ -38,11 +38,8 @@ fun SubtitleTrackDialog(
 ) {
     var showAppearanceDialog by remember { mutableStateOf(false) }
 
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        uri?.let { onLoadExternal(it) }
-    }
+    // FIX: Removed conditionally-composed rememberLauncherForActivityResult.
+    // Launcher is now hoisted to PlayerScreen to survive process death during file selection.
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -86,7 +83,7 @@ fun SubtitleTrackDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(10.dp))
-                            .clickable { launcher.launch(arrayOf("*/*")) }
+                            .clickable { onLaunchFilePicker() }
                             .padding(vertical = 12.dp, horizontal = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
