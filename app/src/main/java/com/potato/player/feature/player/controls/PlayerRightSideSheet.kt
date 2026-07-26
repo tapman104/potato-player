@@ -39,19 +39,31 @@ fun PlayerRightSideSheet(
         label = "scrimAlpha"
     )
 
-    if (visible || scrimAlpha > 0f) {
+    // FIX (Bug 2): Stale onDismiss closure.
+    // What was wrong: onDismiss was captured directly in a gesture handler that didn't restart when it changed.
+    // Fix: rememberUpdatedState ensures the handler always invokes the latest lambda instance.
+    val onDismissRef = rememberUpdatedState(onDismiss)
+
+    // FIX (Bug 3): Race between scrimAlpha and AnimatedVisibility animations.
+    // What was wrong: The tree would tear down abruptly if scrimAlpha reached 0f before AnimatedVisibility finished its exit animation.
+    // Fix: MutableTransitionState allows us to track if AnimatedVisibility is actively visible or still transitioning out.
+    val transitionState = remember { androidx.compose.animation.core.MutableTransitionState(visible) }
+    transitionState.targetState = visible
+
+    if (transitionState.currentState || transitionState.targetState || scrimAlpha > 0f) {
         Box(
             modifier = modifier
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = scrimAlpha))
-                .pointerInput(visible) {
-                    if (visible) {
-                        detectTapGestures(onTap = { _ -> onDismiss() })
-                    }
+                // FIX (Bug 1): Touch fall-through during exit animation.
+                // What was wrong: Keying on 'visible' cancelled the block immediately on exit, disabling tap interception.
+                // Fix: Key on (visible || scrimAlpha > 0f) to keep the touch-blocker alive until the scrim is completely gone.
+                .pointerInput(visible || scrimAlpha > 0f) {
+                    detectTapGestures(onTap = { _ -> onDismissRef.value() })
                 }
         ) {
             AnimatedVisibility(
-                visible = visible,
+                visibleState = transitionState,
                 enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(),
                 exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut(),
                 modifier = Modifier.align(Alignment.CenterEnd)
