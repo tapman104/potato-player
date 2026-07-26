@@ -14,8 +14,10 @@ object TrackListParser {
                     "sub" -> TrackType.SUBTITLE
                     else -> return@mapNotNull null
                 }
+                val id = obj.optInt("id", -1)
+                if (id == -1) return@mapNotNull null
                 TrackInfo(
-                    id = obj.getInt("id"),
+                    id = id,
                     type = type,
                     title = obj.optString("title", "").takeIf { it.isNotBlank() },
                     lang = obj.optString("lang", "").takeIf { it.isNotBlank() },

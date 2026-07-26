@@ -5,19 +5,29 @@ import android.view.Surface
 import android.view.SurfaceHolder
 import `is`.xyz.mpv.MPVLib
 import `is`.xyz.mpv.MPVNode
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import java.util.concurrent.atomic.AtomicBoolean
 
 class MpvWrapper(context: Context) : MPVLib.EventObserver {
 
     val appContext: Context = context.applicationContext
 
-    private val _events = MutableSharedFlow<MpvEvent>(extraBufferCapacity = 64)
+    // DROP_OLDEST ensures the buffer never blocks the MPV event thread and never
+    // silently returns false. Chatty property events (time-pos, etc.) are shed first;
+    // infrequent lifecycle events (FILE_LOADED, END_FILE) always get a slot.
+    private val _events = MutableSharedFlow<MpvEvent>(
+        extraBufferCapacity = 128,
+        onBufferOverflow    = BufferOverflow.DROP_OLDEST
+    )
     val events: SharedFlow<MpvEvent> = _events.asSharedFlow()
 
     private val configurator = MpvOptionsConfigurator()
-    @Volatile private var cachedPause: Boolean = false
+
+    // Tri-state: null = no pause event received yet from MPV, true/false = last known value.
+    @Volatile private var cachedPause: Boolean? = null
 
     init {
         configurator.copyFontAssets(appContext)
@@ -54,6 +64,7 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
     private var currentSurface: Surface? = null
 
     fun attachSurface(surface: Surface) {
+        if (!surface.isValid) return
         currentSurface = surface
         MPVLib.attachSurface(surface)
         MPVLib.setOptionString("force-window", "yes")
@@ -61,6 +72,8 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
     }
 
     fun detachSurface() {
+        // Tell the VO to stop rendering before physically removing the surface.
+        // Reversing this order can cause MPV to write to an already-released surface.
         MPVLib.setPropertyString("vo", "null")
         MPVLib.setPropertyString("force-window", "no")
         MPVLib.detachSurface()
@@ -77,7 +90,10 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
     }
 
     fun togglePlay() {
-        MPVLib.setPropertyBoolean(MpvProp.PAUSE, !cachedPause)
+        // If no pause event has arrived yet, read the current value directly from MPV
+        // rather than relying on a stale default of false.
+        val paused = cachedPause ?: (MPVLib.getPropertyBoolean(MpvProp.PAUSE) ?: false)
+        MPVLib.setPropertyBoolean(MpvProp.PAUSE, !paused)
     }
 
     fun resume() {
@@ -133,11 +149,12 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
         MPVLib.setPropertyDouble(name, value)
     }
 
-    private var destroyed = false
+    // AtomicBoolean makes the check-then-set atomic, preventing two concurrent
+    // destroy() calls from both passing the guard before either sets the flag.
+    private val destroyed = AtomicBoolean(false)
 
     fun destroy() {
-        if (destroyed) return
-        destroyed = true
+        if (!destroyed.compareAndSet(false, true)) return
         detachSurface()
         MPVLib.removeObserver(this)
         MPVLib.destroy()

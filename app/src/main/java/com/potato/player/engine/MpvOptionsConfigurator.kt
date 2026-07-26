@@ -10,15 +10,18 @@ class MpvOptionsConfigurator {
         val fontsDir = java.io.File(context.filesDir, "fonts")
         if (!fontsDir.exists()) fontsDir.mkdirs()
         val fontFile = java.io.File(fontsDir, "Roboto-Regular.ttf")
-        if (!fontFile.exists()) {
-            try {
+        try {
+            val assetSize = context.assets.open("Roboto-Regular.ttf").use { it.available().toLong() }
+            // Copy if the file is missing or its size differs from the bundled asset.
+            // A size mismatch is a reliable signal that the APK was updated with a new font.
+            if (!fontFile.exists() || fontFile.length() != assetSize) {
                 context.assets.open("Roboto-Regular.ttf").use { input ->
                     fontFile.outputStream().use { input.copyTo(it) }
                 }
-                Log.d(TAG, "Font asset copied")
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to copy font asset", e)
+                Log.d(TAG, "Font asset copied (size changed or missing)")
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to copy font asset", e)
         }
     }
 
