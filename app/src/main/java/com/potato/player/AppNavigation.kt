@@ -50,17 +50,17 @@ fun AppNavigation(
             val route: PlayerRoute = backStackEntry.toRoute()
             val videoUri = android.net.Uri.decode(route.videoUri)
             val title = android.net.Uri.decode(route.title)
-            val activity = LocalContext.current.findActivity()
+            val context = LocalContext.current
+            val activity = context.findActivity()
 
-            DisposableEffect(videoUri) {
+            DisposableEffect(Unit) {
                 onDispose {
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || activity?.isInPictureInPictureMode != true) {
-                        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                    val currentActivity = context.findActivity()
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || currentActivity?.isInPictureInPictureMode != true) {
+                        currentActivity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                     }
                 }
             }
-
-            val context = LocalContext.current
             val historyRepository = androidx.compose.runtime.remember(context) {
                 val db = com.potato.player.data.AppDatabase.getInstance(context)
                 com.potato.player.data.VideoHistoryRepository(db.videoHistoryDao())
