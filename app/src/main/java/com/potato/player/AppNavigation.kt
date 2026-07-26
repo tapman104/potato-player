@@ -56,8 +56,10 @@ fun AppNavigation(
             DisposableEffect(Unit) {
                 onDispose {
                     val currentActivity = context.findActivity()
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || currentActivity?.isInPictureInPictureMode != true) {
-                        currentActivity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                    if (currentActivity?.isFinishing == false) {
+                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || currentActivity.isInPictureInPictureMode != true) {
+                            currentActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                        }
                     }
                 }
             }

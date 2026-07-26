@@ -61,9 +61,11 @@ fun PlayerLifecycleEffect(
         updateOrientation()
         
         onDispose {
-            if (activity?.isInPictureInPictureMode == false && window != null) {
-                val controller = androidx.core.view.WindowCompat.getInsetsController(window, view)
-                controller.show(WindowInsetsCompat.Type.systemBars())
+            if (activity?.isFinishing == false) {
+                if (activity.isInPictureInPictureMode == false && window != null) {
+                    val controller = androidx.core.view.WindowCompat.getInsetsController(window, view)
+                    controller.show(WindowInsetsCompat.Type.systemBars())
+                }
             }
         }
     }
