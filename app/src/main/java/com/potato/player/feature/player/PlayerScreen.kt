@@ -50,6 +50,26 @@ private fun enterPip(activity: android.app.Activity?) {
 }
 
 @Composable
+private fun PlayerCenterPlayPause(
+    isPlaying: Boolean,
+    onClick: () -> Unit
+) {
+    IconButton(
+        onClick  = onClick,
+        modifier = Modifier
+            .size(64.dp)
+            .background(Color.Black.copy(alpha = 0.5f), shape = CircleShape)
+    ) {
+        Icon(
+            imageVector        = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+            contentDescription = if (isPlaying) "Pause" else "Play",
+            tint               = Color.White,
+            modifier           = Modifier.size(36.dp)
+        )
+    }
+}
+
+@Composable
 fun PlayerScreen(
     videoUri: String,
     title: String = "",
@@ -189,19 +209,10 @@ fun PlayerScreen(
                 exit = fadeOut(),
                 modifier = Modifier.align(Alignment.Center)
             ) {
-                IconButton(
-                    onClick  = viewModel::togglePlay,
-                    modifier = Modifier
-                        .size(64.dp)
-                        .background(Color.Black.copy(alpha = 0.5f), shape = CircleShape)
-                ) {
-                    Icon(
-                        imageVector     = if (uiState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        contentDescription = if (uiState.isPlaying) "Pause" else "Play",
-                        tint            = Color.White,
-                        modifier        = Modifier.size(36.dp)
-                    )
-                }
+                PlayerCenterPlayPause(
+                    isPlaying = uiState.isPlaying,
+                    onClick   = viewModel::togglePlay
+                )
             }
 
             // ── Bottom controls ──────────────────────────────────────────────
