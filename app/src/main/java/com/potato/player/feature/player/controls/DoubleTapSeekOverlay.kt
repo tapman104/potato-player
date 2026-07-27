@@ -68,8 +68,8 @@ fun DoubleTapSeekOverlay(
                         Text(
                             text = if (state.isForward) "+${state.totalSeconds}s" else "-${state.totalSeconds}s",
                             color = Color.White,
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.ExtraBold
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
