@@ -190,12 +190,12 @@ fun PlayerScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .systemBarsPadding()
-                    .windowInsetsPadding(WindowInsets.displayCutout)
             ) {
                 PlayerBottomControls(
                     progressState     = progressState,
                     isAutoRotation    = uiState.isAutoRotation,
                     currentFitMode    = fitMode,
+                    contentPadding    = WindowInsets.displayCutout.asPaddingValues(),
                     onSeekGesture     = { ms -> viewModel.onSliderDragChange(ms / 1000.0) },
                     onSeekCommit      = { ms -> viewModel.onSliderDragEnd(ms / 1000.0) },
                     onDragStart       = { viewModel.onSliderDragStart(progressState.positionSec) },

@@ -37,6 +37,7 @@ fun PlayerBottomControls(
     onToggleFitMode: () -> Unit = {},
     onEnterPip: () -> Unit = {},
     modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     val currentPositionMs = (progressState.positionSec * 1000.0).toLong()
     val durationMs = (progressState.durationSec * 1000.0).toLong()
@@ -93,6 +94,7 @@ fun PlayerBottomControls(
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .padding(contentPadding)
             .padding(horizontal = 12.dp)
     ) {
         // Play/Pause centered, and Auto-Rotation + PiP right-aligned above the seek area
