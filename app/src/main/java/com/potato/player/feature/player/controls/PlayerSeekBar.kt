@@ -22,7 +22,7 @@ fun PlayerSeekBar(progress: Float, buffered: Float, onValueChange: (Float) -> Un
     val sliderColors = SliderDefaults.colors(
         thumbColor           = Color.White,
         activeTrackColor     = Color.White,
-        inactiveTrackColor   = Color.Transparent,
+        inactiveTrackColor   = Color.White.copy(alpha = 0.3f),
         activeTickColor      = Color.Transparent,
         inactiveTickColor    = Color.Transparent
     )
@@ -37,7 +37,7 @@ fun PlayerSeekBar(progress: Float, buffered: Float, onValueChange: (Float) -> Un
                 .fillMaxWidth()
                 .height(6.dp)
                 .clip(RoundedCornerShape(2.dp))
-                .background(Color.White.copy(alpha = 0.4f))
+                .background(Color.White.copy(alpha = 0.25f))
         )
 
         // Buffer indicator track
