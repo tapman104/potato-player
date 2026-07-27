@@ -43,6 +43,12 @@ import com.potato.player.util.findActivity
 import com.potato.player.util.lockOrientation
 import kotlinx.coroutines.delay
 
+private fun enterPip(activity: android.app.Activity?) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        activity?.enterPictureInPictureMode(PictureInPictureParams.Builder().build())
+    }
+}
+
 @Composable
 fun PlayerScreen(
     videoUri: String,
@@ -79,17 +85,6 @@ fun PlayerScreen(
         isInPipMode = activity?.isInPictureInPictureMode == true
     )
     var doubleTapSeekState by remember { mutableStateOf<DoubleTapSeekState?>(null) }
-    var currentZoom by remember { mutableStateOf(1.0f) }
-    var currentPanX by remember { mutableStateOf(0f) }
-    var currentPanY by remember { mutableStateOf(0f) }
-
-    LaunchedEffect(uiState.fileLoaded) {
-        if (uiState.fileLoaded) {
-            currentZoom = 1.0f
-            currentPanX = 0f
-            currentPanY = 0f
-        }
-    }
 
     // Clear double-tap seek overlay after animation
     LaunchedEffect(doubleTapSeekState?.triggerId) {
@@ -126,12 +121,7 @@ fun PlayerScreen(
             viewModel = viewModel,
             controlsState = controlsState,
             onBrightnessChange = onBrightnessChange,
-            currentZoom = currentZoom,
-            onZoomChange = { currentZoom = it },
-            currentPanX = currentPanX,
-            onPanXChange = { currentPanX = it },
-            currentPanY = currentPanY,
-            onPanYChange = { currentPanY = it },
+            fileLoaded = uiState.fileLoaded,
             doubleTapSeekState = doubleTapSeekState,
             onDoubleTapSeekState = { doubleTapSeekState = it },
             activity = activity
@@ -234,13 +224,7 @@ fun PlayerScreen(
                     onDragEnd         = { /* already handled inside onSeekCommit path */ },
                     onToggleAutoRotation = { viewModel.toggleAutoRotation() },
                     onToggleFitMode   = { viewModel.cycleFitMode() },
-                    onEnterPip        = {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            activity?.enterPictureInPictureMode(
-                                PictureInPictureParams.Builder().build()
-                            )
-                        }
-                    }
+                    onEnterPip        = { enterPip(activity) }
                 )
             }
         }

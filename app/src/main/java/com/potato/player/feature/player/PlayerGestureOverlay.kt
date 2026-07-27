@@ -33,9 +33,7 @@ fun PlayerGestureBox(
     viewModel: PlayerViewModel,
     controlsState: ControlsVisibilityState,
     onBrightnessChange: (Float) -> Unit,
-    currentZoom: Float, onZoomChange: (Float) -> Unit,
-    currentPanX: Float, onPanXChange: (Float) -> Unit,
-    currentPanY: Float, onPanYChange: (Float) -> Unit,
+    fileLoaded: Boolean,
     doubleTapSeekState: DoubleTapSeekState?,
     onDoubleTapSeekState: (DoubleTapSeekState?) -> Unit,
     activity: Activity?
@@ -45,10 +43,17 @@ fun PlayerGestureBox(
     var showBrightnessIndicator by remember { mutableStateOf(false) }
     var showVolumeIndicator by remember { mutableStateOf(false) }
     var tempVolume by remember { mutableStateOf(100f) }
-    
-    val updatedZoom by rememberUpdatedState(currentZoom)
-    val updatedPanX by rememberUpdatedState(currentPanX)
-    val updatedPanY by rememberUpdatedState(currentPanY)
+    var currentZoom by remember { mutableStateOf(1.0f) }
+    var currentPanX by remember { mutableStateOf(0f) }
+    var currentPanY by remember { mutableStateOf(0f) }
+
+    LaunchedEffect(fileLoaded) {
+        if (fileLoaded) {
+            currentZoom = 1.0f
+            currentPanX = 0f
+            currentPanY = 0f
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -68,11 +73,11 @@ fun PlayerGestureBox(
                         viewModel.startFastForward()
                     },
                     onDoubleTap = { offset ->
-                        if (updatedZoom > 1.0f) {
+                        if (currentZoom > 1.0f) {
                             viewModel.resetZoom()
-                            onZoomChange(1.0f)
-                            onPanXChange(0f)
-                            onPanYChange(0f)
+                            currentZoom = 1.0f
+                            currentPanX = 0f
+                            currentPanY = 0f
                             return@detectTapGestures
                         }
                         val current = doubleTapSeekState 
@@ -171,9 +176,9 @@ fun PlayerGestureBox(
                     } while (event.changes.any { it.pressed })
 
                     
-                    var localZoom = updatedZoom
-                    var localPanX = updatedPanX
-                    var localPanY = updatedPanY
+                    var localZoom = currentZoom
+                    var localPanX = currentPanX
+                    var localPanY = currentPanY
                     
                     do {
                         val event = awaitPointerEvent()
@@ -187,19 +192,19 @@ fun PlayerGestureBox(
                         }
 
                         localZoom = (localZoom * zoomChange).coerceIn(1.0f, 4.0f)
-                        onZoomChange(localZoom)
+                        currentZoom = localZoom
                         if (localZoom > 1.0f) {
                             val screenWidth = size.width.toFloat()
                             val screenHeight = size.height.toFloat()
                             localPanX += pan.x / screenWidth
                             localPanY += pan.y / screenHeight
-                            onPanXChange(localPanX)
-                            onPanYChange(localPanY)
+                            currentPanX = localPanX
+                            currentPanY = localPanY
                         } else {
                             localPanX = 0f
                             localPanY = 0f
-                            onPanXChange(0f)
-                            onPanYChange(0f)
+                            currentPanX = 0f
+                            currentPanY = 0f
                         }
                         viewModel.setVideoZoom(localZoom, localPanX, localPanY)
                     } while (event.changes.any { it.pressed } && event.changes.size >= 2)
