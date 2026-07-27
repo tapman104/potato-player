@@ -203,6 +203,7 @@ class PlayerViewModel(
     }
 
     fun togglePlay() {
+        _uiState.update { it.copy(isPlaying = !it.isPlaying) }
         wrapper.togglePlay()
     }
     
