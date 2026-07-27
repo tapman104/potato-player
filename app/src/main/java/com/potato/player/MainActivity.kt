@@ -107,7 +107,7 @@ class MainActivity : ComponentActivity() {
         }
 
         val title = uri.lastPathSegment?.substringAfterLast('/') ?: ""
-        navController.navigate(PlayerRoute(videoUri = android.net.Uri.encode(uri.toString()), title = android.net.Uri.encode(title))) {
+        navController.navigate(PlayerRoute(videoUri = android.net.Uri.encode(uri.toString()), title = android.net.Uri.encode(title), isExternal = true)) {
             launchSingleTop = true
         }
         intent?.action = Intent.ACTION_MAIN

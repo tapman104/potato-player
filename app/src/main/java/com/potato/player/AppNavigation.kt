@@ -26,7 +26,8 @@ data object HomeRoute
 @Serializable
 data class PlayerRoute(
     val videoUri: String,
-    val title: String = ""
+    val title: String = "",
+    val isExternal: Boolean = false
 )
 
 @Composable
@@ -50,6 +51,7 @@ fun AppNavigation(
             val route: PlayerRoute = backStackEntry.toRoute()
             val videoUri = android.net.Uri.decode(route.videoUri)
             val title = android.net.Uri.decode(route.title)
+            val isExternal = route.isExternal
             val context = LocalContext.current
             val activity = context.findActivity()
 
@@ -76,6 +78,7 @@ fun AppNavigation(
                 videoUri  = videoUri,
                 title     = title,
                 viewModel = playerViewModel,
+                isExternalIntent = isExternal,
                 onBack    = {
                     navController.popBackStack()
                 },
