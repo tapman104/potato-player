@@ -4,11 +4,6 @@ import android.os.Build
 import android.app.PictureInPictureParams
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
@@ -16,13 +11,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.potato.player.feature.player.controls.DoubleTapSeekOverlay
 import com.potato.player.feature.player.controls.DoubleTapSeekState
@@ -31,11 +21,7 @@ import com.potato.player.feature.player.controls.PlayerBottomControls
 import com.potato.player.feature.player.controls.PlayerCenterPlayPause
 import com.potato.player.feature.player.controls.PlayerTopBar
 import androidx.activity.compose.BackHandler
-import android.content.pm.ActivityInfo
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import com.potato.player.util.findActivity
-import com.potato.player.util.lockOrientation
 import kotlinx.coroutines.delay
 
 private fun enterPip(activity: android.app.Activity?) {
