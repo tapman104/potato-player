@@ -9,7 +9,7 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
 
 class ControlsVisibilityState(
-    initialVisible: Boolean = true
+    initialVisible: Boolean = false
 ) {
     var isVisible by mutableStateOf(initialVisible)
         private set
@@ -34,7 +34,7 @@ fun rememberControlsVisibilityState(
     isInPipMode: Boolean,
     hideDelayMs: Long = PlayerUiConstants.CONTROLS_HIDE_DELAY_MS
 ): ControlsVisibilityState {
-    val state = remember { ControlsVisibilityState() }
+    val state = remember { ControlsVisibilityState(initialVisible = false) }
 
     LaunchedEffect(state.isVisible, isPlaying, dragPositionSec) {
         if (state.isVisible && isPlaying && dragPositionSec == null) {

@@ -62,10 +62,13 @@ fun PlayerGestureBox(
                 if (activity?.isInPictureInPictureMode == true) return@pointerInput
                 detectTapGestures(
                     onPress = { offset ->
-                        tryAwaitRelease()
-                        if (isLongPressActive) {
-                            isLongPressActive = false
-                            viewModel.stopFastForward()
+                        try {
+                            tryAwaitRelease()
+                        } finally {
+                            if (isLongPressActive) {
+                                isLongPressActive = false
+                                viewModel.stopFastForward()
+                            }
                         }
                     },
                     onLongPress = { offset ->
@@ -192,6 +195,11 @@ fun PlayerGestureBox(
                         }
 
                         localZoom = (localZoom * zoomChange).coerceIn(1.0f, 4.0f)
+                        if (localZoom < 1.1f) {
+                            localZoom = 1.0f
+                            localPanX = 0f
+                            localPanY = 0f
+                        }
                         currentZoom = localZoom
                         if (localZoom > 1.0f) {
                             val screenWidth = size.width.toFloat()
