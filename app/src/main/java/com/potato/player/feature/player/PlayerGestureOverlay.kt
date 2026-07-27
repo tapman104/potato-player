@@ -26,6 +26,8 @@ import androidx.compose.ui.geometry.Offset
 import com.potato.player.feature.player.ControlsVisibilityState
 import com.potato.player.feature.player.controls.DoubleTapSeekState
 import androidx.compose.ui.Alignment
+import android.media.AudioManager
+import android.content.Context
 
 @Composable
 fun PlayerGestureBox(
@@ -39,10 +41,37 @@ fun PlayerGestureBox(
     activity: Activity?
 ) {
     var isLongPressActive by remember { mutableStateOf(false) }
-    var brightnessLevel by remember { mutableStateOf(activity?.window?.attributes?.screenBrightness?.takeIf { it >= 0f } ?: 0.5f) }
+    var brightnessLevel by remember {
+        mutableStateOf(
+            run {
+                val windowBrightness = activity?.window?.attributes?.screenBrightness ?: -1f
+                if (windowBrightness >= 0f) {
+                    windowBrightness
+                } else {
+                    val system = try {
+                        android.provider.Settings.System.getInt(
+                            activity?.contentResolver,
+                            android.provider.Settings.System.SCREEN_BRIGHTNESS
+                        )
+                    } catch (e: Exception) { 128 }
+                    system / 255f
+                }
+            }
+        )
+    }
     var showBrightnessIndicator by remember { mutableStateOf(false) }
     var showVolumeIndicator by remember { mutableStateOf(false) }
-    var tempVolume by remember { mutableStateOf(100f) }
+    val audioManager = remember {
+        activity?.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+    }
+    val maxVolume = remember {
+        audioManager?.getStreamMaxVolume(AudioManager.STREAM_MUSIC)?.toFloat() ?: 15f
+    }
+    var tempVolume by remember {
+        mutableStateOf(
+            audioManager?.getStreamVolume(AudioManager.STREAM_MUSIC)?.toFloat() ?: 0f
+        )
+    }
     var currentZoom by remember { mutableStateOf(1.0f) }
     var currentPanX by remember { mutableStateOf(0f) }
     var currentPanY by remember { mutableStateOf(0f) }
@@ -145,7 +174,7 @@ fun PlayerGestureBox(
                             gestureStarted = true
                             if (isRightSide) {
                                 showVolumeIndicator = true
-                                tempVolume = viewModel.uiState.value.volume.toFloat()
+                                tempVolume = audioManager?.getStreamVolume(AudioManager.STREAM_MUSIC)?.toFloat() ?: 0f
                             } else {
                                 showBrightnessIndicator = true
                             }
@@ -155,8 +184,13 @@ fun PlayerGestureBox(
                             val delta = change.positionChange().y
                             change.consume()
                             if (isRightSide) {
-                                tempVolume += -(delta / screenH) * 150f
-                                viewModel.setVolume(tempVolume.toInt())
+                                tempVolume += -(delta / screenH) * maxVolume * 2f
+                                tempVolume = tempVolume.coerceIn(0f, maxVolume)
+                                audioManager?.setStreamVolume(
+                                    AudioManager.STREAM_MUSIC,
+                                    tempVolume.toInt(),
+                                    0
+                                )
                             } else {
                                 val brightnessDelta = -(delta / screenH) * 1.0f
                                 brightnessLevel = (brightnessLevel + brightnessDelta).coerceIn(0.01f, 1.0f)
@@ -221,9 +255,9 @@ fun PlayerGestureBox(
     ) {
         if (!(activity?.isInPictureInPictureMode == true)) {
             VolumeIndicator(
-                volume = uiState.volume,
+                volume = ((tempVolume / maxVolume) * 100).toInt(),
                 visible = showVolumeIndicator,
-                modifier = Modifier.align(Alignment.CenterStart).padding(start = 32.dp)
+                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 32.dp)
             )
             BrightnessIndicator(
                 brightness = brightnessLevel,
