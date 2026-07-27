@@ -10,13 +10,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,6 +28,7 @@ import com.potato.player.feature.player.controls.DoubleTapSeekOverlay
 import com.potato.player.feature.player.controls.DoubleTapSeekState
 import com.potato.player.feature.player.controls.HoldToFastForward
 import com.potato.player.feature.player.controls.PlayerBottomControls
+import com.potato.player.feature.player.controls.PlayerCenterPlayPause
 import com.potato.player.feature.player.controls.PlayerTopBar
 import androidx.activity.compose.BackHandler
 import android.content.pm.ActivityInfo
@@ -49,25 +44,6 @@ private fun enterPip(activity: android.app.Activity?) {
     }
 }
 
-@Composable
-private fun PlayerCenterPlayPause(
-    isPlaying: Boolean,
-    onClick: () -> Unit
-) {
-    IconButton(
-        onClick  = onClick,
-        modifier = Modifier
-            .size(64.dp)
-            .background(Color.Black.copy(alpha = 0.5f), shape = CircleShape)
-    ) {
-        Icon(
-            imageVector        = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-            contentDescription = if (isPlaying) "Pause" else "Play",
-            tint               = Color.White,
-            modifier           = Modifier.size(36.dp)
-        )
-    }
-}
 
 @Composable
 fun PlayerScreen(
