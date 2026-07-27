@@ -3,7 +3,9 @@ package com.potato.player.feature.player.controls
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PictureInPicture
 import androidx.compose.material.icons.filled.ScreenLockLandscape
@@ -102,27 +104,6 @@ fun PlayerBottomControls(
         val handleEnterPip           = remember { { onEnterPipRef.value() } }
         val buttonModifier = PlayerControlsStyles.iconButtonModifier
 
-        // Time row: current position left, total duration right
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text  = TimeFormatter.formatMs(
-                    if (dragFraction >= 0f) (dragFraction * durationMs).toLong()
-                    else currentPositionMs
-                ),
-                color    = Color.White,
-                fontSize = 13.sp
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Text(
-                text     = durationString,
-                color    = Color.White,
-                fontSize = 13.sp
-            )
-        }
-
         // Floating Live Time Preview Bubble while scrubbing
         AnimatedVisibility(
             visible = dragFraction >= 0f,
@@ -135,13 +116,37 @@ fun PlayerBottomControls(
             )
         }
 
-        // Seek bar flush at bottom edge with custom background track and visual buffer indicator track
-        PlayerSeekBar(
-            progress              = displayFraction,
-            buffered              = bufferFraction,
-            onValueChange         = onValueChange,
-            onValueChangeFinished = onValueChangeFinished
-        )
+        // Combined time and seek bar row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50))
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text  = TimeFormatter.formatMs(
+                    if (dragFraction >= 0f) (dragFraction * durationMs).toLong()
+                    else currentPositionMs
+                ),
+                color    = Color.White,
+                fontSize = 13.sp
+            )
+            
+            PlayerSeekBar(
+                progress              = displayFraction,
+                buffered              = bufferFraction,
+                onValueChange         = onValueChange,
+                onValueChangeFinished = onValueChangeFinished,
+                modifier              = Modifier.weight(1f).padding(horizontal = 8.dp)
+            )
+
+            Text(
+                text     = durationString,
+                color    = Color.White,
+                fontSize = 13.sp
+            )
+        }
 
         Box(
             modifier = Modifier

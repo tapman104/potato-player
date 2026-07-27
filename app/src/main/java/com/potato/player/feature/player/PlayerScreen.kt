@@ -203,12 +203,12 @@ fun PlayerScreen(
                     onClick  = viewModel::togglePlay,
                     modifier = Modifier
                         .size(64.dp)
-                        .background(Color.White, shape = CircleShape)
+                        .background(Color.Black.copy(alpha = 0.5f), shape = CircleShape)
                 ) {
                     Icon(
                         imageVector     = if (uiState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                         contentDescription = if (uiState.isPlaying) "Pause" else "Play",
-                        tint            = Color.Black,
+                        tint            = Color.White,
                         modifier        = Modifier.size(36.dp)
                     )
                 }

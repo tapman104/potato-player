@@ -19,10 +19,9 @@ import androidx.compose.ui.unit.dp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlayerSeekBar(progress: Float, buffered: Float, onValueChange: (Float) -> Unit, onValueChangeFinished: () -> Unit, modifier: Modifier = Modifier) {
-    val baseColors = PlayerControlsStyles.rememberSliderColors()
     val sliderColors = SliderDefaults.colors(
-        thumbColor           = baseColors.thumbColor,
-        activeTrackColor     = baseColors.activeTrackColor,
+        thumbColor           = Color.White,
+        activeTrackColor     = Color.White,
         inactiveTrackColor   = Color.Transparent,
         activeTickColor      = Color.Transparent,
         inactiveTickColor    = Color.Transparent
@@ -38,7 +37,7 @@ fun PlayerSeekBar(progress: Float, buffered: Float, onValueChange: (Float) -> Un
                 .fillMaxWidth()
                 .height(6.dp)
                 .clip(RoundedCornerShape(2.dp))
-                .background(Color.White.copy(alpha = 0.24f))
+                .background(Color.White.copy(alpha = 0.4f))
         )
 
         // Buffer indicator track
