@@ -13,6 +13,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.potato.player.engine.MpvWrapper
+import com.potato.player.feature.home.FolderScreen
 import com.potato.player.feature.home.HomeScreen
 import com.potato.player.feature.player.PlayerScreen
 import com.potato.player.feature.player.PlayerViewModel
@@ -22,6 +23,12 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data object HomeRoute
+
+@Serializable
+data class FolderRoute(
+    val bucketId: Long,
+    val folderName: String
+)
 
 @Serializable
 data class PlayerRoute(
@@ -42,8 +49,38 @@ fun AppNavigation(
         composable<HomeRoute> {
             HomeScreen(
                 onNavigateToPlayer = { uri, title ->
-                    navController.navigate(PlayerRoute(videoUri = android.net.Uri.encode(uri), title = android.net.Uri.encode(title)))
+                    navController.navigate(
+                        PlayerRoute(
+                            videoUri = android.net.Uri.encode(uri),
+                            title = android.net.Uri.encode(title)
+                        )
+                    )
+                },
+                onNavigateToFolder = { bucketId, folderName ->
+                    navController.navigate(
+                        FolderRoute(
+                            bucketId = bucketId,
+                            folderName = folderName
+                        )
+                    )
                 }
+            )
+        }
+
+        composable<FolderRoute> { backStackEntry ->
+            val route: FolderRoute = backStackEntry.toRoute()
+            FolderScreen(
+                bucketId = route.bucketId,
+                folderName = route.folderName,
+                onNavigateToPlayer = { uri, title ->
+                    navController.navigate(
+                        PlayerRoute(
+                            videoUri = android.net.Uri.encode(uri),
+                            title = android.net.Uri.encode(title)
+                        )
+                    )
+                },
+                onBack = { navController.popBackStack() }
             )
         }
 
