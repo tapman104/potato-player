@@ -2,12 +2,15 @@ package com.potato.player.feature.player.controls
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,7 +25,7 @@ fun PlayerSeekBar(progress: Float, buffered: Float, onValueChange: (Float) -> Un
     val sliderColors = SliderDefaults.colors(
         thumbColor           = Color.White,
         activeTrackColor     = Color.White,
-        inactiveTrackColor   = Color.White.copy(alpha = 0.3f),
+        inactiveTrackColor   = Color.Transparent,
         activeTickColor      = Color.Transparent,
         inactiveTickColor    = Color.Transparent
     )
@@ -35,9 +38,9 @@ fun PlayerSeekBar(progress: Float, buffered: Float, onValueChange: (Float) -> Un
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(6.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(Color.White.copy(alpha = 0.25f))
+                .height(3.dp)
+                .clip(RoundedCornerShape(1.5.dp))
+                .background(Color.White.copy(alpha = 0.2f))
         )
 
         // Buffer indicator track
@@ -46,25 +49,35 @@ fun PlayerSeekBar(progress: Float, buffered: Float, onValueChange: (Float) -> Un
                 modifier = Modifier
                     .align(Alignment.CenterStart)
                     .width(maxWidth * buffered)
-                    .height(6.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(Color.White.copy(alpha = 0.5f))
+                    .height(3.dp)
+                    .clip(RoundedCornerShape(1.5.dp))
+                    .background(Color.White.copy(alpha = 0.4f))
             )
         }
 
-        // Slider on top (inactive track transparent to let buffer & background show through)
+        // Slider on top
         val interactionSource = remember { MutableInteractionSource() }
+        val isDragged by interactionSource.collectIsDraggedAsState()
+        
         Slider(
             value                 = progress.coerceIn(0f, 1f),
             onValueChange         = onValueChange,
             onValueChangeFinished = onValueChangeFinished,
             colors                = sliderColors,
             interactionSource     = interactionSource,
+            track = { sliderState ->
+                SliderDefaults.Track(
+                    colors = sliderColors,
+                    sliderState = sliderState,
+                    modifier = Modifier.height(3.dp)
+                )
+            },
             thumb                 = {
-                SliderDefaults.Thumb(
-                    interactionSource = interactionSource,
-                    colors            = sliderColors,
-                    thumbSize         = DpSize(20.dp, 20.dp)
+                Box(
+                    modifier = Modifier
+                        .size(if (isDragged) 13.dp else 10.dp)
+                        .clip(CircleShape)
+                        .background(Color.White)
                 )
             },
             modifier              = Modifier.fillMaxWidth()
