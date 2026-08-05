@@ -87,7 +87,8 @@ fun AppNavigation(
                         )
                     )
                 },
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onNavigateToSettings = { navController.navigate(SettingsRoute) }
             )
         }
 

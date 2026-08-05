@@ -1,5 +1,7 @@
 package com.potato.player.feature.home
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,12 +32,20 @@ fun FolderScreen(
     bucketId: Long,
     folderName: String,
     onNavigateToPlayer: (videoUri: String, title: String) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNavigateToSettings: () -> Unit
 ) {
     val context = LocalContext.current
     val viewModel: FolderViewModel = hiltViewModel()
     val videos by viewModel.videos.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+
+    val videoLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri -> uri?.let { onNavigateToPlayer(it.toString(), "") } }
+    val fileLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri -> uri?.let { onNavigateToPlayer(it.toString(), "") } }
 
     Scaffold(
         topBar = {
@@ -57,6 +67,13 @@ fun FolderScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
+            )
+        },
+        bottomBar = {
+            PotatoPillBar(
+                onFolderClick = { videoLauncher.launch("video/*") },
+                onFileClick = { fileLauncher.launch("*/*") },
+                onSettingsClick = onNavigateToSettings
             )
         }
     ) { innerPadding ->

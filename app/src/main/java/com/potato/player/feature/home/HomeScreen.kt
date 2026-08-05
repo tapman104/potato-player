@@ -11,10 +11,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -130,38 +128,12 @@ fun HomeScreen(
                 }
             )
         },
-        floatingActionButton = {
-            Surface(
-                shape = RoundedCornerShape(50.dp),
-                tonalElevation = 6.dp,
-                shadowElevation = 6.dp,
-                color = MaterialTheme.colorScheme.surfaceContainer
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = { launcher.launch("video/*") }) {
-                        Icon(
-                            imageVector = Icons.Default.Folder,
-                            contentDescription = stringResource(R.string.open_video)
-                        )
-                    }
-                    IconButton(onClick = { launcher.launch("*/*") }) {
-                        Icon(
-                            imageVector = Icons.Default.FileOpen,
-                            contentDescription = stringResource(R.string.open_file)
-                        )
-                    }
-                    IconButton(onClick = onNavigateToSettings) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = stringResource(R.string.settings)
-                        )
-                    }
-                }
-            }
+        bottomBar = {
+            PotatoPillBar(
+                onFolderClick = { launcher.launch("video/*") },
+                onFileClick = { launcher.launch("*/*") },
+                onSettingsClick = onNavigateToSettings
+            )
         }
     ) { innerPadding ->
         Box(
@@ -229,7 +201,6 @@ fun HomeScreen(
                                 onClick = { onNavigateToFolder(folder.bucketId, folder.name) }
                             )
                         }
-                        item { Spacer(Modifier.height(72.dp)) }
                     }
                 }
             }
