@@ -404,6 +404,14 @@ class PlayerViewModel(
         _uiState.update { it.copy(volume = clamped) }
     }
 
+    fun setZoom(zoom: Float) {
+        setVideoZoom(zoom, uiState.value.videoPanX, uiState.value.videoPanY)
+    }
+
+    fun setPan(panX: Float, panY: Float) {
+        setVideoZoom(uiState.value.videoZoom, panX, panY)
+    }
+
     fun setVideoZoom(zoom: Float, panX: Float, panY: Float) {
         val clampedZoom = zoom.coerceIn(1.0f, 4.0f)
         val finalPanX = if (clampedZoom == 1.0f) 0f else panX

@@ -2,6 +2,9 @@ package com.potato.player.feature.player
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -13,16 +16,15 @@ import androidx.compose.ui.unit.sp
 import java.util.Locale
 import kotlin.math.roundToInt
 import android.app.Activity
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.gestures.calculatePan
-import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.geometry.Offset
 import com.potato.player.feature.player.ControlsVisibilityState
 import com.potato.player.feature.player.controls.DoubleTapSeekState
@@ -86,194 +88,117 @@ fun PlayerGestureBox(
         }
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .pointerInput(Unit) {
                 if (activity?.isInPictureInPictureMode == true) return@pointerInput
-                awaitEachGesture {
-                    do {
-                        val event = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Final)
-                        if (event.changes.size >= 2 && !event.changes.any { it.isConsumed }) break
-                    } while (event.changes.any { it.pressed })
-
-                    var localZoom = currentZoom
-                    var localPanX = currentPanX
-                    var localPanY = currentPanY
-                    
-                    do {
-                        val event = awaitPointerEvent()
-                        if (event.changes.count { it.pressed } < 2) {
-                            continue
-                        }
-                        
-                        val zoomChange = event.calculateZoom()
-                        val pan = event.calculatePan()
-                        
-                        event.changes.forEach {
-                            if (it.positionChange() != Offset.Zero) {
-                                it.consume()
-                            }
-                        }
-
-                        localZoom = (localZoom * zoomChange).coerceIn(1.0f, 4.0f)
-                        if (localZoom < 1.1f) {
-                            localZoom = 1.0f
-                            localPanX = 0f
-                            localPanY = 0f
-                        }
-                        currentZoom = localZoom
-                        if (localZoom > 1.0f) {
-                            val screenWidth = size.width.toFloat()
-                            val screenHeight = size.height.toFloat()
-                            localPanX += pan.x / screenWidth
-                            localPanY += pan.y / screenHeight
-                            localPanX = localPanX.coerceIn(-0.5f, 0.5f)
-                            localPanY = localPanY.coerceIn(-0.5f, 0.5f)
-                            currentPanX = localPanX
-                            currentPanY = localPanY
-                        } else {
-                            localPanX = 0f
-                            localPanY = 0f
-                            currentPanX = 0f
-                            currentPanY = 0f
-                        }
-                        viewModel.setVideoZoom(localZoom, localPanX, localPanY)
-                    } while (event.changes.any { it.pressed } && event.changes.size >= 2)
+                detectTransformGestures { _, pan, zoom, _ ->
+                    currentZoom = (currentZoom * zoom).coerceIn(1.0f, 5.0f)
+                    val maxPanX = (currentZoom - 1f) * 0.5f
+                    val maxPanY = (currentZoom - 1f) * 0.5f
+                    currentPanX = (currentPanX + pan.x / size.width).coerceIn(-maxPanX, maxPanX)
+                    currentPanY = (currentPanY + pan.y / size.height).coerceIn(-maxPanY, maxPanY)
+                    viewModel.setZoom(currentZoom)
+                    viewModel.setPan(currentPanX, currentPanY)
                 }
-            }
-            .pointerInput(Unit) {
-                if (activity?.isInPictureInPictureMode == true) return@pointerInput
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    val startX = down.position.x
-                    val startY = down.position.y
-                    val screenW = size.width.toFloat()
-                    val screenH = size.height.toFloat()
-                    
-                    val edgeDeadZone = screenW * 0.08f
-                    val topDeadZone = screenH * 0.10f
-                    val bottomDeadZone = screenH * 0.10f
-                    if (startX < edgeDeadZone || startX > screenW - edgeDeadZone) {
-                        return@awaitEachGesture
-                    }
-                    if (startY < topDeadZone || startY > screenH - bottomDeadZone) {
-                        return@awaitEachGesture
-                    }
-                    
-                    var totalDragY = 0f
-                    var totalDragX = 0f
-                    val minDragThreshold = 40f
-                    var gestureStarted = false
-                    val isRightSide = startX > screenW / 2f
-                    
-                    var pointerId = down.id
-                    
-                    do {
-                        val event = awaitPointerEvent()
-                        val change = event.changes.firstOrNull { it.id == pointerId }
-                        if (change == null || !change.pressed) break
-
-                        totalDragY += change.positionChange().y
-                        totalDragX += change.positionChange().x
-                        
-                        if (!gestureStarted && 
-                            kotlin.math.abs(totalDragY) > minDragThreshold &&
-                            kotlin.math.abs(totalDragY) > kotlin.math.abs(totalDragX) * 1.5f) {
-                            gestureStarted = true
-                            if (isRightSide) {
-                                showVolumeIndicator = true
-                                tempVolume = audioManager?.getStreamVolume(AudioManager.STREAM_MUSIC)?.toFloat() ?: 0f
-                            } else {
-                                showBrightnessIndicator = true
-                            }
-                        }
-                        
-                        if (gestureStarted) {
-                            change.consume()
-                            val delta = change.positionChange().y
-                            if (isRightSide) {
-                                tempVolume += -(delta / screenH) * maxVolume * 6f
-                                tempVolume = tempVolume.coerceIn(0f, maxVolume)
-                                audioManager?.setStreamVolume(
-                                    AudioManager.STREAM_MUSIC,
-                                    tempVolume.toInt(),
-                                    0
-                                )
-                            } else {
-                                val brightnessDelta = -(delta / screenH) * 3.0f
-                                brightnessLevel = (brightnessLevel + brightnessDelta).coerceIn(0.01f, 1.0f)
-                                onBrightnessChange(brightnessLevel)
-                            }
-                        }
-                    } while (true)
-
-                    showVolumeIndicator = false
-                    showBrightnessIndicator = false
-                }
-            }
-            .pointerInput(Unit) {
-                if (activity?.isInPictureInPictureMode == true) return@pointerInput
-                detectHorizontalDragGestures(
-                    onDragStart = { _ ->
-                        swipeDragStartSec = viewModel.progressState.value.positionSec
-                        onSwipeSeekStart(swipeDragStartSec)
-                    },
-                    onHorizontalDrag = { change, dragAmount ->
-                        change.consume()
-                        val delta = (dragAmount / size.width) * 120.0
-                        val target = (swipeDragStartSec + delta).coerceIn(0.0, viewModel.progressState.value.durationSec)
-                        swipeDragStartSec += delta
-                        viewModel.onSwipeSeek(target)
-                    },
-                    onDragEnd = {
-                        viewModel.onSwipeSeekFinished()
-                    },
-                    onDragCancel = {
-                        viewModel.onSwipeSeekFinished()
-                    }
-                )
-            }
-            .pointerInput(activity?.isInPictureInPictureMode == true) {
-                if (activity?.isInPictureInPictureMode == true) return@pointerInput
-                detectTapGestures(
-                    onPress = { offset ->
-                        try {
-                            tryAwaitRelease()
-                        } finally {
-                            if (isLongPressActive) {
-                                isLongPressActive = false
-                                viewModel.stopFastForward()
-                            }
-                        }
-                    },
-                    onLongPress = { offset ->
-                        isLongPressActive = true
-                        viewModel.startFastForward()
-                    },
-                    onDoubleTap = { offset ->
-                        val current = doubleTapSeekState 
-                        val screenWidth = size.width
-                        if (offset.x < screenWidth / 2f) {
-                            viewModel.seekExactRelative(-PlayerUiConstants.DOUBLE_TAP_SEEK_SECONDS)
-                            val accum = if (current != null && !current.isForward) {
-                                current.totalSeconds + PlayerUiConstants.DOUBLE_TAP_SEEK_SECONDS
-                            } else PlayerUiConstants.DOUBLE_TAP_SEEK_SECONDS
-                            onDoubleTapSeekState(DoubleTapSeekState(isForward = false, totalSeconds = accum))
-                        } else {
-                            viewModel.seekExactRelative(PlayerUiConstants.DOUBLE_TAP_SEEK_SECONDS)
-                            val accum = if (current != null && current.isForward) {
-                                current.totalSeconds + PlayerUiConstants.DOUBLE_TAP_SEEK_SECONDS
-                            } else PlayerUiConstants.DOUBLE_TAP_SEEK_SECONDS
-                            onDoubleTapSeekState(DoubleTapSeekState(isForward = true, totalSeconds = accum))
-                        }
-                    },
-                    onTap = {
-                        controlsState.toggle()
-                    }
-                )
             }
     ) {
+        val boxMaxHeight = maxHeight.value
+        Row(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .draggable(
+                        orientation = Orientation.Vertical,
+                        state = rememberDraggableState { delta ->
+                            brightnessLevel = (brightnessLevel - delta / boxMaxHeight).coerceIn(0.01f, 1.0f)
+                            onBrightnessChange(brightnessLevel)
+                        }
+                    )
+            )
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .pointerInput(Unit) {
+                        if (activity?.isInPictureInPictureMode == true) return@pointerInput
+                        detectHorizontalDragGestures(
+                            onDragStart = { _ ->
+                                swipeDragStartSec = viewModel.progressState.value.positionSec
+                                onSwipeSeekStart(swipeDragStartSec)
+                            },
+                            onHorizontalDrag = { change, dragAmount ->
+                                change.consume()
+                                val delta = (dragAmount / size.width) * 120.0
+                                val target = (swipeDragStartSec + delta).coerceIn(0.0, viewModel.progressState.value.durationSec)
+                                swipeDragStartSec += delta
+                                viewModel.onSwipeSeek(target)
+                            },
+                            onDragEnd = {
+                                viewModel.onSwipeSeekFinished()
+                            },
+                            onDragCancel = {
+                                viewModel.onSwipeSeekFinished()
+                            }
+                        )
+                    }
+                    .pointerInput(activity?.isInPictureInPictureMode == true) {
+                        if (activity?.isInPictureInPictureMode == true) return@pointerInput
+                        detectTapGestures(
+                            onPress = { offset ->
+                                try {
+                                    tryAwaitRelease()
+                                } finally {
+                                    if (isLongPressActive) {
+                                        isLongPressActive = false
+                                        viewModel.stopFastForward()
+                                    }
+                                }
+                            },
+                            onLongPress = { offset ->
+                                isLongPressActive = true
+                                viewModel.startFastForward()
+                            },
+                            onDoubleTap = { offset ->
+                                val current = doubleTapSeekState 
+                                val isRight = offset.x > size.width / 2f
+                                if (!isRight) {
+                                    viewModel.seekExactRelative(-PlayerUiConstants.DOUBLE_TAP_SEEK_SECONDS)
+                                    val accum = if (current != null && !current.isForward) {
+                                        current.totalSeconds + PlayerUiConstants.DOUBLE_TAP_SEEK_SECONDS
+                                    } else PlayerUiConstants.DOUBLE_TAP_SEEK_SECONDS
+                                    onDoubleTapSeekState(DoubleTapSeekState(isForward = false, totalSeconds = accum))
+                                } else {
+                                    viewModel.seekExactRelative(PlayerUiConstants.DOUBLE_TAP_SEEK_SECONDS)
+                                    val accum = if (current != null && current.isForward) {
+                                        current.totalSeconds + PlayerUiConstants.DOUBLE_TAP_SEEK_SECONDS
+                                    } else PlayerUiConstants.DOUBLE_TAP_SEEK_SECONDS
+                                    onDoubleTapSeekState(DoubleTapSeekState(isForward = true, totalSeconds = accum))
+                                }
+                            },
+                            onTap = {
+                                controlsState.toggle()
+                            }
+                        )
+                    }
+            )
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .draggable(
+                        orientation = Orientation.Vertical,
+                        state = rememberDraggableState { delta ->
+                            val maxVolume = audioManager?.getStreamMaxVolume(AudioManager.STREAM_MUSIC)?.toFloat() ?: 15f
+                            tempVolume = (tempVolume - delta / boxMaxHeight * maxVolume).coerceIn(0f, maxVolume)
+                            audioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, tempVolume.toInt(), 0)
+                        }
+                    )
+            )
+        }
+
         if (!(activity?.isInPictureInPictureMode == true)) {
             VolumeIndicator(
                 volume = ((tempVolume / maxVolume) * 100).toInt(),
