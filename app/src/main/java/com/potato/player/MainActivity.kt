@@ -91,8 +91,15 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun parseViewIntent(intent: Intent?): PlayerRoute? {
-        if (intent?.action != Intent.ACTION_VIEW) return null
-        val uri = intent.data ?: return null
+        val action = intent?.action
+        if (action != Intent.ACTION_VIEW && action != Intent.ACTION_SEND) return null
+
+        val uri = if (action == Intent.ACTION_SEND) {
+            @Suppress("DEPRECATION")
+            intent.getParcelableExtra<android.net.Uri>(Intent.EXTRA_STREAM) ?: intent.data
+        } else {
+            intent.data
+        } ?: return null
 
         if (uri.scheme == ContentResolver.SCHEME_CONTENT) {
             val flags = intent.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION
