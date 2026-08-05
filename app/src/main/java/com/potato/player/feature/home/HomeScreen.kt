@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.VideoLibrary
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -242,7 +243,7 @@ private fun FolderRow(
                 model = folder.firstVideoUri,
                 contentDescription = null,
                 placeholder = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.Folder),
-                error = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.Folder),
+                error = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.Warning),
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                 modifier = Modifier
                     .size(56.dp)

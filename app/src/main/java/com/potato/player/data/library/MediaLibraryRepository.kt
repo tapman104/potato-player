@@ -89,9 +89,10 @@ object MediaLibraryRepository {
 
                 while (cursor.moveToNext()) {
                     val id = cursor.getLong(idCol)
+                    val uri = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id)
                     videos += VideoItem(
                         id = id,
-                        uri = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id),
+                        uri = uri,
                         title = cursor.getString(nameCol) ?: "Video",
                         durationMs = cursor.getLong(durationCol),
                         sizeBytes = cursor.getLong(sizeCol),

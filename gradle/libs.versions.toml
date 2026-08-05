@@ -41,6 +41,7 @@ hilt-compiler                  = { group = "com.google.dagger",         name = "
 androidx-hilt-navigation-compose = { group = "androidx.hilt",           name = "hilt-navigation-compose",     version.ref = "androidxHiltNavigationCompose" }
 coil-compose                   = { group = "io.coil-kt.coil3",                name = "coil-compose",                version.ref = "coil" }
 coil-network-okhttp            = { group = "io.coil-kt.coil3",                name = "coil-network-okhttp",         version.ref = "coil" }
+coil-video                     = { group = "io.coil-kt.coil3",                name = "coil-video",                  version.ref = "coil" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
