@@ -16,6 +16,7 @@ import android.app.Activity
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.fillMaxSize
@@ -77,6 +78,7 @@ fun PlayerGestureBox(
     var currentZoom by remember { mutableStateOf(1.0f) }
     var currentPanX by remember { mutableStateOf(0f) }
     var currentPanY by remember { mutableStateOf(0f) }
+    var swipeDragStartSec by remember { mutableStateOf(0.0) }
 
     LaunchedEffect(fileLoaded) {
         if (fileLoaded) {
@@ -89,6 +91,154 @@ fun PlayerGestureBox(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .pointerInput(Unit) {
+                if (activity?.isInPictureInPictureMode == true) return@pointerInput
+                awaitEachGesture {
+                    do {
+                        val event = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Final)
+                        if (event.changes.size >= 2 && !event.changes.any { it.isConsumed }) break
+                    } while (event.changes.any { it.pressed })
+
+                    var localZoom = currentZoom
+                    var localPanX = currentPanX
+                    var localPanY = currentPanY
+                    
+                    do {
+                        val event = awaitPointerEvent()
+                        if (event.changes.count { it.pressed } < 2) {
+                            continue
+                        }
+                        
+                        val zoomChange = event.calculateZoom()
+                        val pan = event.calculatePan()
+                        
+                        event.changes.forEach {
+                            if (it.positionChange() != Offset.Zero) {
+                                it.consume()
+                            }
+                        }
+
+                        localZoom = (localZoom * zoomChange).coerceIn(1.0f, 4.0f)
+                        if (localZoom < 1.1f) {
+                            localZoom = 1.0f
+                            localPanX = 0f
+                            localPanY = 0f
+                        }
+                        currentZoom = localZoom
+                        if (localZoom > 1.0f) {
+                            val screenWidth = size.width.toFloat()
+                            val screenHeight = size.height.toFloat()
+                            localPanX += pan.x / screenWidth
+                            localPanY += pan.y / screenHeight
+                            localPanX = localPanX.coerceIn(-0.5f, 0.5f)
+                            localPanY = localPanY.coerceIn(-0.5f, 0.5f)
+                            currentPanX = localPanX
+                            currentPanY = localPanY
+                        } else {
+                            localPanX = 0f
+                            localPanY = 0f
+                            currentPanX = 0f
+                            currentPanY = 0f
+                        }
+                        viewModel.setVideoZoom(localZoom, localPanX, localPanY)
+                    } while (event.changes.any { it.pressed } && event.changes.size >= 2)
+                }
+            }
+            .pointerInput(Unit) {
+                if (activity?.isInPictureInPictureMode == true) return@pointerInput
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    val startX = down.position.x
+                    val startY = down.position.y
+                    val screenW = size.width.toFloat()
+                    val screenH = size.height.toFloat()
+                    
+                    val edgeDeadZone = screenW * 0.08f
+                    val topDeadZone = screenH * 0.10f
+                    val bottomDeadZone = screenH * 0.10f
+                    if (startX < edgeDeadZone || startX > screenW - edgeDeadZone) {
+                        return@awaitEachGesture
+                    }
+                    if (startY < topDeadZone || startY > screenH - bottomDeadZone) {
+                        return@awaitEachGesture
+                    }
+                    
+                    var totalDragY = 0f
+                    var totalDragX = 0f
+                    val minDragThreshold = 40f
+                    var gestureStarted = false
+                    val isRightSide = startX > screenW / 2f
+                    
+                    var pointerId = down.id
+                    
+                    do {
+                        val event = awaitPointerEvent()
+                        val change = event.changes.firstOrNull { it.id == pointerId }
+                        if (change == null || !change.pressed) break
+
+                        totalDragY += change.positionChange().y
+                        totalDragX += change.positionChange().x
+                        
+                        if (!gestureStarted && 
+                            kotlin.math.abs(totalDragY) > minDragThreshold &&
+                            kotlin.math.abs(totalDragY) > kotlin.math.abs(totalDragX) * 1.5f) {
+                            gestureStarted = true
+                            if (isRightSide) {
+                                showVolumeIndicator = true
+                                tempVolume = audioManager?.getStreamVolume(AudioManager.STREAM_MUSIC)?.toFloat() ?: 0f
+                            } else {
+                                showBrightnessIndicator = true
+                            }
+                        }
+                        
+                        if (gestureStarted) {
+                            change.consume()
+                            val delta = change.positionChange().y
+                            if (isRightSide) {
+                                tempVolume += -(delta / screenH) * maxVolume * 2f
+                                tempVolume = tempVolume.coerceIn(0f, maxVolume)
+                                audioManager?.setStreamVolume(
+                                    AudioManager.STREAM_MUSIC,
+                                    tempVolume.toInt(),
+                                    0
+                                )
+                            } else {
+                                val brightnessDelta = -(delta / screenH) * 1.0f
+                                brightnessLevel = (brightnessLevel + brightnessDelta).coerceIn(0.01f, 1.0f)
+                                onBrightnessChange(brightnessLevel)
+                            }
+                        }
+                    } while (true)
+
+                    showVolumeIndicator = false
+                    showBrightnessIndicator = false
+                }
+            }
+            .pointerInput(Unit) {
+                if (activity?.isInPictureInPictureMode == true) return@pointerInput
+                detectHorizontalDragGestures(
+                    onDragStart = { _ ->
+                        swipeDragStartSec = viewModel.progressState.value.positionSec
+                        onSwipeSeekStart(swipeDragStartSec)
+                    },
+                    onHorizontalDrag = { change, dragAmount ->
+                        change.consume()
+                        val delta = (dragAmount / size.width) * 120.0
+                        val target = (swipeDragStartSec + delta).coerceIn(0.0, viewModel.progressState.value.durationSec)
+                        swipeDragStartSec += delta
+                        onSwipeSeekTargetSec(target)
+                        viewModel.onSwipeSeek(target)
+                    },
+                    onDragEnd = {
+                        onSwipeSeekTargetSec(null)
+                        viewModel.onSwipeSeekFinished()
+                    },
+                    onDragCancel = {
+                        onSwipeSeekTargetSec(null)
+                        viewModel.onSwipeSeekFinished()
+                    }
+                )
+            }
             .pointerInput(activity?.isInPictureInPictureMode == true) {
                 if (activity?.isInPictureInPictureMode == true) return@pointerInput
                 detectTapGestures(
@@ -127,147 +277,6 @@ fun PlayerGestureBox(
                         controlsState.toggle()
                     }
                 )
-            }
-            .pointerInput(Unit) {
-                if (activity?.isInPictureInPictureMode == true) return@pointerInput
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    val startX = down.position.x
-                    val startY = down.position.y
-                    val screenW = size.width.toFloat()
-                    val screenH = size.height.toFloat()
-                    
-                    val edgeDeadZone = screenW * 0.08f
-                    val topDeadZone = screenH * 0.10f
-                    val bottomDeadZone = screenH * 0.10f
-                    if (startX < edgeDeadZone || startX > screenW - edgeDeadZone) {
-                        return@awaitEachGesture
-                    }
-                    if (startY < topDeadZone || startY > screenH - bottomDeadZone) {
-                        return@awaitEachGesture
-                    }
-                    
-                    var totalDragY = 0f
-                    var totalDragX = 0f
-                    val minDragThreshold = 20f
-                    var gestureStarted = false
-                    var isHorizontalGesture = false
-                    val isRightSide = startX > screenW / 2f
-                    val startPositionSec = viewModel.progressState.value.positionSec
-                    val durationSec = viewModel.progressState.value.durationSec
-                    
-                    var pointerId = down.id
-                    
-                    do {
-                        val event = awaitPointerEvent()
-                        val change = event.changes.firstOrNull { it.id == pointerId }
-                        if (change == null || !change.pressed) break
-
-                        totalDragY += change.positionChange().y
-                        totalDragX += change.positionChange().x
-                        
-                        if (!gestureStarted && 
-                            kotlin.math.abs(totalDragY) > minDragThreshold &&
-                            kotlin.math.abs(totalDragY) > kotlin.math.abs(totalDragX) * 1.5f) {
-                            gestureStarted = true
-                            if (isRightSide) {
-                                showVolumeIndicator = true
-                                tempVolume = audioManager?.getStreamVolume(AudioManager.STREAM_MUSIC)?.toFloat() ?: 0f
-                            } else {
-                                showBrightnessIndicator = true
-                            }
-                        } else if (!gestureStarted && 
-                            kotlin.math.abs(totalDragX) > minDragThreshold &&
-                            kotlin.math.abs(totalDragX) > kotlin.math.abs(totalDragY) * 1.5f) {
-                            gestureStarted = true
-                            isHorizontalGesture = true
-                            onSwipeSeekStart(startPositionSec)
-                        }
-                        
-                        if (gestureStarted) {
-                            change.consume()
-                            if (isHorizontalGesture) {
-                                val seekDelta = (totalDragX / screenW) * 120.0
-                                val targetPositionSec = (startPositionSec + seekDelta).coerceIn(0.0, durationSec)
-                                onSwipeSeekTargetSec(targetPositionSec)
-                                viewModel.onSwipeSeek(targetPositionSec)
-                            } else {
-                                val delta = change.positionChange().y
-                                if (isRightSide) {
-                                    tempVolume += -(delta / screenH) * maxVolume * 2f
-                                    tempVolume = tempVolume.coerceIn(0f, maxVolume)
-                                    audioManager?.setStreamVolume(
-                                        AudioManager.STREAM_MUSIC,
-                                        tempVolume.toInt(),
-                                        0
-                                    )
-                                } else {
-                                    val brightnessDelta = -(delta / screenH) * 1.0f
-                                    brightnessLevel = (brightnessLevel + brightnessDelta).coerceIn(0.01f, 1.0f)
-                                    onBrightnessChange(brightnessLevel)
-                                }
-                            }
-                        }
-                    } while (true)
-
-                    
-                    showVolumeIndicator = false
-                    showBrightnessIndicator = false
-                    if (isHorizontalGesture) {
-                        viewModel.onSwipeSeekFinished()
-                        onSwipeSeekTargetSec(null)
-                    }
-                }
-            }
-            .pointerInput(Unit) {
-                if (activity?.isInPictureInPictureMode == true) return@pointerInput
-                awaitEachGesture {
-                    do {
-                        val event = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Final)
-                        if (event.changes.size >= 2 && !event.changes.any { it.isConsumed }) break
-                    } while (event.changes.any { it.pressed })
-
-                    
-                    var localZoom = currentZoom
-                    var localPanX = currentPanX
-                    var localPanY = currentPanY
-                    
-                    do {
-                        val event = awaitPointerEvent()
-                        val zoomChange = event.calculateZoom()
-                        val pan = event.calculatePan()
-                        
-                        event.changes.forEach {
-                            if (it.positionChange() != Offset.Zero) {
-                                it.consume()
-                            }
-                        }
-
-                        localZoom = (localZoom * zoomChange).coerceIn(1.0f, 4.0f)
-                        if (localZoom < 1.1f) {
-                            localZoom = 1.0f
-                            localPanX = 0f
-                            localPanY = 0f
-                        }
-                        currentZoom = localZoom
-                        if (localZoom > 1.0f) {
-                            val screenWidth = size.width.toFloat()
-                            val screenHeight = size.height.toFloat()
-                            localPanX += pan.x / screenWidth
-                            localPanY += pan.y / screenHeight
-                            localPanX = localPanX.coerceIn(-0.5f, 0.5f)
-                            localPanY = localPanY.coerceIn(-0.5f, 0.5f)
-                            currentPanX = localPanX
-                            currentPanY = localPanY
-                        } else {
-                            localPanX = 0f
-                            localPanY = 0f
-                            currentPanX = 0f
-                            currentPanY = 0f
-                        }
-                        viewModel.setVideoZoom(localZoom, localPanX, localPanY)
-                    } while (event.changes.any { it.pressed } && event.changes.size >= 2)
-                }
             }
     ) {
         if (!(activity?.isInPictureInPictureMode == true)) {
