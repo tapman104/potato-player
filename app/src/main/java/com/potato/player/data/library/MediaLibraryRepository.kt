@@ -6,7 +6,9 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 
 object MediaLibraryRepository {
 
@@ -21,7 +23,7 @@ object MediaLibraryRepository {
         MediaStore.Video.Media.RELATIVE_PATH
     )
 
-    suspend fun getFolders(context: Context): List<FolderItem> = withContext(Dispatchers.IO) {
+    fun getFolders(context: Context): Flow<List<FolderItem>> = flow {
         val folders = linkedMapOf<Long, FolderItem>()
         val collection = videoCollection()
 
@@ -62,11 +64,11 @@ object MediaLibraryRepository {
             }
         }
 
-        folders.values.sortedBy { it.name.lowercase() }
-    }
+        emit(folders.values.sortedBy { it.name.lowercase() })
+    }.flowOn(Dispatchers.IO)
 
-    suspend fun getVideosInFolder(context: Context, bucketId: Long): List<VideoItem> =
-        withContext(Dispatchers.IO) {
+    fun getVideosInFolder(context: Context, bucketId: Long): Flow<List<VideoItem>> =
+        flow {
             val videos = mutableListOf<VideoItem>()
             val collection = videoCollection()
             val selection = "${MediaStore.Video.Media.BUCKET_ID} = ?"
@@ -103,10 +105,10 @@ object MediaLibraryRepository {
                     )
                 }
             }
-            videos
-        }
+            emit(videos)
+        }.flowOn(Dispatchers.IO)
 
-    suspend fun getAllVideos(context: Context): List<VideoItem> = withContext(Dispatchers.IO) {
+    fun getAllVideos(context: Context): Flow<List<VideoItem>> = flow {
         val videos = mutableListOf<VideoItem>()
         val collection = videoCollection()
 
@@ -141,8 +143,8 @@ object MediaLibraryRepository {
                 )
             }
         }
-        videos
-    }
+        emit(videos)
+    }.flowOn(Dispatchers.IO)
 
     private fun videoCollection(): Uri {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
