@@ -17,6 +17,8 @@ import androidx.compose.ui.unit.dp
 import com.potato.player.data.library.MediaLibraryRepository
 import com.potato.player.data.library.VideoItem
 import kotlinx.coroutines.launch
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,15 +29,9 @@ fun FolderScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var videos by remember { mutableStateOf<List<VideoItem>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-
-    LaunchedEffect(bucketId) {
-        isLoading = true
-        videos = MediaLibraryRepository.getVideosInFolder(context, bucketId)
-        isLoading = false
-    }
+    val viewModel: FolderViewModel = hiltViewModel()
+    val videos by viewModel.videos.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {

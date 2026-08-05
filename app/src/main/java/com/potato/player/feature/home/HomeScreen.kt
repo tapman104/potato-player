@@ -36,6 +36,8 @@ import com.potato.player.util.MediaMetadataRepository
 import com.potato.player.util.findActivity
 import com.potato.player.util.lockOrientation
 import kotlinx.coroutines.launch
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,24 +70,16 @@ fun HomeScreen(
         }
     }
 
+    val viewModel: HomeViewModel = hiltViewModel()
+    val folders by viewModel.folders.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+
     var pendingUri by remember { mutableStateOf<Uri?>(null) }
-    var folders by remember { mutableStateOf<List<FolderItem>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(false) }
     var hasPermission by remember { mutableStateOf(checkPermission(context)) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     fun loadFolders() {
-        scope.launch {
-            isLoading = true
-            errorMessage = null
-            try {
-                folders = MediaLibraryRepository.getFolders(context)
-            } catch (e: Exception) {
-                errorMessage = e.localizedMessage ?: "Failed to scan videos"
-            } finally {
-                isLoading = false
-            }
-        }
+        viewModel.loadFolders()
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(

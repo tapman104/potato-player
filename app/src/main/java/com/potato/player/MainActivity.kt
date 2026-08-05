@@ -33,6 +33,9 @@ private val AmoledDarkColorScheme = darkColorScheme(
     onSecondary       = Color(0xFF000000)
 )
 
+import dagger.hilt.android.AndroidEntryPoint
+
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private var pendingIntent by mutableStateOf<Intent?>(null)
     private val mpvWrapper by lazy { MpvWrapper(applicationContext) }
