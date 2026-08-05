@@ -9,30 +9,32 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.catch
 import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     @ApplicationContext private val context: Context
 ) : ViewModel() {
-    private val _folders = MutableStateFlow<List<FolderItem>>(emptyList())
-    val folders: StateFlow<List<FolderItem>> = _folders.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    val isLoading: StateFlow<Boolean> = _isLoading
+
+    val folders: StateFlow<List<FolderItem>> = MediaLibraryRepository.getFolders(context)
+        .onStart { _isLoading.value = true }
+        .onCompletion { _isLoading.value = false }
+        .catch { emit(emptyList()) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
     fun loadFolders() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                _folders.value = MediaLibraryRepository.getFolders(context)
-            } catch (e: Exception) {
-                // error handling skipped for brevity, UI will just show empty list
-            } finally {
-                _isLoading.value = false
-            }
-        }
+        // Live updates handled by Flow
     }
 }

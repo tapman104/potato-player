@@ -10,8 +10,12 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flowOf
 import javax.inject.Inject
 
 @HiltViewModel
@@ -20,31 +24,26 @@ class FolderViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     val bucketId: Long = savedStateHandle.get<Long>("bucketId") ?: -1L
-    
-    private val _videos = MutableStateFlow<List<VideoItem>>(emptyList())
-    val videos: StateFlow<List<VideoItem>> = _videos.asStateFlow()
 
-    private val _isLoading = MutableStateFlow(true)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
 
-    init {
-        loadVideos()
-    }
-
-    private fun loadVideos() {
-        if (bucketId == -1L) {
-            _isLoading.value = false
-            return
-        }
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                _videos.value = MediaLibraryRepository.getVideosInFolder(context, bucketId)
-            } catch (e: Exception) {
-                // empty state handled by UI
-            } finally {
-                _isLoading.value = false
-            }
-        }
+    val videos: StateFlow<List<VideoItem>> = if (bucketId != -1L) {
+        MediaLibraryRepository.getVideosInFolder(context, bucketId)
+            .onStart { _isLoading.value = true }
+            .onCompletion { _isLoading.value = false }
+            .catch { emit(emptyList()) }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList()
+            )
+    } else {
+        flowOf(emptyList<VideoItem>())
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList()
+            )
     }
 }
