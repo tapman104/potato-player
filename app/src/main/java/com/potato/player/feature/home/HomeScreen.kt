@@ -238,7 +238,7 @@ private fun FolderRow(
             )
         },
         leadingContent = {
-            coil.compose.AsyncImage(
+            coil3.compose.AsyncImage(
                 model = folder.firstVideoUri,
                 contentDescription = null,
                 placeholder = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.Folder),

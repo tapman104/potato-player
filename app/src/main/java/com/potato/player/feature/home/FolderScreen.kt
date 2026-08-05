@@ -114,7 +114,7 @@ private fun VideoRow(
             )
         },
         leadingContent = {
-            coil.compose.AsyncImage(
+            coil3.compose.AsyncImage(
                 model = video.uri,
                 contentDescription = null,
                 placeholder = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.PlayCircle),
