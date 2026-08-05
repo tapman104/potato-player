@@ -38,6 +38,8 @@ import com.potato.player.util.lockOrientation
 import kotlinx.coroutines.launch
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.res.stringResource
+import com.potato.player.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -113,11 +115,11 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Potato Player") },
+                title = { Text(stringResource(R.string.app_name)) },
                 actions = {
                     if (hasPermission) {
                         IconButton(onClick = { loadFolders() }) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh))
                         }
                     }
                 }
@@ -132,12 +134,12 @@ fun HomeScreen(
                     onClick = { launcher.launch("video/*") },
                     containerColor = MaterialTheme.colorScheme.secondaryContainer
                 ) {
-                    Icon(Icons.Default.Folder, contentDescription = "Open Video")
+                    Icon(Icons.Default.Folder, contentDescription = stringResource(R.string.open_video))
                 }
                 FloatingActionButton(
                     onClick = { launcher.launch("*/*") }
                 ) {
-                    Icon(Icons.Default.FileOpen, contentDescription = "Open File")
+                    Icon(Icons.Default.FileOpen, contentDescription = stringResource(R.string.open_file))
                 }
             }
         }
@@ -163,9 +165,9 @@ fun HomeScreen(
                 errorMessage != null && folders.isEmpty() -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(errorMessage ?: "Error", color = MaterialTheme.colorScheme.error)
+                            Text(errorMessage ?: stringResource(R.string.error), color = MaterialTheme.colorScheme.error)
                             Spacer(Modifier.height(12.dp))
-                            Button(onClick = { loadFolders() }) { Text("Retry") }
+                            Button(onClick = { loadFolders() }) { Text(stringResource(R.string.retry)) }
                         }
                     }
                 }
@@ -179,9 +181,9 @@ fun HomeScreen(
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(Modifier.height(12.dp))
-                            Text("No videos found", style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.no_videos_found), style = MaterialTheme.typography.titleMedium)
                             Text(
-                                "Use the buttons below to open a file",
+                                stringResource(R.string.use_buttons_open_file),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -265,18 +267,18 @@ private fun PermissionRequest(onRequest: () -> Unit) {
             )
             Spacer(Modifier.height(16.dp))
             Text(
-                "Allow access to your videos",
+                stringResource(R.string.allow_access_videos),
                 style = MaterialTheme.typography.titleMedium
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                "Potato Player needs permission to scan and show videos on your device, just like MX Player.",
+                stringResource(R.string.permission_rationale),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(Modifier.height(24.dp))
             Button(onClick = onRequest) {
-                Text("Grant permission")
+                Text(stringResource(R.string.grant_permission))
             }
         }
     }

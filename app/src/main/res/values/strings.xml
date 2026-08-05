@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Potato Player</string>
+    <string name="refresh">Refresh</string>
+    <string name="open_video">Open Video</string>
+    <string name="open_file">Open File</string>
+    <string name="no_videos_found">No videos found</string>
+    <string name="use_buttons_open_file">Use the buttons below to open a file</string>
+    <string name="allow_access_videos">Allow access to your videos</string>
+    <string name="permission_rationale">Potato Player needs permission to scan and show videos on your device, just like MX Player.</string>
+    <string name="grant_permission">Grant permission</string>
+    <string name="error">Error</string>
+    <string name="retry">Retry</string>
+    <string name="no_videos_in_folder">No videos in this folder</string>
+</resources>

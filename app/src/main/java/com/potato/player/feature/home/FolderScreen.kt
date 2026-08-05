@@ -19,6 +19,8 @@ import com.potato.player.data.library.VideoItem
 import kotlinx.coroutines.launch
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.res.stringResource
+import com.potato.player.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,7 +71,7 @@ fun FolderScreen(
                 }
                 videos.isEmpty() -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No videos in this folder")
+                        Text(stringResource(R.string.no_videos_in_folder))
                     }
                 }
                 else -> {
