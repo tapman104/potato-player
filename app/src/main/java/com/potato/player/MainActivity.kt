@@ -44,9 +44,9 @@ class MainActivity : ComponentActivity() {
         
         // MpvWrapper initializes in its init block, so just by accessing it, it initializes.
         val wrapper = mpvWrapper 
+        pendingIntent = intent
         
         val initialRoute = parseViewIntent(intent)
-        val startRoute: Any = initialRoute ?: HomeRoute
 
         // Set orientation before setContent to prevent portrait flash
         if (initialRoute != null) {
@@ -66,14 +66,14 @@ class MainActivity : ComponentActivity() {
 
                 AppNavigation(
                     navController = navController,
-                    wrapper       = mpvWrapper,
-                    startDestination = startRoute
+                    wrapper       = mpvWrapper
                 )
 
                 LaunchedEffect(navController, pendingIntent) {
                     pendingIntent?.let { newIntent ->
                         parseViewIntent(newIntent)?.let { route ->
                             navController.navigate(route) {
+                                popUpTo(HomeRoute) { inclusive = false }
                                 launchSingleTop = true
                             }
                         }
