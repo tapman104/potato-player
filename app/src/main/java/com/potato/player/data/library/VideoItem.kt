@@ -8,10 +8,8 @@ data class VideoItem(
     val title: String,
     val durationMs: Long,
     val sizeBytes: Long,
-    val dateAdded: Long,
     val bucketId: Long,
-    val bucketName: String,
-    val relativePath: String?
+    val bucketName: String
 )
 
 data class FolderItem(

@@ -19,8 +19,7 @@ object MediaLibraryRepository {
         MediaStore.Video.Media.SIZE,
         MediaStore.Video.Media.DATE_ADDED,
         MediaStore.Video.Media.BUCKET_ID,
-        MediaStore.Video.Media.BUCKET_DISPLAY_NAME,
-        MediaStore.Video.Media.RELATIVE_PATH
+        MediaStore.Video.Media.BUCKET_DISPLAY_NAME
     )
 
     fun getFolders(context: Context): Flow<List<FolderItem>> = flow {
@@ -85,10 +84,8 @@ object MediaLibraryRepository {
                 val nameCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DISPLAY_NAME)
                 val durationCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DURATION)
                 val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.SIZE)
-                val dateCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATE_ADDED)
                 val bucketIdCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.BUCKET_ID)
                 val bucketNameCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.BUCKET_DISPLAY_NAME)
-                val pathCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.RELATIVE_PATH)
 
                 while (cursor.moveToNext()) {
                     val id = cursor.getLong(idCol)
@@ -98,10 +95,8 @@ object MediaLibraryRepository {
                         title = cursor.getString(nameCol) ?: "Video",
                         durationMs = cursor.getLong(durationCol),
                         sizeBytes = cursor.getLong(sizeCol),
-                        dateAdded = cursor.getLong(dateCol),
                         bucketId = cursor.getLong(bucketIdCol),
-                        bucketName = cursor.getString(bucketNameCol) ?: "Unknown",
-                        relativePath = cursor.getString(pathCol)
+                        bucketName = cursor.getString(bucketNameCol) ?: "Unknown"
                     )
                 }
             }
@@ -123,10 +118,8 @@ object MediaLibraryRepository {
             val nameCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DISPLAY_NAME)
             val durationCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DURATION)
             val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.SIZE)
-            val dateCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATE_ADDED)
             val bucketIdCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.BUCKET_ID)
             val bucketNameCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.BUCKET_DISPLAY_NAME)
-            val pathCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.RELATIVE_PATH)
 
             while (cursor.moveToNext()) {
                 val id = cursor.getLong(idCol)
@@ -136,10 +129,8 @@ object MediaLibraryRepository {
                     title = cursor.getString(nameCol) ?: "Video",
                     durationMs = cursor.getLong(durationCol),
                     sizeBytes = cursor.getLong(sizeCol),
-                    dateAdded = cursor.getLong(dateCol),
                     bucketId = cursor.getLong(bucketIdCol),
-                    bucketName = cursor.getString(bucketNameCol) ?: "Unknown",
-                    relativePath = cursor.getString(pathCol)
+                    bucketName = cursor.getString(bucketNameCol) ?: "Unknown"
                 )
             }
         }
