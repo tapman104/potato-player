@@ -46,17 +46,20 @@ fun PlayerScreen(
 ) {
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
-    BackHandler {
-        viewModel.pause()
-        if (isExternalIntent) {
-            activity?.finish()
-        } else {
-            onBack()
-        }
-    }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val progressState by viewModel.progressState.collectAsStateWithLifecycle()
     val fitMode by viewModel.fitMode.collectAsStateWithLifecycle()
+
+    BackHandler {
+        if (!uiState.isLocked) {
+            viewModel.pause()
+            if (isExternalIntent) {
+                activity?.finish()
+            } else {
+                onBack()
+            }
+        }
+    }
 
     // FIX (Bug 1): rememberLauncherForActivityResult registered inside a conditional composable.
     // What was wrong: The launcher was inside SubtitleTrackDialog (a conditional overlay). If the process died while the file picker was open, the result was dropped upon recreation because the dialog wasn't initially composed.
