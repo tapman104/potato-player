@@ -1,5 +1,6 @@
 package com.potato.player.feature.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,9 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.FileOpen
+import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material.icons.rounded.VideoLibrary
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -23,15 +23,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.potato.player.R
 
+enum class PillBarTab { FOLDERS, SETTINGS }
+
 @Composable
 fun PotatoPillBar(
-    onFolderClick: () -> Unit,
-    onFileClick: () -> Unit,
+    selectedTab: PillBarTab,
+    onFoldersClick: () -> Unit,
     onSettingsClick: () -> Unit
 ) {
     Box(
@@ -55,18 +58,15 @@ fun PotatoPillBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 PillBarItem(
-                    icon = Icons.Rounded.VideoLibrary,
-                    label = stringResource(R.string.pill_videos),
-                    onClick = onFolderClick
-                )
-                PillBarItem(
-                    icon = Icons.Rounded.FileOpen,
-                    label = stringResource(R.string.pill_file),
-                    onClick = onFileClick
+                    icon = Icons.Rounded.Folder,
+                    label = "Folders",
+                    isSelected = selectedTab == PillBarTab.FOLDERS,
+                    onClick = onFoldersClick
                 )
                 PillBarItem(
                     icon = Icons.Rounded.Settings,
                     label = stringResource(R.string.settings),
+                    isSelected = selectedTab == PillBarTab.SETTINGS,
                     onClick = onSettingsClick
                 )
             }
@@ -78,26 +78,31 @@ fun PotatoPillBar(
 private fun PillBarItem(
     icon: ImageVector,
     label: String,
+    isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val containerColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent
+    val contentColor = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .clip(RoundedCornerShape(16.dp))
+            .background(containerColor)
             .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 6.dp)
+            .padding(horizontal = 32.dp, vertical = 6.dp)
     ) {
         Icon(
             imageVector = icon,
             contentDescription = label,
             modifier = Modifier.size(26.dp),
-            tint = MaterialTheme.colorScheme.onSurface
+            tint = contentColor
         )
         Spacer(Modifier.height(4.dp))
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface
+            color = contentColor
         )
     }
 }

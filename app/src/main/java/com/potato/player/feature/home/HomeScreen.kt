@@ -79,7 +79,6 @@ fun HomeScreen(
     val folders by viewModel.folders.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
 
-    var pendingUri by remember { mutableStateOf<Uri?>(null) }
     var hasPermission by remember { mutableStateOf(checkPermission(context)) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -98,23 +97,6 @@ fun HomeScreen(
         if (hasPermission) loadFolders()
     }
 
-    LaunchedEffect(pendingUri) {
-        pendingUri?.let { uri ->
-            val uriStr = uri.toString()
-            val title = MediaMetadataRepository.resolveTitle(context, uri)
-            onNavigateToPlayer(uriStr, title)
-            pendingUri = null
-        }
-    }
-
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            pendingUri = uri
-        }
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -130,8 +112,8 @@ fun HomeScreen(
         },
         bottomBar = {
             PotatoPillBar(
-                onFolderClick = { launcher.launch("video/*") },
-                onFileClick = { launcher.launch("*/*") },
+                selectedTab = PillBarTab.FOLDERS,
+                onFoldersClick = { /* Already on Folders */ },
                 onSettingsClick = onNavigateToSettings
             )
         }

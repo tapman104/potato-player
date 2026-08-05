@@ -40,13 +40,6 @@ fun FolderScreen(
     val videos by viewModel.videos.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
 
-    val videoLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.GetContent()
-    ) { uri -> uri?.let { onNavigateToPlayer(it.toString(), "") } }
-    val fileLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.GetContent()
-    ) { uri -> uri?.let { onNavigateToPlayer(it.toString(), "") } }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -71,8 +64,8 @@ fun FolderScreen(
         },
         bottomBar = {
             PotatoPillBar(
-                onFolderClick = { videoLauncher.launch("video/*") },
-                onFileClick = { fileLauncher.launch("*/*") },
+                selectedTab = PillBarTab.FOLDERS,
+                onFoldersClick = onBack,
                 onSettingsClick = onNavigateToSettings
             )
         }
