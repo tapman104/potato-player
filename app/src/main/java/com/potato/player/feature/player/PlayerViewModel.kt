@@ -204,8 +204,6 @@ class PlayerViewModel(
 
     fun togglePlay() {
         wrapper.togglePlay()
-        val isPaused = wrapper.getPropertyBoolean(MpvProp.PAUSE) ?: return
-        _uiState.update { it.copy(isPlaying = !isPaused) }
     }
     
     fun pause() {

@@ -90,10 +90,7 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
     }
 
     fun togglePlay() {
-        // If no pause event has arrived yet, read the current value directly from MPV
-        // rather than relying on a stale default of false.
-        val paused = cachedPause ?: (MPVLib.getPropertyBoolean(MpvProp.PAUSE) ?: false)
-        MPVLib.setPropertyBoolean(MpvProp.PAUSE, !paused)
+        MPVLib.command("cycle", MpvProp.PAUSE)
     }
 
     fun resume() {
