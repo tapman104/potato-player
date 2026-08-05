@@ -44,11 +44,12 @@ data object SettingsRoute
 @Composable
 fun AppNavigation(
     navController: NavHostController,
-    wrapper: MpvWrapper
+    wrapper: MpvWrapper,
+    startDestination: Any = HomeRoute
 ) {
     NavHost(
         navController = navController,
-        startDestination = HomeRoute
+        startDestination = startDestination
     ) {
         composable<HomeRoute> {
             HomeScreen(

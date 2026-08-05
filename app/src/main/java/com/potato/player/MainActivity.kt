@@ -44,10 +44,12 @@ class MainActivity : ComponentActivity() {
         
         // MpvWrapper initializes in its init block, so just by accessing it, it initializes.
         val wrapper = mpvWrapper 
-        pendingIntent = intent
+        
+        val initialRoute = parseViewIntent(intent)
+        val startRoute: Any = initialRoute ?: HomeRoute
 
         // Set orientation before setContent to prevent portrait flash
-        if (intent?.action == Intent.ACTION_VIEW) {
+        if (initialRoute != null) {
             requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         }
 
@@ -64,14 +66,17 @@ class MainActivity : ComponentActivity() {
 
                 AppNavigation(
                     navController = navController,
-                    wrapper       = mpvWrapper
+                    wrapper       = mpvWrapper,
+                    startDestination = startRoute
                 )
 
                 LaunchedEffect(navController, pendingIntent) {
-                    if (pendingIntent == null) return@LaunchedEffect
-                    navController.currentBackStackEntryFlow.first()
-                    pendingIntent?.let { intent ->
-                        handleViewIntent(intent, navController)
+                    pendingIntent?.let { newIntent ->
+                        parseViewIntent(newIntent)?.let { route ->
+                            navController.navigate(route) {
+                                launchSingleTop = true
+                            }
+                        }
                         pendingIntent = null
                     }
                 }
@@ -85,9 +90,9 @@ class MainActivity : ComponentActivity() {
         pendingIntent = intent
     }
 
-    private fun handleViewIntent(intent: Intent?, navController: NavController) {
-        if (intent?.action != Intent.ACTION_VIEW) return
-        val uri = intent.data ?: return
+    private fun parseViewIntent(intent: Intent?): PlayerRoute? {
+        if (intent?.action != Intent.ACTION_VIEW) return null
+        val uri = intent.data ?: return null
 
         if (uri.scheme == ContentResolver.SCHEME_CONTENT) {
             val flags = intent.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION
@@ -104,15 +109,18 @@ class MainActivity : ComponentActivity() {
                 contentResolver.openFileDescriptor(uri, "r")?.close()
             } catch (e: Exception) {
                 android.widget.Toast.makeText(this, "Cannot read file: ${e.localizedMessage}", android.widget.Toast.LENGTH_SHORT).show()
-                return // URI unreadable, bail
+                return null // URI unreadable, bail
             }
         }
 
         val title = uri.lastPathSegment?.substringAfterLast('/') ?: ""
-        navController.navigate(PlayerRoute(videoUri = android.net.Uri.encode(uri.toString()), title = android.net.Uri.encode(title), isExternal = true)) {
-            launchSingleTop = true
-        }
-        intent?.action = Intent.ACTION_MAIN
+        val route = PlayerRoute(
+            videoUri = android.net.Uri.encode(uri.toString()),
+            title = android.net.Uri.encode(title),
+            isExternal = true
+        )
+        intent.action = Intent.ACTION_MAIN
+        return route
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
