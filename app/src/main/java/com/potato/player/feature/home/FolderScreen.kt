@@ -111,11 +111,15 @@ private fun VideoRow(
             )
         },
         leadingContent = {
-            Icon(
-                Icons.Default.PlayCircle,
+            coil.compose.AsyncImage(
+                model = video.uri,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(40.dp)
+                placeholder = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.PlayCircle),
+                error = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.PlayCircle),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
             )
         },
         modifier = Modifier.clickable(onClick = onClick)

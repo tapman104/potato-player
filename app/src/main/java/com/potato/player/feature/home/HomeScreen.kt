@@ -235,10 +235,15 @@ private fun FolderRow(
             )
         },
         leadingContent = {
-            Icon(
-                Icons.Default.Folder,
+            coil.compose.AsyncImage(
+                model = folder.firstVideoUri,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
+                placeholder = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.Folder),
+                error = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.Folder),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
             )
         },
         modifier = Modifier.clickable(onClick = onClick)
