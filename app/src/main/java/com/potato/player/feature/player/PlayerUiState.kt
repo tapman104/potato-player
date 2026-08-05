@@ -38,5 +38,6 @@ data class PlayerUiState(
     val volume: Int = 100,
     val videoZoom: Float = 1.0f,
     val videoPanX: Float = 0f,
-    val videoPanY: Float = 0f
+    val videoPanY: Float = 0f,
+    val isLocked: Boolean = false
 )

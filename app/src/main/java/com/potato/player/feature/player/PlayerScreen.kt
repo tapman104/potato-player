@@ -5,7 +5,11 @@ import android.app.PictureInPictureParams
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -103,16 +107,18 @@ fun PlayerScreen(
         )
 
         // ── Gesture & Tap Overlay ────────────────────────────────────────────
-        PlayerGestureBox(
-            uiState = uiState,
-            viewModel = viewModel,
-            controlsState = controlsState,
-            onBrightnessChange = onBrightnessChange,
-            fileLoaded = uiState.fileLoaded,
-            doubleTapSeekState = doubleTapSeekState,
-            onDoubleTapSeekState = { doubleTapSeekState = it },
-            activity = activity
-        )
+        if (!uiState.isLocked) {
+            PlayerGestureBox(
+                uiState = uiState,
+                viewModel = viewModel,
+                controlsState = controlsState,
+                onBrightnessChange = onBrightnessChange,
+                fileLoaded = uiState.fileLoaded,
+                doubleTapSeekState = doubleTapSeekState,
+                onDoubleTapSeekState = { doubleTapSeekState = it },
+                activity = activity
+            )
+        }
 
         // ── Double-Tap Seek Overlay ──────────────────────────────────────────
         if (!(activity?.isInPictureInPictureMode == true)) {
@@ -150,7 +156,7 @@ fun PlayerScreen(
 
             // ── Top bar ──────────────────────────────────────────────────────
             AnimatedVisibility(
-                visible = controlsState.isVisible,
+                visible = controlsState.isVisible && !uiState.isLocked,
                 enter = fadeIn() + slideInVertically { -it },
                 exit = fadeOut() + slideOutVertically { -it },
                 modifier = Modifier
@@ -171,7 +177,7 @@ fun PlayerScreen(
 
             // ── Center play/pause ────────────────────────────────────────────
             AnimatedVisibility(
-                visible = controlsState.isVisible,
+                visible = controlsState.isVisible && !uiState.isLocked,
                 enter = fadeIn(),
                 exit = fadeOut(),
                 modifier = Modifier.align(Alignment.Center)
@@ -184,7 +190,7 @@ fun PlayerScreen(
 
             // ── Bottom controls ──────────────────────────────────────────────
             AnimatedVisibility(
-                visible = controlsState.isVisible,
+                visible = controlsState.isVisible && !uiState.isLocked,
                 enter = fadeIn() + slideInVertically { it },
                 exit = fadeOut() + slideOutVertically { it },
                 modifier = Modifier
@@ -202,7 +208,24 @@ fun PlayerScreen(
                     onDragEnd         = { /* already handled inside onSeekCommit path */ },
                     onToggleAutoRotation = { viewModel.toggleAutoRotation() },
                     onToggleFitMode   = { viewModel.cycleFitMode() },
-                    onEnterPip        = { enterPip(activity) }
+                    onEnterPip        = { enterPip(activity) },
+                    isLocked          = uiState.isLocked,
+                    onToggleLock      = { viewModel.toggleLock() }
+                )
+            }
+        }
+
+        // ── Centered Unlock Button ───────────────────────────────────────────
+        if (uiState.isLocked && !(activity?.isInPictureInPictureMode == true)) {
+            IconButton(
+                onClick = viewModel::toggleLock,
+                modifier = Modifier.align(Alignment.Center)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = "Unlock",
+                    tint = Color.White.copy(alpha = 0.6f),
+                    modifier = Modifier.size(32.dp)
                 )
             }
         }

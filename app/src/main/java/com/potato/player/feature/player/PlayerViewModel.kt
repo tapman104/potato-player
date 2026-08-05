@@ -210,6 +210,10 @@ class PlayerViewModel(
         wrapper.pause()
     }
 
+    fun toggleLock() {
+        _uiState.update { it.copy(isLocked = !it.isLocked) }
+    }
+
     fun cycleOrientationMode() {
         val next = when (_uiState.value.orientationMode) {
             OrientationMode.AUTO -> OrientationMode.LOCK_LANDSCAPE

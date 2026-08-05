@@ -11,6 +11,8 @@ import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.FitScreen
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.AspectRatio
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,6 +38,8 @@ fun PlayerBottomControls(
     onToggleAutoRotation: () -> Unit = {},
     onToggleFitMode: () -> Unit = {},
     onEnterPip: () -> Unit = {},
+    isLocked: Boolean = false,
+    onToggleLock: () -> Unit = {},
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
@@ -159,6 +163,18 @@ fun PlayerBottomControls(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment     = Alignment.CenterVertically
             ) {
+                val onToggleLockRef = rememberUpdatedState(onToggleLock)
+                val handleToggleLock = remember { { onToggleLockRef.value() } }
+
+                IconButton(onClick = handleToggleLock, modifier = buttonModifier) {
+                    Icon(
+                        imageVector        = if (isLocked) Icons.Default.LockOpen else Icons.Default.Lock,
+                        contentDescription = if (isLocked) "Unlock" else "Lock",
+                        tint               = Color.White
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+
                 val onToggleFitModeRef = rememberUpdatedState(onToggleFitMode)
                 val handleToggleFitMode = remember { { onToggleFitModeRef.value() } }
 
