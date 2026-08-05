@@ -14,8 +14,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -47,7 +49,8 @@ import com.potato.player.R
 @Composable
 fun HomeScreen(
     onNavigateToPlayer: (videoUri: String, title: String) -> Unit,
-    onNavigateToFolder: (bucketId: Long, folderName: String) -> Unit
+    onNavigateToFolder: (bucketId: Long, folderName: String) -> Unit,
+    onNavigateToSettings: () -> Unit
 ) {
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
@@ -128,20 +131,35 @@ fun HomeScreen(
             )
         },
         floatingActionButton = {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.padding(end = 4.dp)
+            Surface(
+                shape = RoundedCornerShape(50.dp),
+                tonalElevation = 6.dp,
+                shadowElevation = 6.dp,
+                color = MaterialTheme.colorScheme.surfaceContainer
             ) {
-                FloatingActionButton(
-                    onClick = { launcher.launch("video/*") },
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                Row(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Folder, contentDescription = stringResource(R.string.open_video))
-                }
-                FloatingActionButton(
-                    onClick = { launcher.launch("*/*") }
-                ) {
-                    Icon(Icons.Default.FileOpen, contentDescription = stringResource(R.string.open_file))
+                    IconButton(onClick = { launcher.launch("video/*") }) {
+                        Icon(
+                            imageVector = Icons.Default.Folder,
+                            contentDescription = stringResource(R.string.open_video)
+                        )
+                    }
+                    IconButton(onClick = { launcher.launch("*/*") }) {
+                        Icon(
+                            imageVector = Icons.Default.FileOpen,
+                            contentDescription = stringResource(R.string.open_file)
+                        )
+                    }
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = stringResource(R.string.settings)
+                        )
+                    }
                 }
             }
         }
@@ -211,7 +229,7 @@ fun HomeScreen(
                                 onClick = { onNavigateToFolder(folder.bucketId, folder.name) }
                             )
                         }
-                        item { Spacer(Modifier.height(80.dp)) }
+                        item { Spacer(Modifier.height(72.dp)) }
                     }
                 }
             }

@@ -18,6 +18,7 @@ import com.potato.player.feature.home.HomeScreen
 import com.potato.player.feature.player.PlayerScreen
 import com.potato.player.feature.player.PlayerViewModel
 import com.potato.player.feature.player.PlayerViewModelFactory
+import com.potato.player.feature.settings.SettingsScreen
 import com.potato.player.util.findActivity
 import kotlinx.serialization.Serializable
 
@@ -36,6 +37,9 @@ data class PlayerRoute(
     val title: String = "",
     val isExternal: Boolean = false
 )
+
+@Serializable
+data object SettingsRoute
 
 @Composable
 fun AppNavigation(
@@ -63,6 +67,9 @@ fun AppNavigation(
                             folderName = folderName
                         )
                     )
+                },
+                onNavigateToSettings = {
+                    navController.navigate(SettingsRoute)
                 }
             )
         }
@@ -80,6 +87,12 @@ fun AppNavigation(
                         )
                     )
                 },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<SettingsRoute> {
+            SettingsScreen(
                 onBack = { navController.popBackStack() }
             )
         }
