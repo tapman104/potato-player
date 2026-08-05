@@ -94,7 +94,10 @@ fun AppNavigation(
 
         composable<SettingsRoute> {
             SettingsScreen(
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onNavigateToHome = {
+                    navController.popBackStack(HomeRoute, inclusive = false)
+                }
             )
         }
 

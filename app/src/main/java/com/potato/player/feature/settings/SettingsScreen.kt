@@ -21,10 +21,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.potato.player.R
+import com.potato.player.feature.home.PillBarTab
+import com.potato.player.feature.home.PotatoPillBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen(
+    onBack: () -> Unit,
+    onNavigateToHome: () -> Unit
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -37,6 +42,13 @@ fun SettingsScreen(onBack: () -> Unit) {
                         )
                     }
                 }
+            )
+        },
+        bottomBar = {
+            PotatoPillBar(
+                selectedTab = PillBarTab.SETTINGS,
+                onFoldersClick = onNavigateToHome,
+                onSettingsClick = { /* Already on Settings */ }
             )
         }
     ) { padding ->
