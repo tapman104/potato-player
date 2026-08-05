@@ -35,7 +35,7 @@ class MpvEventProcessor(
             }
             is MpvEvent.PropertyBool -> {
                 if (event.name == MpvProp.PAUSE) {
-                    if (event.value) onPlaybackPaused() else onPlaybackStarted()
+                    if (event.value) onPlaybackStarted() else onPlaybackPaused()
                 }
             }
             is MpvEvent.PropertyDouble -> {
