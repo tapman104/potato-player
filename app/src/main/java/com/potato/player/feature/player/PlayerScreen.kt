@@ -79,6 +79,8 @@ fun PlayerScreen(
         isInPipMode = activity?.isInPictureInPictureMode == true
     )
     var doubleTapSeekState by remember { mutableStateOf<DoubleTapSeekState?>(null) }
+    var swipeSeekTargetSec by remember { mutableStateOf<Double?>(null) }
+    var swipeDragStartSec by remember { mutableStateOf(0.0) }
 
     // Clear double-tap seek overlay after animation
     LaunchedEffect(doubleTapSeekState?.triggerId) {
@@ -119,6 +121,9 @@ fun PlayerScreen(
                 fileLoaded = uiState.fileLoaded,
                 doubleTapSeekState = doubleTapSeekState,
                 onDoubleTapSeekState = { doubleTapSeekState = it },
+                swipeSeekTargetSec = swipeSeekTargetSec,
+                onSwipeSeekTargetSec = { swipeSeekTargetSec = it },
+                onSwipeSeekStart = { startSec -> swipeDragStartSec = startSec },
                 activity = activity
             )
         }
@@ -126,6 +131,47 @@ fun PlayerScreen(
         // ── Double-Tap Seek Overlay ──────────────────────────────────────────
         if (!(activity?.isInPictureInPictureMode == true)) {
             DoubleTapSeekOverlay(seekState = doubleTapSeekState)
+        }
+
+        // ── Swipe Seek Overlay ───────────────────────────────────────────────
+        if (swipeSeekTargetSec != null && !(activity?.isInPictureInPictureMode == true)) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                androidx.compose.foundation.layout.Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .background(Color.Black.copy(alpha = 0.6f), androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                        .padding(16.dp)
+                ) {
+                    val target = swipeSeekTargetSec!!
+                    val delta = target - swipeDragStartSec
+                    val sign = if (delta >= 0) "+" else "-"
+                    
+                    val hours = (target / 3600).toInt()
+                    val minutes = ((target % 3600) / 60).toInt()
+                    val seconds = (target % 60).toInt()
+                    val timeString = if (hours > 0) {
+                        String.format(java.util.Locale.US, "%d:%02d:%02d", hours, minutes, seconds)
+                    } else {
+                        String.format(java.util.Locale.US, "%02d:%02d", minutes, seconds)
+                    }
+                    
+                    Text(
+                        text = timeString,
+                        color = Color.White,
+                        fontSize = 24.sp,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "[$sign${kotlin.math.abs(delta).toInt()}s]",
+                        color = Color.White,
+                        fontSize = 16.sp
+                    )
+                }
+            }
         }
 
         // ── Top Hold for 2x Fast-Forward Banner ──────────────────────────────

@@ -38,6 +38,9 @@ fun PlayerGestureBox(
     fileLoaded: Boolean,
     doubleTapSeekState: DoubleTapSeekState?,
     onDoubleTapSeekState: (DoubleTapSeekState?) -> Unit,
+    swipeSeekTargetSec: Double?,
+    onSwipeSeekTargetSec: (Double?) -> Unit,
+    onSwipeSeekStart: (Double) -> Unit,
     activity: Activity?
 ) {
     var isLongPressActive by remember { mutableStateOf(false) }
@@ -48,13 +51,12 @@ fun PlayerGestureBox(
                 if (windowBrightness >= 0f) {
                     windowBrightness
                 } else {
-                    val system = try {
+                    try {
                         android.provider.Settings.System.getInt(
                             activity?.contentResolver,
                             android.provider.Settings.System.SCREEN_BRIGHTNESS
-                        )
-                    } catch (e: Exception) { 128 }
-                    system / 255f
+                        ) / 255f
+                    } catch (e: Exception) { 0.5f }
                 }
             }
         )
@@ -105,13 +107,6 @@ fun PlayerGestureBox(
                         viewModel.startFastForward()
                     },
                     onDoubleTap = { offset ->
-                        if (currentZoom > 1.0f) {
-                            viewModel.resetZoom()
-                            currentZoom = 1.0f
-                            currentPanX = 0f
-                            currentPanY = 0f
-                            return@detectTapGestures
-                        }
                         val current = doubleTapSeekState 
                         val screenWidth = size.width
                         if (offset.x < screenWidth / 2f) {
@@ -156,7 +151,10 @@ fun PlayerGestureBox(
                     var totalDragX = 0f
                     val minDragThreshold = 20f
                     var gestureStarted = false
+                    var isHorizontalGesture = false
                     val isRightSide = startX > screenW / 2f
+                    val startPositionSec = viewModel.progressState.value.positionSec
+                    val durationSec = viewModel.progressState.value.durationSec
                     
                     var pointerId = down.id
                     
@@ -178,23 +176,36 @@ fun PlayerGestureBox(
                             } else {
                                 showBrightnessIndicator = true
                             }
+                        } else if (!gestureStarted && 
+                            kotlin.math.abs(totalDragX) > minDragThreshold &&
+                            kotlin.math.abs(totalDragX) > kotlin.math.abs(totalDragY) * 1.5f) {
+                            gestureStarted = true
+                            isHorizontalGesture = true
+                            onSwipeSeekStart(startPositionSec)
                         }
                         
                         if (gestureStarted) {
-                            val delta = change.positionChange().y
                             change.consume()
-                            if (isRightSide) {
-                                tempVolume += -(delta / screenH) * maxVolume * 2f
-                                tempVolume = tempVolume.coerceIn(0f, maxVolume)
-                                audioManager?.setStreamVolume(
-                                    AudioManager.STREAM_MUSIC,
-                                    tempVolume.toInt(),
-                                    0
-                                )
+                            if (isHorizontalGesture) {
+                                val seekDelta = (totalDragX / screenW) * 120.0
+                                val targetPositionSec = (startPositionSec + seekDelta).coerceIn(0.0, durationSec)
+                                onSwipeSeekTargetSec(targetPositionSec)
+                                viewModel.onSwipeSeek(targetPositionSec)
                             } else {
-                                val brightnessDelta = -(delta / screenH) * 1.0f
-                                brightnessLevel = (brightnessLevel + brightnessDelta).coerceIn(0.01f, 1.0f)
-                                onBrightnessChange(brightnessLevel)
+                                val delta = change.positionChange().y
+                                if (isRightSide) {
+                                    tempVolume += -(delta / screenH) * maxVolume * 2f
+                                    tempVolume = tempVolume.coerceIn(0f, maxVolume)
+                                    audioManager?.setStreamVolume(
+                                        AudioManager.STREAM_MUSIC,
+                                        tempVolume.toInt(),
+                                        0
+                                    )
+                                } else {
+                                    val brightnessDelta = -(delta / screenH) * 1.0f
+                                    brightnessLevel = (brightnessLevel + brightnessDelta).coerceIn(0.01f, 1.0f)
+                                    onBrightnessChange(brightnessLevel)
+                                }
                             }
                         }
                     } while (true)
@@ -202,6 +213,10 @@ fun PlayerGestureBox(
                     
                     showVolumeIndicator = false
                     showBrightnessIndicator = false
+                    if (isHorizontalGesture) {
+                        viewModel.onSwipeSeekFinished()
+                        onSwipeSeekTargetSec(null)
+                    }
                 }
             }
             .pointerInput(Unit) {
@@ -240,6 +255,8 @@ fun PlayerGestureBox(
                             val screenHeight = size.height.toFloat()
                             localPanX += pan.x / screenWidth
                             localPanY += pan.y / screenHeight
+                            localPanX = localPanX.coerceIn(-0.5f, 0.5f)
+                            localPanY = localPanY.coerceIn(-0.5f, 0.5f)
                             currentPanX = localPanX
                             currentPanY = localPanY
                         } else {

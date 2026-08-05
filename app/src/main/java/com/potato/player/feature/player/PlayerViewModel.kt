@@ -306,6 +306,14 @@ class PlayerViewModel(
         _progressState.update { it.copy(dragPositionSec = null) }
     }
 
+    fun onSwipeSeek(positionSec: Double) {
+        wrapper.seekTo((positionSec * 1000).toLong())
+    }
+
+    fun onSwipeSeekFinished() {
+        // no-op for now unless a final commit seek is needed
+    }
+
     fun setPlaybackSpeed(speed: Double) {
         val clamped = speed.coerceIn(0.25, 4.0)
         normalPlaybackSpeed = clamped
