@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.draw.clip
 import com.potato.player.R
 
 @OptIn(ExperimentalMaterial3Api::class)

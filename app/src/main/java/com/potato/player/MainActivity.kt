@@ -17,6 +17,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.potato.player.engine.MpvWrapper
 import kotlinx.coroutines.flow.first
+import dagger.hilt.android.AndroidEntryPoint
 
 private val AmoledDarkColorScheme = darkColorScheme(
     background        = Color(0xFF000000),
@@ -32,8 +33,6 @@ private val AmoledDarkColorScheme = darkColorScheme(
     secondary         = Color(0xFF80CBC4),
     onSecondary       = Color(0xFF000000)
 )
-
-import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
