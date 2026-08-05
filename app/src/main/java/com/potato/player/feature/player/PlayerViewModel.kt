@@ -48,6 +48,9 @@ class PlayerViewModel(
     private val _fitMode = MutableStateFlow(VideoFitMode.FIT)
     val fitMode: StateFlow<VideoFitMode> = _fitMode.asStateFlow()
 
+    val swipeSeekTargetSec = MutableStateFlow<Double?>(null)
+    private var lastSeekTime = 0L
+
     private var currentUri = ""
     private var currentTitle = ""
     
@@ -307,11 +310,20 @@ class PlayerViewModel(
     }
 
     fun onSwipeSeek(positionSec: Double) {
-        wrapper.seekTo((positionSec * 1000).toLong())
+        swipeSeekTargetSec.value = positionSec
+        if (System.currentTimeMillis() - lastSeekTime >= 100L) {
+            wrapper.seekTo((positionSec * 1000).toLong())
+            lastSeekTime = System.currentTimeMillis()
+        }
     }
 
     fun onSwipeSeekFinished() {
-        // no-op for now unless a final commit seek is needed
+        val target = swipeSeekTargetSec.value
+        swipeSeekTargetSec.value = null
+        if (target != null) {
+            wrapper.seekTo((target * 1000).toLong())
+            lastSeekTime = System.currentTimeMillis()
+        }
     }
 
     fun setPlaybackSpeed(speed: Double) {

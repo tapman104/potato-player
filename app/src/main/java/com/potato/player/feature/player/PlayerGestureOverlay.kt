@@ -39,8 +39,6 @@ fun PlayerGestureBox(
     fileLoaded: Boolean,
     doubleTapSeekState: DoubleTapSeekState?,
     onDoubleTapSeekState: (DoubleTapSeekState?) -> Unit,
-    swipeSeekTargetSec: Double?,
-    onSwipeSeekTargetSec: (Double?) -> Unit,
     onSwipeSeekStart: (Double) -> Unit,
     activity: Activity?
 ) {
@@ -195,7 +193,7 @@ fun PlayerGestureBox(
                             change.consume()
                             val delta = change.positionChange().y
                             if (isRightSide) {
-                                tempVolume += -(delta / screenH) * maxVolume * 2f
+                                tempVolume += -(delta / screenH) * maxVolume * 6f
                                 tempVolume = tempVolume.coerceIn(0f, maxVolume)
                                 audioManager?.setStreamVolume(
                                     AudioManager.STREAM_MUSIC,
@@ -203,7 +201,7 @@ fun PlayerGestureBox(
                                     0
                                 )
                             } else {
-                                val brightnessDelta = -(delta / screenH) * 1.0f
+                                val brightnessDelta = -(delta / screenH) * 3.0f
                                 brightnessLevel = (brightnessLevel + brightnessDelta).coerceIn(0.01f, 1.0f)
                                 onBrightnessChange(brightnessLevel)
                             }
@@ -226,15 +224,12 @@ fun PlayerGestureBox(
                         val delta = (dragAmount / size.width) * 120.0
                         val target = (swipeDragStartSec + delta).coerceIn(0.0, viewModel.progressState.value.durationSec)
                         swipeDragStartSec += delta
-                        onSwipeSeekTargetSec(target)
                         viewModel.onSwipeSeek(target)
                     },
                     onDragEnd = {
-                        onSwipeSeekTargetSec(null)
                         viewModel.onSwipeSeekFinished()
                     },
                     onDragCancel = {
-                        onSwipeSeekTargetSec(null)
                         viewModel.onSwipeSeekFinished()
                     }
                 )

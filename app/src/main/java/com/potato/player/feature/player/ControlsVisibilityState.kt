@@ -22,6 +22,10 @@ class ControlsVisibilityState(
         isVisible = false
     }
 
+    fun forceHide() {
+        isVisible = false
+    }
+
     fun toggle() {
         isVisible = !isVisible
     }

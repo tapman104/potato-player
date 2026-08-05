@@ -80,8 +80,14 @@ fun PlayerScreen(
         isInPipMode = activity?.isInPictureInPictureMode == true
     )
     var doubleTapSeekState by remember { mutableStateOf<DoubleTapSeekState?>(null) }
-    var swipeSeekTargetSec by remember { mutableStateOf<Double?>(null) }
+    val swipeSeekTargetSec by viewModel.swipeSeekTargetSec.collectAsStateWithLifecycle()
     var swipeDragStartSec by remember { mutableStateOf(0.0) }
+
+    LaunchedEffect(swipeSeekTargetSec) {
+        if (swipeSeekTargetSec != null) {
+            controlsState.forceHide()
+        }
+    }
 
     // Clear double-tap seek overlay after animation
     LaunchedEffect(doubleTapSeekState?.triggerId) {
@@ -122,8 +128,6 @@ fun PlayerScreen(
                 fileLoaded = uiState.fileLoaded,
                 doubleTapSeekState = doubleTapSeekState,
                 onDoubleTapSeekState = { doubleTapSeekState = it },
-                swipeSeekTargetSec = swipeSeekTargetSec,
-                onSwipeSeekTargetSec = { swipeSeekTargetSec = it },
                 onSwipeSeekStart = { startSec -> swipeDragStartSec = startSec },
                 activity = activity
             )
@@ -206,7 +210,7 @@ fun PlayerScreen(
 
             // ── Top bar ──────────────────────────────────────────────────────
             AnimatedVisibility(
-                visible = controlsState.isVisible && !uiState.isLocked,
+                visible = controlsState.isVisible && !uiState.isLocked && swipeSeekTargetSec == null,
                 enter = fadeIn() + slideInVertically { -it },
                 exit = fadeOut() + slideOutVertically { -it },
                 modifier = Modifier
@@ -227,7 +231,7 @@ fun PlayerScreen(
 
             // ── Center play/pause ────────────────────────────────────────────
             AnimatedVisibility(
-                visible = controlsState.isVisible && !uiState.isLocked,
+                visible = controlsState.isVisible && !uiState.isLocked && swipeSeekTargetSec == null,
                 enter = fadeIn(),
                 exit = fadeOut(),
                 modifier = Modifier.align(Alignment.Center)
@@ -240,7 +244,7 @@ fun PlayerScreen(
 
             // ── Bottom controls ──────────────────────────────────────────────
             AnimatedVisibility(
-                visible = controlsState.isVisible && !uiState.isLocked,
+                visible = controlsState.isVisible && !uiState.isLocked && swipeSeekTargetSec == null,
                 enter = fadeIn() + slideInVertically { it },
                 exit = fadeOut() + slideOutVertically { it },
                 modifier = Modifier
