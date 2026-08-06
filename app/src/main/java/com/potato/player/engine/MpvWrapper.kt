@@ -26,8 +26,6 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
 
     private val configurator = MpvOptionsConfigurator()
 
-    // Tri-state: null = no pause event received yet from MPV, true/false = last known value.
-    @Volatile private var cachedPause: Boolean? = null
 
     init {
         configurator.copyFontAssets(appContext)
@@ -165,7 +163,6 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
     override fun eventProperty(name: String) {}
     override fun eventProperty(name: String, value: Long) { _events.tryEmit(MpvEvent.PropertyLong(name, value)) }
     override fun eventProperty(name: String, value: Boolean) {
-        if (name == MpvProp.PAUSE) cachedPause = value
         _events.tryEmit(MpvEvent.PropertyBool(name, value))
     }
     override fun eventProperty(name: String, value: String) { _events.tryEmit(MpvEvent.PropertyString(name, value)) }

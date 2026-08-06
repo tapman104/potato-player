@@ -18,13 +18,7 @@ internal object MpvProp {
     const val VIDEO_PARAMS_H     = "video-params/h"
 }
 
-// ponytail: values correspond directly to mpv_format C enum in mpv/client.h
-internal object MpvFmt {
-    const val FLAG   = 3
-    const val STRING = 4
-    const val DOUBLE = 5
-    const val INT64  = 6
-}
+
 
 internal object MpvEventId {
     const val FILE_LOADED      = 8
@@ -33,8 +27,3 @@ internal object MpvEventId {
     const val PLAYBACK_RESTART_21 = 21
 }
 
-internal object MpvCache {
-    const val MAX_BYTES      = "50MiB"
-    const val MAX_BACK_BYTES = "20MiB"
-    const val SECS           = "30"
-}

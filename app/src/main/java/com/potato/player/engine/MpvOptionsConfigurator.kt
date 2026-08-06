@@ -101,3 +101,17 @@ class MpvOptionsConfigurator {
 
     companion object { private const val TAG = "MpvOptionsConfigurator" }
 }
+
+// ponytail: values correspond directly to mpv_format C enum in mpv/client.h
+private object MpvFmt {
+    const val FLAG   = 3
+    const val STRING = 4
+    const val DOUBLE = 5
+    const val INT64  = 6
+}
+
+private object MpvCache {
+    const val MAX_BYTES      = "50MiB"
+    const val MAX_BACK_BYTES = "20MiB"
+    const val SECS           = "30"
+}
