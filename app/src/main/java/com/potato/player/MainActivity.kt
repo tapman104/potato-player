@@ -46,10 +46,14 @@ class MainActivity : ComponentActivity() {
         val wrapper = mpvWrapper 
         pendingIntent = intent
         
-        val initialRoute = parseViewIntent(intent)
-
-        // Set orientation before setContent to prevent portrait flash
-        if (initialRoute != null) {
+        // Set orientation before setContent to prevent portrait flash.
+        // Use a direct check instead of calling parseViewIntent here — parseViewIntent
+        // must only be called once, inside the LaunchedEffect, to avoid the mutation
+        // at intent.action corrupting the intent before the LaunchedEffect fires.
+        @Suppress("DEPRECATION")
+        val isExternalVideoIntent = (intent.action == Intent.ACTION_VIEW || intent.action == Intent.ACTION_SEND)
+                && (intent.data != null || intent.getParcelableExtra<android.net.Uri>(Intent.EXTRA_STREAM) != null)
+        if (isExternalVideoIntent) {
             requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         }
 
@@ -126,7 +130,6 @@ class MainActivity : ComponentActivity() {
             title = android.net.Uri.encode(title),
             isExternal = true
         )
-        intent.action = Intent.ACTION_MAIN
         return route
     }
 
