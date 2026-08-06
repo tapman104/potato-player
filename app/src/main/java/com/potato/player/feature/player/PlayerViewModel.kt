@@ -14,7 +14,7 @@ import com.potato.player.engine.MpvProp
 import com.potato.player.engine.TrackInfo
 import com.potato.player.engine.TrackListParser
 import com.potato.player.engine.TrackType
-import com.potato.player.feature.player.PlayerUiConstants
+
 import com.potato.player.feature.player.toUiModel
 import com.potato.player.util.MediaMetadataRepository
 import kotlinx.coroutines.Dispatchers
@@ -37,18 +37,9 @@ class PlayerViewModel(
 
     private val prefsRepository by lazy { UserPreferencesRepository(appContext) }
     
-    val dialogs = PlayerDialogStateHolder()
-
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
 
-    private val _progressState = MutableStateFlow(PlaybackProgressState())
-    val progressState: StateFlow<PlaybackProgressState> = _progressState.asStateFlow()
-
-    private val _fitMode = MutableStateFlow(VideoFitMode.FIT)
-    val fitMode: StateFlow<VideoFitMode> = _fitMode.asStateFlow()
-
-    val swipeSeekTargetSec = MutableStateFlow<Double?>(null)
     private var lastSeekTime = 0L
 
     private var currentUri = ""
@@ -61,9 +52,9 @@ class PlayerViewModel(
     private val eventProcessor = MpvEventProcessor(
         onPlaybackStarted = { _uiState.update { it.copy(isLoading = false, isPlaying = true) } },
         onPlaybackPaused = { _uiState.update { it.copy(isPlaying = false) } },
-        onDurationChanged = { ms -> _progressState.update { it.copy(durationSec = ms / 1000.0) } },
+        onDurationChanged = { ms -> _uiState.update { it.copy(progressState = it.progressState.copy(durationSec = ms / 1000.0)) } },
         onPositionChanged = { ms -> 
-            if (!isSliderSeeking) _progressState.update { it.copy(positionSec = ms / 1000.0) } 
+            if (!isSliderSeeking) _uiState.update { it.copy(progressState = it.progressState.copy(positionSec = ms / 1000.0)) } 
         },
         onTracksChanged = { json ->
             val tracks = TrackListParser.parse(json)
@@ -94,16 +85,15 @@ class PlayerViewModel(
         },
         onFileLoaded = {
             val isPaused = wrapper.getPropertyBoolean(MpvProp.PAUSE) ?: false
-            _uiState.update { it.copy(fileLoaded = true, isLoading = false, isPlaying = !isPaused) }
-            _fitMode.value = VideoFitMode.FIT
+            _uiState.update { it.copy(fileLoaded = true, isLoading = false, isPlaying = !isPaused, fitMode = VideoFitMode.FIT) }
             loadTracks()
             if (pendingResumePosition > 0L) {
                 wrapper.seekTo(pendingResumePosition)
                 pendingResumePosition = 0L
             }
         },
-        onCacheTimeChanged = { sec -> _progressState.update { it.copy(cachedSec = sec) } },
-        onCacheDurationChanged = { sec -> _progressState.update { it.copy(cacheDurationSec = sec) } },
+        onCacheTimeChanged = { sec -> _uiState.update { it.copy(progressState = it.progressState.copy(cachedSec = sec)) } },
+        onCacheDurationChanged = { sec -> _uiState.update { it.copy(progressState = it.progressState.copy(cacheDurationSec = sec)) } },
         onSpeedChanged = { speed ->
             if (!_uiState.value.isFastForwarding) {
                 _uiState.update { it.copy(playbackSpeed = speed) }
@@ -233,12 +223,12 @@ class PlayerViewModel(
     }
 
     fun cycleFitMode() {
-        val next = when (_fitMode.value) {
+        val next = when (_uiState.value.fitMode) {
             VideoFitMode.FIT -> VideoFitMode.FILL
             VideoFitMode.FILL -> VideoFitMode.STRETCH
             VideoFitMode.STRETCH -> VideoFitMode.FIT
         }
-        _fitMode.value = next
+        _uiState.update { it.copy(fitMode = next) }
         when (next) {
             VideoFitMode.FIT -> {
                 wrapper.setPropertyString("video-aspect-override", "-1")
@@ -265,7 +255,7 @@ class PlayerViewModel(
     }
 
     fun seekRelative(offsetSec: Double) {
-        val target = (_progressState.value.positionSec + offsetSec).coerceIn(0.0, _progressState.value.durationSec.takeIf { it > 0.0 } ?: Double.MAX_VALUE)
+        val target = (_uiState.value.progressState.positionSec + offsetSec).coerceIn(0.0, _uiState.value.progressState.durationSec.takeIf { it > 0.0 } ?: Double.MAX_VALUE)
         wrapper.seekTo((target * 1000).toLong())
     }
 
@@ -291,11 +281,11 @@ class PlayerViewModel(
 
     fun onSliderDragStart(posSec: Double) {
         isSliderSeeking = true
-        _progressState.update { it.copy(dragPositionSec = posSec) }
+        _uiState.update { it.copy(progressState = it.progressState.copy(dragPositionSec = posSec)) }
     }
 
     fun onSliderDragChange(posSec: Double) {
-        _progressState.update { it.copy(dragPositionSec = posSec) }
+        _uiState.update { it.copy(progressState = it.progressState.copy(dragPositionSec = posSec)) }
         // The old code used seekGesture which just stored a value, but since MPV has its own thread and queue
         // we could just use absolute+exact if we want to seek during drag. Since we deleted the debouncer,
         // it's better not to spam it, but actually `seekTo` should be fine. However, old `seekGesture`
@@ -306,11 +296,11 @@ class PlayerViewModel(
     fun onSliderDragEnd(posSec: Double) {
         isSliderSeeking = false
         wrapper.seekTo((posSec * 1000).toLong())
-        _progressState.update { it.copy(dragPositionSec = null) }
+        _uiState.update { it.copy(progressState = it.progressState.copy(dragPositionSec = null)) }
     }
 
     fun onSwipeSeek(positionSec: Double) {
-        swipeSeekTargetSec.value = positionSec
+        _uiState.update { it.copy(swipeSeekTargetSec = positionSec) }
         if (System.currentTimeMillis() - lastSeekTime >= 100L) {
             wrapper.seekTo((positionSec * 1000).toLong())
             lastSeekTime = System.currentTimeMillis()
@@ -318,8 +308,8 @@ class PlayerViewModel(
     }
 
     fun onSwipeSeekFinished() {
-        val target = swipeSeekTargetSec.value
-        swipeSeekTargetSec.value = null
+        val target = _uiState.value.swipeSeekTargetSec
+        _uiState.update { it.copy(swipeSeekTargetSec = null) }
         if (target != null) {
             wrapper.seekTo((target * 1000).toLong())
             lastSeekTime = System.currentTimeMillis()
@@ -338,13 +328,13 @@ class PlayerViewModel(
     fun onSelectAudioTrack(id: Int) {
         wrapper.setAudioTrack(id)
         _uiState.update { it.copy(currentAudioTrackId = id) }
-        dialogs.onDismissAudioDialog()
+        dismissDialog()
     }
 
     fun onSelectSubtitleTrack(id: Int) {
         wrapper.setSubTrack(id)
         _uiState.update { it.copy(currentSubtitleTrackId = id) }
-        dialogs.onDismissSubtitleDialog()
+        dismissDialog()
     }
 
     fun onLoadExternalSubtitle(uri: Uri, context: Context) {
@@ -354,7 +344,7 @@ class PlayerViewModel(
             // Reload tracks to reflect new subtitle
             loadTracks()
         }
-        dialogs.onDismissSubtitleDialog()
+        dismissDialog()
     }
 
     fun setSubScale(scale: Double) { wrapper.setSubScale(scale) }
@@ -370,21 +360,30 @@ class PlayerViewModel(
     }
 
     fun resetSubtitleAppearance() {
-        wrapper.setSubScale(PlayerUiConstants.DEFAULT_SUBTITLE_SCALE)
-        wrapper.setSubPos(PlayerUiConstants.DEFAULT_SUBTITLE_POSITION)
+        _uiState.update { it.copy(subScale = 1.0, subPos = 100) }
+        wrapper.setSubScale(1.0)
+        wrapper.setSubPos(100)
         viewModelScope.launch {
-            prefsRepository.setSubScale(PlayerUiConstants.DEFAULT_SUBTITLE_SCALE)
-            prefsRepository.setSubPos(PlayerUiConstants.DEFAULT_SUBTITLE_POSITION)
+            prefsRepository.setSubScale(1.0)
+            prefsRepository.setSubPos(100)
         }
     }
 
+    fun showDialog(dialog: ActiveDialog) {
+        _uiState.update { it.copy(activeDialog = dialog) }
+    }
+
+    fun dismissDialog() {
+        _uiState.update { it.copy(activeDialog = ActiveDialog.None) }
+    }
+
     private fun saveHistoryIfNeeded() {
-        if (currentUri.isEmpty() || _progressState.value.durationSec <= 0.0) return
+        if (currentUri.isEmpty() || _uiState.value.progressState.durationSec <= 0.0) return
         val entry = VideoHistory(
             uri = currentUri,
             title = currentTitle.ifEmpty { currentUri.substringAfterLast('/') },
-            lastPlayedPositionSec = _progressState.value.positionSec,
-            durationSec = _progressState.value.durationSec,
+            lastPlayedPositionSec = _uiState.value.progressState.positionSec,
+            durationSec = _uiState.value.progressState.durationSec,
             lastAudioTrackId = _uiState.value.currentAudioTrackId,
             lastSubtitleTrackId = _uiState.value.currentSubtitleTrackId,
             lastPlayedTimestamp = System.currentTimeMillis()

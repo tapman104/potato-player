@@ -2,7 +2,7 @@ package com.potato.player.feature.player
 
 
 
-enum class ActiveSheet { NONE, MORE_MENU, SPEED, AUDIO, SUBTITLE, DECODER }
+enum class ActiveDialog { None, Audio, Subtitle, Speed, AspectRatio, MoreMenu, Decoder }
 
 enum class OrientationMode { AUTO, LOCK_LANDSCAPE, LOCK_PORTRAIT }
 
@@ -29,7 +29,7 @@ data class PlayerUiState(
     val currentSubtitleTrackId: Int = -1,
     val subScale: Double = 1.0,
     val subPos: Int = 100,
-    val activeSheet: ActiveSheet = ActiveSheet.NONE,
+    val activeDialog: ActiveDialog = ActiveDialog.None,
     val videoWidth: Int = 0,
     val videoHeight: Int = 0,
     val orientationMode: OrientationMode = OrientationMode.AUTO,
@@ -39,5 +39,8 @@ data class PlayerUiState(
     val videoZoom: Float = 1.0f,
     val videoPanX: Float = 0f,
     val videoPanY: Float = 0f,
-    val isLocked: Boolean = false
+    val isLocked: Boolean = false,
+    val progressState: PlaybackProgressState = PlaybackProgressState(),
+    val fitMode: VideoFitMode = VideoFitMode.FIT,
+    val swipeSeekTargetSec: Double? = null
 )

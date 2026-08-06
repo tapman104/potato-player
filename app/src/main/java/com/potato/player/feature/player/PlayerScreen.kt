@@ -48,8 +48,6 @@ fun PlayerScreen(
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val progressState by viewModel.progressState.collectAsStateWithLifecycle()
-    val fitMode by viewModel.fitMode.collectAsStateWithLifecycle()
 
     BackHandler {
         if (!uiState.isLocked) {
@@ -74,25 +72,34 @@ fun PlayerScreen(
     // ponytail: orientation + insets boilerplate extracted for readability
     PlayerLifecycleEffect(activity = activity, uiState = uiState, viewModel = viewModel)
 
-    val controlsState = rememberControlsVisibilityState(
-        isPlaying = uiState.isPlaying,
-        dragPositionSec = progressState.dragPositionSec,
-        isInPipMode = activity?.isInPictureInPictureMode == true
-    )
+    var controlsVisible by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(controlsVisible, uiState.isPlaying, uiState.progressState.dragPositionSec) {
+        if (controlsVisible && uiState.isPlaying && uiState.progressState.dragPositionSec == null) {
+            delay(4000L)
+            controlsVisible = false
+        }
+    }
+
+    LaunchedEffect(activity?.isInPictureInPictureMode) {
+        if (activity?.isInPictureInPictureMode == true) {
+            controlsVisible = false
+        }
+    }
     var doubleTapSeekState by remember { mutableStateOf<DoubleTapSeekState?>(null) }
-    val swipeSeekTargetSec by viewModel.swipeSeekTargetSec.collectAsStateWithLifecycle()
+    val swipeSeekTargetSec = uiState.swipeSeekTargetSec
     var swipeDragStartSec by remember { mutableStateOf(0.0) }
 
     LaunchedEffect(swipeSeekTargetSec) {
         if (swipeSeekTargetSec != null) {
-            controlsState.forceHide()
+            controlsVisible = false
         }
     }
 
     // Clear double-tap seek overlay after animation
     LaunchedEffect(doubleTapSeekState?.triggerId) {
         if (doubleTapSeekState != null) {
-            delay(PlayerUiConstants.DOUBLE_TAP_OVERLAY_CLEAR_MS)
+            delay(1200L)
             doubleTapSeekState = null
         }
     }
@@ -123,7 +130,7 @@ fun PlayerScreen(
             PlayerGestureBox(
                 uiState = uiState,
                 viewModel = viewModel,
-                controlsState = controlsState,
+                onToggleControls = { controlsVisible = !controlsVisible },
                 onBrightnessChange = onBrightnessChange,
                 fileLoaded = uiState.fileLoaded,
                 doubleTapSeekState = doubleTapSeekState,
@@ -185,7 +192,7 @@ fun PlayerScreen(
                 visible = uiState.isFastForwarding,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = if (controlsState.isVisible) 72.dp else 36.dp)
+                    .padding(top = if (controlsVisible) 72.dp else 36.dp)
             )
         }
 
@@ -210,7 +217,7 @@ fun PlayerScreen(
 
             // ── Top bar ──────────────────────────────────────────────────────
             AnimatedVisibility(
-                visible = controlsState.isVisible && !uiState.isLocked && swipeSeekTargetSec == null,
+                visible = controlsVisible && !uiState.isLocked && swipeSeekTargetSec == null,
                 enter = fadeIn() + slideInVertically { -it },
                 exit = fadeOut() + slideOutVertically { -it },
                 modifier = Modifier
@@ -222,16 +229,19 @@ fun PlayerScreen(
                     fileName              = uiState.fileName,
                     currentDecoder        = uiState.hwdecCurrent,
                     onBack                = onBack,
-                    onSelectAudioTrack    = { viewModel.dialogs.onShowAudioDialog() },
-                    onSelectSubtitleTrack = { viewModel.dialogs.onShowSubtitleDialog() },
-                    onSelectDecoder       = { viewModel.dialogs.onShowDecoderDialog() },
-                    onMoreOptions         = { viewModel.dialogs.onMoreMenuToggle() }
+                    onSelectAudioTrack    = { viewModel.showDialog(ActiveDialog.Audio) },
+                    onSelectSubtitleTrack = { viewModel.showDialog(ActiveDialog.Subtitle) },
+                    onSelectDecoder       = { viewModel.showDialog(ActiveDialog.Decoder) },
+                    onMoreOptions         = { 
+                        if (uiState.activeDialog == ActiveDialog.MoreMenu) viewModel.dismissDialog()
+                        else viewModel.showDialog(ActiveDialog.MoreMenu)
+                    }
                 )
             }
 
             // ── Center play/pause ────────────────────────────────────────────
             AnimatedVisibility(
-                visible = controlsState.isVisible && !uiState.isLocked && swipeSeekTargetSec == null,
+                visible = controlsVisible && !uiState.isLocked && swipeSeekTargetSec == null,
                 enter = fadeIn(),
                 exit = fadeOut(),
                 modifier = Modifier.align(Alignment.Center)
@@ -244,7 +254,7 @@ fun PlayerScreen(
 
             // ── Bottom controls ──────────────────────────────────────────────
             AnimatedVisibility(
-                visible = controlsState.isVisible && !uiState.isLocked && swipeSeekTargetSec == null,
+                visible = controlsVisible && !uiState.isLocked && swipeSeekTargetSec == null,
                 enter = fadeIn() + slideInVertically { it },
                 exit = fadeOut() + slideOutVertically { it },
                 modifier = Modifier
@@ -252,13 +262,13 @@ fun PlayerScreen(
                     .systemBarsPadding()
             ) {
                 PlayerBottomControls(
-                    progressState     = progressState,
+                    progressState     = uiState.progressState,
                     isAutoRotation    = uiState.isAutoRotation,
-                    currentFitMode    = fitMode,
+                    currentFitMode    = uiState.fitMode,
                     contentPadding    = WindowInsets.displayCutout.asPaddingValues(),
                     onSeekGesture     = { ms -> viewModel.onSliderDragChange(ms / 1000.0) },
                     onSeekCommit      = { ms -> viewModel.onSliderDragEnd(ms / 1000.0) },
-                    onDragStart       = { viewModel.onSliderDragStart(progressState.positionSec) },
+                    onDragStart       = { viewModel.onSliderDragStart(uiState.progressState.positionSec) },
                     onDragEnd         = { /* already handled inside onSeekCommit path */ },
                     onToggleAutoRotation = { viewModel.toggleAutoRotation() },
                     onToggleFitMode   = { viewModel.cycleFitMode() },

@@ -17,30 +17,30 @@ fun PlayerModals(
     onLaunchFilePicker: () -> Unit
 ) {
     val context = LocalContext.current
-    val activeSheet by viewModel.dialogs.activeSheet.collectAsStateWithLifecycle()
+    val activeDialog = uiState.activeDialog
 
     PlayerDecoderDialog(
-        visible = activeSheet == ActiveSheet.DECODER,
+        visible = activeDialog == ActiveDialog.Decoder,
         currentDecoder = uiState.hwdecCurrent,
         onSelectDecoder = { mode -> viewModel.setDecoder(mode) },
-        onDismiss = { viewModel.dialogs.onDismissDecoderDialog() }
+        onDismiss = { viewModel.dismissDialog() }
     )
 
     AudioTrackDialog(
-        visible = activeSheet == ActiveSheet.AUDIO,
+        visible = activeDialog == ActiveDialog.Audio,
         tracks = uiState.audioTracks,
         currentTrackId = uiState.currentAudioTrackId,
         onSelectTrack = { viewModel.onSelectAudioTrack(it) },
-        onDismiss = { viewModel.dialogs.onDismissAudioDialog() }
+        onDismiss = { viewModel.dismissDialog() }
     )
 
     SubtitleTrackDialog(
-        visible = activeSheet == ActiveSheet.SUBTITLE,
+        visible = activeDialog == ActiveDialog.Subtitle,
         tracks = uiState.subtitleTracks,
         currentTrackId = uiState.currentSubtitleTrackId,
         onSelectTrack = { viewModel.onSelectSubtitleTrack(it) },
         onLaunchFilePicker = onLaunchFilePicker,
-        onDismiss = { viewModel.dialogs.onDismissSubtitleDialog() },
+        onDismiss = { viewModel.dismissDialog() },
         uiState = uiState,
         onSetSubtitleAppearance = { scale, pos -> viewModel.setSubtitleAppearance(scale, pos) },
         onResetSubtitleAppearance = { viewModel.resetSubtitleAppearance() }
@@ -49,16 +49,12 @@ fun PlayerModals(
     // ponytail: gate sheet on fileLoaded so it never appears on an empty player
     if (uiState.fileLoaded) {
         PlayerRightSideSheet(
-            visible = activeSheet == ActiveSheet.MORE_MENU || activeSheet == ActiveSheet.SPEED,
+            visible = activeDialog == ActiveDialog.MoreMenu || activeDialog == ActiveDialog.Speed,
             currentSpeed = uiState.playbackSpeed,
             onSelectSpeed = { viewModel.setPlaybackSpeed(it) },
-            onShowAudioDialog = { viewModel.dialogs.onShowAudioDialog() },
-            onShowSubtitleDialog = { viewModel.dialogs.onShowSubtitleDialog() },
-            onDismiss = {
-                if (activeSheet == ActiveSheet.MORE_MENU) viewModel.dialogs.onMoreMenuDismiss()
-                else if (activeSheet == ActiveSheet.SPEED) viewModel.dialogs.onDismissSpeedDialog()
-                else viewModel.dialogs.onMoreMenuDismiss()
-            }
+            onShowAudioDialog = { viewModel.showDialog(ActiveDialog.Audio) },
+            onShowSubtitleDialog = { viewModel.showDialog(ActiveDialog.Subtitle) },
+            onDismiss = { viewModel.dismissDialog() }
         )
     }
 }

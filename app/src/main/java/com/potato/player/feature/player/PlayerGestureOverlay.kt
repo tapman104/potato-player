@@ -33,7 +33,7 @@ import kotlin.math.roundToInt
 fun PlayerGestureBox(
     uiState: PlayerUiState,
     viewModel: PlayerViewModel,
-    controlsState: ControlsVisibilityState,
+    onToggleControls: () -> Unit,
     onBrightnessChange: (Float) -> Unit,
     fileLoaded: Boolean,
     doubleTapSeekState: DoubleTapSeekState?,
@@ -187,7 +187,7 @@ fun PlayerGestureBox(
 
                         if (!gestureConsumed && totalDx > 12f && totalDx > totalDy * 1.5f) {
                             gestureConsumed = true
-                            swipeStartSec = viewModel.progressState.value.positionSec
+                            swipeStartSec = viewModel.uiState.value.progressState.positionSec
                             accumulatedDrag = 0f
                             onSwipeSeekStart(swipeStartSec)
                         }
@@ -197,7 +197,7 @@ fun PlayerGestureBox(
                             accumulatedDrag += dx
                             val seekDelta = (accumulatedDrag / size.width) * 120.0
                             val target = (swipeStartSec + seekDelta)
-                                .coerceIn(0.0, viewModel.progressState.value.durationSec)
+                                .coerceIn(0.0, viewModel.uiState.value.progressState.durationSec)
                             viewModel.onSwipeSeek(target)
                         }
                     } while (event.changes.any { it.pressed })
@@ -226,20 +226,20 @@ fun PlayerGestureBox(
                         val current = doubleTapSeekState
                         val isRight = offset.x > size.width / 2f
                         if (!isRight) {
-                            viewModel.seekExactRelative(-PlayerUiConstants.DOUBLE_TAP_SEEK_SECONDS)
+                            viewModel.seekExactRelative(-10)
                             val accum = if (current != null && !current.isForward)
-                                current.totalSeconds + PlayerUiConstants.DOUBLE_TAP_SEEK_SECONDS
-                            else PlayerUiConstants.DOUBLE_TAP_SEEK_SECONDS
+                                current.totalSeconds + 10
+                            else 10
                             onDoubleTapSeekState(DoubleTapSeekState(isForward = false, totalSeconds = accum))
                         } else {
-                            viewModel.seekExactRelative(PlayerUiConstants.DOUBLE_TAP_SEEK_SECONDS)
+                            viewModel.seekExactRelative(10)
                             val accum = if (current != null && current.isForward)
-                                current.totalSeconds + PlayerUiConstants.DOUBLE_TAP_SEEK_SECONDS
-                            else PlayerUiConstants.DOUBLE_TAP_SEEK_SECONDS
+                                current.totalSeconds + 10
+                            else 10
                             onDoubleTapSeekState(DoubleTapSeekState(isForward = true, totalSeconds = accum))
                         }
                     },
-                    onTap = { controlsState.toggle() }
+                    onTap = { onToggleControls() }
                 )
             }
     ) {
