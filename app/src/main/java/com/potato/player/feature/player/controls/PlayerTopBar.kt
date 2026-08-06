@@ -23,9 +23,6 @@ fun PlayerTopBar(
     onMoreOptions: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val onBackRef     = rememberUpdatedState(onBack)
-    val handleBack    = remember { { onBackRef.value() } }
-
     Row(
         modifier          = modifier
             .fillMaxWidth()
@@ -34,7 +31,7 @@ fun PlayerTopBar(
     ) {
         // Back button
         IconButton(
-            onClick  = handleBack,
+            onClick  = onBack,
             modifier = PlayerControlsStyles.iconButtonModifier
         ) {
             Icon(

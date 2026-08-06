@@ -65,32 +65,24 @@ fun PlayerBottomControls(
 
     val durationString = remember(durationMs) { TimeFormatter.formatMs(durationMs) }
 
-    // rememberUpdatedState: lambdas captured in remember{} always see the latest values
-    val onSeekGestureRef  = rememberUpdatedState(onSeekGesture)
-    val onSeekCommitRef   = rememberUpdatedState(onSeekCommit)
-    val onDragStartRef    = rememberUpdatedState(onDragStart)
-    val onDragEndRef      = rememberUpdatedState(onDragEnd)
-    val durationMsRef     = rememberUpdatedState(durationMs)
-    val sliderValueRef    = rememberUpdatedState(sliderValue)
-
     val onValueChange = remember {
         { fraction: Float ->
             if (dragFraction < 0f) {
                 // First movement of this gesture — notify repository to suppress MPV echo-backs
-                onDragStartRef.value()
+                onDragStart()
             }
             dragFraction = fraction
-            val targetMs = (fraction * durationMsRef.value).toLong()
-            onSeekGestureRef.value(targetMs)
+            val targetMs = (fraction * durationMs).toLong()
+            onSeekGesture(targetMs)
         }
     }
 
     val onValueChangeFinished = remember {
         {
-            val finalFraction = if (dragFraction >= 0f) dragFraction else sliderValueRef.value
-            val targetMs = (finalFraction.coerceIn(0f, 1f) * durationMsRef.value).toLong()
-            onSeekCommitRef.value(targetMs)
-            onDragEndRef.value()
+            val finalFraction = if (dragFraction >= 0f) dragFraction else sliderValue
+            val targetMs = (finalFraction.coerceIn(0f, 1f) * durationMs).toLong()
+            onSeekCommit(targetMs)
+            onDragEnd()
             dragFraction = -1f
         }
     }
@@ -102,10 +94,6 @@ fun PlayerBottomControls(
             .padding(horizontal = 12.dp)
     ) {
         // Play/Pause centered, and Auto-Rotation + PiP right-aligned above the seek area
-        val onToggleAutoRotationRef = rememberUpdatedState(onToggleAutoRotation)
-        val onEnterPipRef           = rememberUpdatedState(onEnterPip)
-        val handleToggleAutoRotation = remember { { onToggleAutoRotationRef.value() } }
-        val handleEnterPip           = remember { { onEnterPipRef.value() } }
         val buttonModifier = PlayerControlsStyles.iconButtonModifier
 
         // Floating Live Time Preview Bubble while scrubbing
@@ -163,10 +151,7 @@ fun PlayerBottomControls(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment     = Alignment.CenterVertically
             ) {
-                val onToggleLockRef = rememberUpdatedState(onToggleLock)
-                val handleToggleLock = remember { { onToggleLockRef.value() } }
-
-                IconButton(onClick = handleToggleLock, modifier = buttonModifier) {
+                IconButton(onClick = onToggleLock, modifier = buttonModifier) {
                     Icon(
                         imageVector        = if (isLocked) Icons.Default.LockOpen else Icons.Default.Lock,
                         contentDescription = if (isLocked) "Unlock" else "Lock",
@@ -175,10 +160,7 @@ fun PlayerBottomControls(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
 
-                val onToggleFitModeRef = rememberUpdatedState(onToggleFitMode)
-                val handleToggleFitMode = remember { { onToggleFitModeRef.value() } }
-
-                IconButton(onClick = handleToggleFitMode, modifier = buttonModifier) {
+                IconButton(onClick = onToggleFitMode, modifier = buttonModifier) {
                     val icon = when (currentFitMode) {
                         VideoFitMode.FIT -> Icons.Default.FitScreen
                         VideoFitMode.FILL -> Icons.Default.Fullscreen
@@ -192,7 +174,7 @@ fun PlayerBottomControls(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
 
-                IconButton(onClick = handleToggleAutoRotation, modifier = buttonModifier) {
+                IconButton(onClick = onToggleAutoRotation, modifier = buttonModifier) {
                     Icon(
                         imageVector        = if (isAutoRotation) Icons.Default.ScreenRotation else Icons.Default.ScreenLockLandscape,
                         contentDescription = if (isAutoRotation) "Auto-rotation on" else "Rotation locked",
@@ -201,7 +183,7 @@ fun PlayerBottomControls(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    IconButton(onClick = handleEnterPip, modifier = buttonModifier) {
+                    IconButton(onClick = onEnterPip, modifier = buttonModifier) {
                         Icon(
                             imageVector        = Icons.Default.PictureInPicture,
                             contentDescription = "Picture-in-Picture",

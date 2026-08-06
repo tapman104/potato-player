@@ -141,7 +141,11 @@ fun PlayerSpeedSection(
             onSelectSpeed(rounded)
         },
         valueRange = 0.25f..4.0f,
-        colors = PlayerControlsStyles.rememberSliderColors(),
+        colors = androidx.compose.material3.SliderDefaults.colors(
+            thumbColor          = Color.White,
+            activeTrackColor    = Color.White,
+            inactiveTrackColor  = Color.White.copy(alpha = 0.3f)
+        ),
         modifier = Modifier.fillMaxWidth()
     )
 

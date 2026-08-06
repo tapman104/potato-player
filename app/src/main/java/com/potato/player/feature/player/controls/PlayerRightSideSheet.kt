@@ -41,8 +41,7 @@ fun PlayerRightSideSheet(
 
     // FIX (Bug 2): Stale onDismiss closure.
     // What was wrong: onDismiss was captured directly in a gesture handler that didn't restart when it changed.
-    // Fix: rememberUpdatedState ensures the handler always invokes the latest lambda instance.
-    val onDismissRef = rememberUpdatedState(onDismiss)
+
 
     // FIX (Bug 3): Race between scrimAlpha and AnimatedVisibility animations.
     // What was wrong: The tree would tear down abruptly if scrimAlpha reached 0f before AnimatedVisibility finished its exit animation.
@@ -59,7 +58,7 @@ fun PlayerRightSideSheet(
                 // What was wrong: Keying on 'visible' cancelled the block immediately on exit, disabling tap interception.
                 // Fix: Key on (visible || scrimAlpha > 0f) to keep the touch-blocker alive until the scrim is completely gone.
                 .pointerInput(visible || scrimAlpha > 0f) {
-                    detectTapGestures(onTap = { _ -> onDismissRef.value() })
+                    detectTapGestures(onTap = { _ -> onDismiss() })
                 }
         ) {
             AnimatedVisibility(

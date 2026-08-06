@@ -17,10 +17,4 @@ internal object PlayerControlsStyles {
         .size(40.dp)
         .background(Color.Black.copy(alpha = 0.5f), shape = CircleShape)
 
-    @Composable
-    fun rememberSliderColors(): SliderColors = SliderDefaults.colors(
-        thumbColor          = Color.White,
-        activeTrackColor    = Color.White,
-        inactiveTrackColor  = Color.White.copy(alpha = 0.3f),
-    )
 }

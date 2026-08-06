@@ -18,7 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
+
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -82,8 +82,6 @@ fun PlayerDecoderDialog(
         label = "scrimAlpha"
     )
 
-    val onDismissRef = rememberUpdatedState(onDismiss)
-
     val transitionState = remember { androidx.compose.animation.core.MutableTransitionState(visible) }
     transitionState.targetState = visible
 
@@ -93,7 +91,7 @@ fun PlayerDecoderDialog(
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = scrimAlpha))
                 .pointerInput(visible || scrimAlpha > 0f) {
-                    detectTapGestures(onTap = { _ -> onDismissRef.value() })
+                    detectTapGestures(onTap = { _ -> onDismiss() })
                 }
         ) {
             AnimatedVisibility(

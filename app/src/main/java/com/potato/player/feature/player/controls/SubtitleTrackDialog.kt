@@ -53,7 +53,6 @@ fun SubtitleTrackDialog(
         targetValue = if (visible) 0.45f else 0f,
         label = "scrimAlpha"
     )
-    val onDismissRef = rememberUpdatedState(onDismiss)
     val transitionState = remember { androidx.compose.animation.core.MutableTransitionState(visible) }
     transitionState.targetState = visible
 
@@ -63,7 +62,7 @@ fun SubtitleTrackDialog(
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = scrimAlpha))
                 .pointerInput(visible || scrimAlpha > 0f) {
-                    detectTapGestures(onTap = { _ -> onDismissRef.value() })
+                    detectTapGestures(onTap = { _ -> onDismiss() })
                 }
         ) {
             AnimatedVisibility(

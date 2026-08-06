@@ -27,29 +27,18 @@ fun PlayerQuickActions(
 ) {
     val buttonModifier = PlayerControlsStyles.iconButtonModifier
 
-    // rememberUpdatedState so lambdas stable-wrapped in remember{} always call latest
-    val onAudioRef       = rememberUpdatedState(onSelectAudioTrack)
-    val onSubtitleRef    = rememberUpdatedState(onSelectSubtitleTrack)
-    val onDecoderRef     = rememberUpdatedState(onSelectDecoder)
-    val onMoreRef        = rememberUpdatedState(onMoreOptions)
-
-    val handleAudio       = remember { { onAudioRef.value()       } }
-    val handleSubtitle    = remember { { onSubtitleRef.value()    } }
-    val handleDecoder     = remember { { onDecoderRef.value()     } }
-    val handleMore        = remember { { onMoreRef.value()        } }
-
     Row(
         modifier              = modifier,
         verticalAlignment     = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        IconButton(onClick = handleAudio,    modifier = buttonModifier) {
+        IconButton(onClick = onSelectAudioTrack,    modifier = buttonModifier) {
             Icon(Icons.Default.AudioFile, contentDescription = "Audio track", tint = Color.White)
         }
-        IconButton(onClick = handleSubtitle, modifier = buttonModifier) {
+        IconButton(onClick = onSelectSubtitleTrack, modifier = buttonModifier) {
             Icon(Icons.Default.Subtitles,  contentDescription = "Subtitles",   tint = Color.White)
         }
-        IconButton(onClick = handleDecoder,  modifier = buttonModifier) {
+        IconButton(onClick = onSelectDecoder,  modifier = buttonModifier) {
             Text(
                 text = currentDecoder,
                 color = Color.White,
@@ -57,7 +46,7 @@ fun PlayerQuickActions(
                 fontWeight = FontWeight.Bold
             )
         }
-        IconButton(onClick = handleMore, modifier = buttonModifier) {
+        IconButton(onClick = onMoreOptions, modifier = buttonModifier) {
             Icon(Icons.Default.MoreVert, contentDescription = "More options", tint = Color.White)
         }
     }
