@@ -7,6 +7,10 @@ import com.potato.player.engine.MpvProp
 class MpvEventProcessor(
     private val onPlaybackStarted: () -> Unit,
     private val onPlaybackPaused: () -> Unit,
+    // Fired on PLAYBACK_RESTART (seek completion). The ViewModel must query the real
+    // PAUSE property here rather than assuming playback is active, because seeks also
+    // fire PLAYBACK_RESTART while the player is paused.
+    private val onPlaybackRestart: () -> Unit,
     private val onDurationChanged: (ms: Long) -> Unit,
     private val onPositionChanged: (ms: Long) -> Unit,
     private val onTracksChanged: (json: String) -> Unit,
@@ -28,7 +32,7 @@ class MpvEventProcessor(
             is MpvEvent.Id -> {
                 when (event.id) {
                     MpvEventId.FILE_LOADED -> onFileLoaded()
-                    MpvEventId.PLAYBACK_RESTART, MpvEventId.PLAYBACK_RESTART_21 -> onPlaybackStarted()
+                    MpvEventId.PLAYBACK_RESTART, MpvEventId.PLAYBACK_RESTART_21 -> onPlaybackRestart()
                     MpvEventId.END_FILE -> onEndFileReached()
                     // If IDLE was a valid MpvEventId, we could map it to onIdleEntered
                 }

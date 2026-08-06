@@ -52,6 +52,13 @@ class PlayerViewModel(
     private val eventProcessor = MpvEventProcessor(
         onPlaybackStarted = { _uiState.update { it.copy(isLoading = false, isPlaying = true) } },
         onPlaybackPaused = { _uiState.update { it.copy(isPlaying = false) } },
+        onPlaybackRestart = {
+            // Read the real MPV pause state instead of assuming playback is active.
+            // PLAYBACK_RESTART fires on every seek (including seeks while paused), so
+            // blindly setting isPlaying=true here would show the wrong icon.
+            val isPaused = wrapper.getPropertyBoolean(MpvProp.PAUSE) ?: false
+            _uiState.update { it.copy(isLoading = false, isPlaying = !isPaused) }
+        },
         onDurationChanged = { ms -> _uiState.update { it.copy(progressState = it.progressState.copy(durationSec = ms / 1000.0)) } },
         onPositionChanged = { ms -> 
             if (!isSliderSeeking) _uiState.update { it.copy(progressState = it.progressState.copy(positionSec = ms / 1000.0)) } 
