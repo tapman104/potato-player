@@ -1,11 +1,7 @@
 package com.potato.player
 
-import android.app.Activity
-import android.content.pm.ActivityInfo
-import android.os.Build
-import android.view.WindowManager
+
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -109,16 +105,6 @@ fun AppNavigation(
             val context = LocalContext.current
             val activity = context.findActivity()
 
-            DisposableEffect(Unit) {
-                onDispose {
-                    val currentActivity = context.findActivity()
-                    if (currentActivity?.isFinishing == false) {
-                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || currentActivity.isInPictureInPictureMode != true) {
-                            currentActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-                        }
-                    }
-                }
-            }
             val historyRepository = androidx.compose.runtime.remember(context) {
                 val db = com.potato.player.data.AppDatabase.getInstance(context)
                 com.potato.player.data.VideoHistoryRepository(db.videoHistoryDao())
