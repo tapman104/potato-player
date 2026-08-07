@@ -40,11 +40,24 @@ data object SettingsRoute
 @Composable
 fun AppNavigation(
     navController: NavHostController,
-    wrapper: MpvWrapper
+    wrapper: MpvWrapper,
+    startDestination: PlayerStartDestination = PlayerStartDestination.Home
 ) {
+    // Map the semantic start destination to a concrete nav route.
+    // This mapping runs before the first NavHost composition — HomeScreen is
+    // never rendered when startDestination is PlayerStartDestination.Player.
+    val navStartRoute: Any = when (startDestination) {
+        is PlayerStartDestination.Home -> HomeRoute
+        is PlayerStartDestination.Player -> PlayerRoute(
+            videoUri = android.net.Uri.encode(startDestination.uri.toString()),
+            title    = android.net.Uri.encode(startDestination.title ?: ""),
+            isExternal = true
+        )
+    }
+
     NavHost(
         navController = navController,
-        startDestination = HomeRoute
+        startDestination = navStartRoute
     ) {
         composable<HomeRoute> {
             HomeScreen(

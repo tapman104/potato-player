@@ -36,24 +36,40 @@ private val AmoledDarkColorScheme = darkColorScheme(
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    // pendingIntent is ONLY used by the onNewIntent (hot re-open) path.
+    // Cold-start routing is handled by resolveStartDestination() before setContent.
     private var pendingIntent by mutableStateOf<Intent?>(null)
     private val mpvWrapper by lazy { MpvWrapper(applicationContext) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         // MpvWrapper initializes in its init block, so just by accessing it, it initializes.
-        val wrapper = mpvWrapper 
-        pendingIntent = intent
-        
-        // Set orientation before setContent to prevent portrait flash.
-        // Use a direct check instead of calling parseViewIntent here — parseViewIntent
-        // must only be called once, inside the LaunchedEffect, to avoid the mutation
-        // at intent.action corrupting the intent before the LaunchedEffect fires.
-        @Suppress("DEPRECATION")
-        val isExternalVideoIntent = (intent.action == Intent.ACTION_VIEW || intent.action == Intent.ACTION_SEND)
-                && (intent.data != null || intent.getParcelableExtra<android.net.Uri>(Intent.EXTRA_STREAM) != null)
-        if (isExternalVideoIntent) {
+        val wrapper = mpvWrapper
+
+        // ── Resolve start destination BEFORE setContent ──────────────────────
+        // resolveStartDestination() is pure: no side effects, no ContentResolver.
+        // The result drives NavHost.startDestination directly, so HomeScreen is
+        // never composed when an external video intent is the launch trigger.
+        val startDest = resolveStartDestination(intent)
+
+        // ── URI permission grant (side effect — must happen before playback) ──
+        // Kept separate from resolveStartDestination() to preserve the pure-function contract.
+        if (startDest is PlayerStartDestination.Player) {
+            val uri = startDest.uri
+            if (uri.scheme == ContentResolver.SCHEME_CONTENT) {
+                val flags = intent.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION
+                if (flags != 0) {
+                    try {
+                        contentResolver.takePersistableUriPermission(
+                            uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        )
+                    } catch (_: SecurityException) {
+                        // transient grant only — still have access for this session
+                    }
+                }
+            }
+            // Lock to landscape immediately, before setContent, to prevent portrait flash.
             requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         }
 
@@ -68,11 +84,19 @@ class MainActivity : ComponentActivity() {
             MaterialTheme(colorScheme = AmoledDarkColorScheme) {
                 val navController = rememberNavController()
 
+                // startDest is captured before setContent — NavHost starts on the
+                // correct screen without ever rendering HomeScreen first.
                 AppNavigation(
-                    navController = navController,
-                    wrapper       = mpvWrapper
+                    navController    = navController,
+                    wrapper          = mpvWrapper,
+                    startDestination = startDest
                 )
 
+                // ── Hot re-open path (onNewIntent only) ──────────────────────
+                // pendingIntent is only ever set by onNewIntent(), not by onCreate().
+                // When the app is already running and another video is opened, this
+                // LaunchedEffect fires and navigates without a home-screen flash
+                // because the nav graph is already fully initialized.
                 LaunchedEffect(navController, pendingIntent) {
                     pendingIntent?.let { newIntent ->
                         parseViewIntent(newIntent)?.let { route ->
@@ -91,9 +115,19 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        // Assign pendingIntent here (hot re-open path) — never in onCreate.
         pendingIntent = intent
     }
 
+    /**
+     * Converts a hot re-open Intent to a PlayerRoute for navController.navigate().
+     *
+     * Unlike resolveStartDestination(), this function:
+     *   - Verifies URI readability via ContentResolver (side effect)
+     *   - Returns the serialisable PlayerRoute that NavGraph expects
+     *
+     * Only called from the LaunchedEffect (onNewIntent path), never on cold start.
+     */
     private fun parseViewIntent(intent: Intent?): PlayerRoute? {
         val action = intent?.action
         if (action != Intent.ACTION_VIEW && action != Intent.ACTION_SEND) return null
@@ -135,7 +169,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        // MpvWrapper takes care of this internally via surface Changed callbacks.
+        // MpvWrapper takes care of this internally via surfaceChanged callbacks.
     }
 
     override fun onPause() {
@@ -151,10 +185,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handlePipModeChange(isInPip: Boolean) {
-        // PlayerViewModel now watches isInPipMode from activity/system or we don't need to manually set it.
-        // Actually, PlayerViewModel watches PipMode internally or through UI state.
         if (isInPip) {
-            mpvWrapper.resume() // or just let it play
+            mpvWrapper.resume()
         }
     }
 

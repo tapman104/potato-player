@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Theme.PotatoPlayer — extends NoActionBar so the app bar behaviour is unchanged.
+
+        android:windowBackground is set to pure black (#000000) as a safety net:
+        even if the nav routing ever slips a frame, the window background matches
+        the player/AMOLED background exactly, making any transient flash invisible.
+    -->
+    <style name="Theme.PotatoPlayer" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">#000000</item>
+    </style>
+</resources>
