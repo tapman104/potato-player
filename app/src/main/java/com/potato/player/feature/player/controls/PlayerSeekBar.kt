@@ -30,10 +30,9 @@ fun PlayerSeekBar(
     buffered: Float,
     onValueChange: (Float) -> Unit,
     onValueChangeFinished: () -> Unit,
+    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     modifier: Modifier = Modifier
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isDragged by interactionSource.collectIsDraggedAsState()
 
     Slider(
         value = progress.coerceIn(0f, 1f),
@@ -63,7 +62,7 @@ fun PlayerSeekBar(
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(3.dp)
+                    .height(2.dp)
             ) {
                 val w = size.width
                 val h = size.height
@@ -96,13 +95,9 @@ fun PlayerSeekBar(
             }
         },
         thumb = {
-            val thumbSize = if (isDragged) 14.dp else 10.dp
-            val elevation = if (isDragged) 6.dp else 2.dp
-            // shadow() must precede clip() so the shadow is cast outside the clip region
             Box(
                 modifier = Modifier
-                    .size(thumbSize)
-                    .shadow(elevation = elevation, shape = CircleShape, clip = false)
+                    .size(10.dp)
                     .clip(CircleShape)
                     .background(Color.White)
             )

@@ -74,10 +74,20 @@ fun PlayerScreen(
 
     var controlsVisible by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
 
-    LaunchedEffect(controlsVisible, uiState.isPlaying, uiState.progressState.dragPositionSec) {
-        if (controlsVisible && uiState.isPlaying && uiState.progressState.dragPositionSec == null) {
-            delay(4000L)
-            controlsVisible = false
+    val isSeeking = uiState.progressState.dragPositionSec != null
+    LaunchedEffect(
+        controlsVisible, 
+        uiState.isPlaying, 
+        isSeeking,
+        doubleTapSeekState,
+        uiState.isFastForwarding,
+        uiState.isLocked
+    ) {
+        if (controlsVisible && uiState.isPlaying && !isSeeking) {
+            if (!uiState.isFastForwarding) {
+                delay(4000L)
+                controlsVisible = false
+            }
         }
     }
 

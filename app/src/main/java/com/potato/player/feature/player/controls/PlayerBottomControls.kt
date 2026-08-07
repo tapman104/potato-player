@@ -21,6 +21,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.os.Build
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import com.potato.player.util.TimeFormatter
 
 import com.potato.player.feature.player.PlaybackProgressState
@@ -54,6 +56,15 @@ fun PlayerBottomControls(
     var lastDragFraction by remember { mutableFloatStateOf(0f) }
     if (dragFraction >= 0f) {
         lastDragFraction = dragFraction
+    }
+
+    val interactionSource = remember { MutableInteractionSource() }
+    val isDragged by interactionSource.collectIsDraggedAsState()
+
+    LaunchedEffect(isDragged) {
+        if (isDragged && dragFraction < 0f) {
+            onDragStart()
+        }
     }
 
     val sliderValue = if (durationMs > 0L) currentPositionMs.toFloat() / durationMs else 0f
@@ -129,6 +140,7 @@ fun PlayerBottomControls(
                 buffered              = bufferFraction,
                 onValueChange         = onValueChange,
                 onValueChangeFinished = onValueChangeFinished,
+                interactionSource     = interactionSource,
                 modifier              = Modifier.weight(1f).padding(horizontal = 8.dp)
             )
 
