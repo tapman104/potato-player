@@ -162,11 +162,11 @@ fun PlayerGestureBox(
                             }
                         } while (event.changes.any { it.pressed })
                     } finally {
+                        viewModel.setSwipingVolumeOrBrightness(false)
                         if (gestureConsumed) {
-                            viewModel.setSwipingVolumeOrBrightness(false)
+                            showBrightnessIndicator = false
+                            showVolumeIndicator = false
                         }
-                        showBrightnessIndicator = false
-                        showVolumeIndicator = false
                     }
                 }
             }
