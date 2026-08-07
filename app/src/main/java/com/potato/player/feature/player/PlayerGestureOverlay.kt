@@ -131,41 +131,43 @@ fun PlayerGestureBox(
                     var totalDy = 0f
                     var gestureConsumed = false
 
-                    do {
-                        val event = awaitPointerEvent(PointerEventPass.Main)
-                        // Abort if a second finger joins — pinch/pan loop owns it
-                        if (event.changes.count { it.pressed } >= 2) break
-
-                        val change = event.changes.firstOrNull() ?: break
-                        totalDx += abs(change.positionChange().x)
-                        totalDy += abs(change.positionChange().y)
-
-                        // Only claim this gesture once it's clearly more vertical than horizontal
-                        if (!gestureConsumed && totalDy > 12f && totalDy > totalDx * 1.5f) {
-                            gestureConsumed = true
-                            viewModel.setSwipingVolumeOrBrightness(true)
-                            if (isLeftSide) showBrightnessIndicator = true
-                            else showVolumeIndicator = true
-                        }
-
-                        if (gestureConsumed) {
-                            val dy = change.positionChange().y
-                            change.consume()
-                            if (isLeftSide) {
-                                brightnessLevel = (brightnessLevel - dy / size.height).coerceIn(0.01f, 1.0f)
-                                onBrightnessChange(brightnessLevel)
-                            } else {
-                                tempVolume = (tempVolume - (dy / size.height) * maxVolume).coerceIn(0f, maxVolume)
-                                audioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, tempVolume.toInt(), 0)
+                    try {
+                        do {
+                            val event = awaitPointerEvent(PointerEventPass.Main)
+                            // Abort if a second finger joins — pinch/pan loop owns it
+                            if (event.changes.count { it.pressed } >= 2) break
+    
+                            val change = event.changes.firstOrNull() ?: break
+                            totalDx += abs(change.positionChange().x)
+                            totalDy += abs(change.positionChange().y)
+    
+                            // Only claim this gesture once it's clearly more vertical than horizontal
+                            if (!gestureConsumed && totalDy > 12f && totalDy > totalDx * 1.5f) {
+                                gestureConsumed = true
+                                viewModel.setSwipingVolumeOrBrightness(true)
+                                if (isLeftSide) showBrightnessIndicator = true
+                                else showVolumeIndicator = true
                             }
+    
+                            if (gestureConsumed) {
+                                val dy = change.positionChange().y
+                                change.consume()
+                                if (isLeftSide) {
+                                    brightnessLevel = (brightnessLevel - dy / size.height).coerceIn(0.01f, 1.0f)
+                                    onBrightnessChange(brightnessLevel)
+                                } else {
+                                    tempVolume = (tempVolume - (dy / size.height) * maxVolume).coerceIn(0f, maxVolume)
+                                    audioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, tempVolume.toInt(), 0)
+                                }
+                            }
+                        } while (event.changes.any { it.pressed })
+                    } finally {
+                        if (gestureConsumed) {
+                            viewModel.setSwipingVolumeOrBrightness(false)
                         }
-                    } while (event.changes.any { it.pressed })
-
-                    if (gestureConsumed) {
-                        viewModel.setSwipingVolumeOrBrightness(false)
+                        showBrightnessIndicator = false
+                        showVolumeIndicator = false
                     }
-                    showBrightnessIndicator = false
-                    showVolumeIndicator = false
                 }
             }
             // ── Pass 3: horizontal swipe seek ──────────────────────────────
@@ -179,34 +181,36 @@ fun PlayerGestureBox(
                     var accumulatedDrag = 0f
                     var gestureConsumed = false
 
-                    do {
-                        val event = awaitPointerEvent(PointerEventPass.Main)
-                        if (event.changes.count { it.pressed } >= 2) break
-
-                        val change = event.changes.firstOrNull() ?: break
-                        val dx = change.positionChange().x
-                        val dy = change.positionChange().y
-                        totalDx += abs(dx)
-                        totalDy += abs(dy)
-
-                        if (!gestureConsumed && totalDx > 12f && totalDx > totalDy * 1.5f) {
-                            gestureConsumed = true
-                            swipeStartSec = viewModel.uiState.value.progressState.positionSec
-                            accumulatedDrag = 0f
-                            onSwipeSeekStart(swipeStartSec)
-                        }
-
-                        if (gestureConsumed) {
-                            change.consume()
-                            accumulatedDrag += dx
-                            val seekDelta = (accumulatedDrag / size.width) * 120.0
-                            val target = (swipeStartSec + seekDelta)
-                                .coerceIn(0.0, viewModel.uiState.value.progressState.durationSec)
-                            viewModel.onSwipeSeek(target)
-                        }
-                    } while (event.changes.any { it.pressed })
-
-                    if (gestureConsumed) viewModel.onSwipeSeekFinished()
+                    try {
+                        do {
+                            val event = awaitPointerEvent(PointerEventPass.Main)
+                            if (event.changes.count { it.pressed } >= 2) break
+    
+                            val change = event.changes.firstOrNull() ?: break
+                            val dx = change.positionChange().x
+                            val dy = change.positionChange().y
+                            totalDx += abs(dx)
+                            totalDy += abs(dy)
+    
+                            if (!gestureConsumed && totalDx > 12f && totalDx > totalDy * 1.5f) {
+                                gestureConsumed = true
+                                swipeStartSec = viewModel.uiState.value.progressState.positionSec
+                                accumulatedDrag = 0f
+                                onSwipeSeekStart(swipeStartSec)
+                            }
+    
+                            if (gestureConsumed) {
+                                change.consume()
+                                accumulatedDrag += dx
+                                val seekDelta = (accumulatedDrag / size.width) * 120.0
+                                val target = (swipeStartSec + seekDelta)
+                                    .coerceIn(0.0, viewModel.uiState.value.progressState.durationSec)
+                                viewModel.onSwipeSeek(target)
+                            }
+                        } while (event.changes.any { it.pressed })
+                    } finally {
+                        if (gestureConsumed) viewModel.onSwipeSeekFinished()
+                    }
                 }
             }
             // ── Pass 4: taps, double-tap, long-press ───────────────────────
