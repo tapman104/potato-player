@@ -74,6 +74,10 @@ fun PlayerScreen(
 
     var controlsVisible by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
 
+    var doubleTapSeekState by remember { mutableStateOf<DoubleTapSeekState?>(null) }
+    val swipeSeekTargetSec = uiState.swipeSeekTargetSec
+    var swipeDragStartSec by remember { mutableStateOf(0.0) }
+    
     val isSeeking = uiState.progressState.dragPositionSec != null
     LaunchedEffect(
         controlsVisible, 
@@ -97,9 +101,7 @@ fun PlayerScreen(
             controlsVisible = false
         }
     }
-    var doubleTapSeekState by remember { mutableStateOf<DoubleTapSeekState?>(null) }
-    val swipeSeekTargetSec = uiState.swipeSeekTargetSec
-    var swipeDragStartSec by remember { mutableStateOf(0.0) }
+
 
     LaunchedEffect(swipeSeekTargetSec) {
         if (swipeSeekTargetSec != null) {
