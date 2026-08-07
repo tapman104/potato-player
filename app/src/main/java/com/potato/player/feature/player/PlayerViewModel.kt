@@ -323,6 +323,10 @@ class PlayerViewModel(
         }
     }
 
+    fun setSwipingVolumeOrBrightness(isSwiping: Boolean) {
+        _uiState.update { it.copy(isSwipingVolumeOrBrightness = isSwiping) }
+    }
+
     fun setPlaybackSpeed(speed: Double) {
         val clamped = speed.coerceIn(0.25, 4.0)
         normalPlaybackSpeed = clamped

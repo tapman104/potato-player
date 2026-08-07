@@ -81,10 +81,11 @@ fun PlayerScreen(
         isSeeking,
         doubleTapSeekState,
         uiState.isFastForwarding,
-        uiState.isLocked
+        uiState.isLocked,
+        uiState.isSwipingVolumeOrBrightness
     ) {
         if (controlsVisible && uiState.isPlaying && !isSeeking) {
-            if (!uiState.isFastForwarding) {
+            if (!uiState.isFastForwarding && !uiState.isSwipingVolumeOrBrightness) {
                 delay(4000L)
                 controlsVisible = false
             }

@@ -143,6 +143,7 @@ fun PlayerGestureBox(
                         // Only claim this gesture once it's clearly more vertical than horizontal
                         if (!gestureConsumed && totalDy > 12f && totalDy > totalDx * 1.5f) {
                             gestureConsumed = true
+                            viewModel.setSwipingVolumeOrBrightness(true)
                             if (isLeftSide) showBrightnessIndicator = true
                             else showVolumeIndicator = true
                         }
@@ -160,6 +161,9 @@ fun PlayerGestureBox(
                         }
                     } while (event.changes.any { it.pressed })
 
+                    if (gestureConsumed) {
+                        viewModel.setSwipingVolumeOrBrightness(false)
+                    }
                     showBrightnessIndicator = false
                     showVolumeIndicator = false
                 }

@@ -42,5 +42,6 @@ data class PlayerUiState(
     val isLocked: Boolean = false,
     val progressState: PlaybackProgressState = PlaybackProgressState(),
     val fitMode: VideoFitMode = VideoFitMode.FIT,
-    val swipeSeekTargetSec: Double? = null
+    val swipeSeekTargetSec: Double? = null,
+    val isSwipingVolumeOrBrightness: Boolean = false
 )
