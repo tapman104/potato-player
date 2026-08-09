@@ -85,6 +85,7 @@ fun PlayerGestureBox(
     var currentPanX by remember { mutableStateOf(0f) }
     var currentPanY by remember { mutableStateOf(0f) }
     var showZoomIndicator by remember { mutableStateOf(false) }
+    var isPinchActive by remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
     var hideZoomJob by remember { mutableStateOf<Job?>(null) }
@@ -114,6 +115,7 @@ fun PlayerGestureBox(
                             // Two fingers — handle pinch/pan until all lift
                             showZoomIndicator = true
                             hideZoomJob?.cancel()
+                            isPinchActive = true
                             do {
                                 val e2 = awaitPointerEvent(PointerEventPass.Main)
                                 val zoom = e2.calculateZoom()
@@ -128,6 +130,7 @@ fun PlayerGestureBox(
                                 viewModel.setZoom(currentZoom)
                                 viewModel.setPan(currentPanX, currentPanY)
                             } while (e2.changes.any { it.pressed })
+                            isPinchActive = false
                             hideZoomJob = coroutineScope.launch {
                                 delay(1500)
                                 showZoomIndicator = false
@@ -145,7 +148,7 @@ fun PlayerGestureBox(
                     val startX = down.position.x
                     val startY = down.position.y
                     val isLeftSide = startX < size.width / 2f
-                    val isPanGesture = currentZoom > 1.0f
+                    val isPanGesture = currentZoom > 1.0f && isPinchActive
                     var totalDx = 0f
                     var totalDy = 0f
                     var gestureConsumed = false
