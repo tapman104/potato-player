@@ -120,8 +120,8 @@ fun AppNavigation(
             val videoUri = android.net.Uri.decode(route.videoUri)
             val title = android.net.Uri.decode(route.title)
             val isExternal = route.isExternal
-            val playlist = route.playlist
-            val playlistTitles = route.playlistTitles
+            val playlist = route.playlist.map { android.net.Uri.decode(it) }
+            val playlistTitles = route.playlistTitles.map { android.net.Uri.decode(it) }
             val context = LocalContext.current
             val activity = context.findActivity()
 
