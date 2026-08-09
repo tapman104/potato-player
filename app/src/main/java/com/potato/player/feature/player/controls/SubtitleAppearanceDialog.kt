@@ -18,8 +18,8 @@ fun SubtitleAppearanceDialog(
     initialSize: Float,
     initialPosition: Float,
     onApply: (size: Float, position: Float) -> Unit,
-    onDismiss: () -> Unit,
-    onReset: () -> Unit
+    onPreview: (size: Float, position: Float) -> Unit,
+    onDismiss: () -> Unit
 ) {
     var size by remember(initialSize) { mutableFloatStateOf(initialSize) }
     var position by remember(initialPosition) { mutableFloatStateOf(initialPosition) }
@@ -58,7 +58,10 @@ fun SubtitleAppearanceDialog(
                 }
                 Slider(
                     value = size,
-                    onValueChange = { size = it },
+                    onValueChange = { 
+                        size = it 
+                        onPreview(size, position)
+                    },
                     valueRange = 0.5f..3.0f,
                     steps = 9,
                     colors = SliderDefaults.colors(
@@ -72,11 +75,7 @@ fun SubtitleAppearanceDialog(
 
             // Subtitle Position
             Column(modifier = Modifier.fillMaxWidth()) {
-                val positionLabel = when {
-                    position >= 0.66f -> "Top"
-                    position >= 0.33f -> "Middle"
-                    else -> "Bottom"
-                }
+                val positionLabel = "${(position * 100).toInt()}%"
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -87,7 +86,10 @@ fun SubtitleAppearanceDialog(
                 }
                 Slider(
                     value = position,
-                    onValueChange = { position = it },
+                    onValueChange = { 
+                        position = it 
+                        onPreview(size, position)
+                    },
                     valueRange = 0f..1f,
                     colors = SliderDefaults.colors(
                         thumbColor = Color.White,
@@ -104,7 +106,11 @@ fun SubtitleAppearanceDialog(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 TextButton(
-                    onClick = onReset,
+                    onClick = {
+                        size = 1.0f
+                        position = 0f
+                        onPreview(1.0f, 0f)
+                    },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("Reset", color = Color(0xFFAAAAAA))

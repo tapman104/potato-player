@@ -41,7 +41,7 @@ fun SubtitleTrackDialog(
     onDismiss: () -> Unit,
     uiState: PlayerUiState,
     onSetSubtitleAppearance: (Double, Int) -> Unit,
-    onResetSubtitleAppearance: () -> Unit,
+    onPreviewSubtitleAppearance: (Double, Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showAppearanceDialog by remember { mutableStateOf(false) }
@@ -206,11 +206,14 @@ fun SubtitleTrackDialog(
                 onSetSubtitleAppearance(size.toDouble(), mpvPos)
                 showAppearanceDialog = false
             },
-            onDismiss = {
-                showAppearanceDialog = false
+            onPreview = { size, position ->
+                val mpvPos = ((1f - position) * 100).roundToInt().coerceIn(0, 100)
+                onPreviewSubtitleAppearance(size.toDouble(), mpvPos)
             },
-            onReset = {
-                onResetSubtitleAppearance()
+            onDismiss = {
+                // Revert MPV to original values since user cancelled
+                val revertMpvPos = subPos.coerceIn(0, 100)
+                onPreviewSubtitleAppearance(subScale.toDouble(), revertMpvPos)
                 showAppearanceDialog = false
             }
         )

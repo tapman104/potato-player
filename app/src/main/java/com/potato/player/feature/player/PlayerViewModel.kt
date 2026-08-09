@@ -19,9 +19,11 @@ import com.potato.player.feature.player.toUiModel
 import com.potato.player.util.MediaMetadataRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -49,7 +51,9 @@ class PlayerViewModel(
     private var isSliderSeeking = false
     private var pendingResumePosition: Long = 0L
     private var autoSubApplied = false
-    private var currentPreferredSubLang: String = "eng"
+
+    private val preferredSubLangState = prefsRepository.preferredSubLangFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, "eng")
 
     private val eventProcessor = MpvEventProcessor(
         onPlaybackStarted = { _uiState.update { it.copy(isLoading = false, isPlaying = true) } },
@@ -126,12 +130,6 @@ class PlayerViewModel(
         }
 
         viewModelScope.launch {
-            prefsRepository.preferredSubLangFlow.collect { lang ->
-                currentPreferredSubLang = lang
-            }
-        }
-
-        viewModelScope.launch {
             combine(
                 prefsRepository.subScaleFlow,
                 prefsRepository.subPosFlow,
@@ -173,16 +171,16 @@ class PlayerViewModel(
     }
 
     private fun applyPreferredSubtitleTrack() {
-        if (autoSubApplied || currentPreferredSubLang == "off") return
+        if (autoSubApplied || preferredSubLangState.value == "off") return
         val currentTracks = _uiState.value.subtitleTracks
         if (currentTracks.isEmpty()) return
 
         // 1. Try exact match on language code (case-insensitive)
-        var match = currentTracks.find { it.lang?.equals(currentPreferredSubLang, ignoreCase = true) == true }
+        var match = currentTracks.find { it.language.equals(preferredSubLangState.value, ignoreCase = true) }
         
         // 2. Fallback to matching "english" in title if preference is English
-        if (match == null && (currentPreferredSubLang == "eng" || currentPreferredSubLang == "en")) {
-            match = currentTracks.find { it.title?.contains("english", ignoreCase = true) == true }
+        if (match == null && (preferredSubLangState.value == "eng" || preferredSubLangState.value == "en")) {
+            match = currentTracks.find { it.title.contains("english", ignoreCase = true) }
         }
 
         if (match != null) {

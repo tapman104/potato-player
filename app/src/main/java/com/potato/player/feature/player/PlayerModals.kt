@@ -43,7 +43,10 @@ fun PlayerModals(
         onDismiss = { viewModel.dismissDialog() },
         uiState = uiState,
         onSetSubtitleAppearance = { scale, pos -> viewModel.setSubtitleAppearance(scale, pos) },
-        onResetSubtitleAppearance = { viewModel.resetSubtitleAppearance() }
+        onPreviewSubtitleAppearance = { scale, pos -> 
+            viewModel.setSubScale(scale)
+            viewModel.setSubPos(pos)
+        }
     )
 
     // ponytail: gate sheet on fileLoaded so it never appears on an empty player
