@@ -76,7 +76,10 @@ class PlayerViewModel(
                 val audioTracks = tracks.filter { it.type == TrackType.AUDIO }.map { it.toUiModel() }
                 val subtitleTracks = tracks.filter { it.type == TrackType.SUBTITLE }.map { it.toUiModel() }
                 _uiState.update { it.copy(audioTracks = audioTracks, subtitleTracks = subtitleTracks) }
-                applyPreferredSubtitleTrack()
+                viewModelScope.launch {
+                    preferredSubLangState.first { true }
+                    applyPreferredSubtitleTrack()
+                }
             } else {
                 loadTracks()
             }
@@ -196,9 +199,6 @@ class PlayerViewModel(
                 wrapper.setSubTrack(match.id)
                 _uiState.update { it.copy(currentSubtitleTrackId = match.id) }
             }
-            autoSubApplied = true
-        } else {
-            // Tracks are loaded but none match the preference — stop retrying for this file.
             autoSubApplied = true
         }
     }
