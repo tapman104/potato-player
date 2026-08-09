@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -101,7 +102,13 @@ class PlayerViewModel(
             val isPaused = wrapper.getPropertyBoolean(MpvProp.PAUSE) ?: false
             _uiState.update { it.copy(fileLoaded = true, isLoading = false, isPlaying = !isPaused, fitMode = VideoFitMode.FIT) }
             loadTracks()
-            applyPreferredSubtitleTrack()
+            viewModelScope.launch {
+                // Wait until DataStore has emitted at least once before applying subtitle preference.
+                // preferredSubLangState is Eagerly shared so first{true} returns immediately if the
+                // upstream has already emitted, or suspends briefly until it does.
+                preferredSubLangState.first { true }
+                applyPreferredSubtitleTrack()
+            }
             if (pendingResumePosition > 0L) {
                 wrapper.seekTo(pendingResumePosition)
                 pendingResumePosition = 0L
@@ -190,13 +197,16 @@ class PlayerViewModel(
                 _uiState.update { it.copy(currentSubtitleTrackId = match.id) }
             }
             autoSubApplied = true
+        } else {
+            // Tracks are loaded but none match the preference — stop retrying for this file.
+            autoSubApplied = true
         }
     }
 
     val surfaceCallback: SurfaceHolder.Callback get() = wrapper.surfaceCallback
 
     fun onSurfaceReady(uri: String, title: String = "") {
-        if (currentUri != uri) {
+        if (currentUri != uri || !_uiState.value.fileLoaded) {
             viewModelScope.launch(Dispatchers.IO) {
                 val history = historyRepository.getByUri(uri)
                 val resumePos = if (history != null && history.lastPlayedPositionSec > 0)
