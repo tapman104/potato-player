@@ -13,6 +13,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Brightness6
+import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -241,19 +245,21 @@ fun PlayerGestureBox(
                     },
                     onDoubleTap = { offset ->
                         val current = doubleTapSeekState
-                        val isRight = offset.x > size.width / 2f
-                        if (!isRight) {
+                        val thirdWidth = size.width / 3f
+                        if (offset.x < thirdWidth) {
                             viewModel.seekExactRelative(-10)
                             val accum = if (current != null && !current.isForward)
                                 current.totalSeconds + 10
                             else 10
                             onDoubleTapSeekState(DoubleTapSeekState(isForward = false, totalSeconds = accum))
-                        } else {
+                        } else if (offset.x > 2 * thirdWidth) {
                             viewModel.seekExactRelative(10)
                             val accum = if (current != null && current.isForward)
                                 current.totalSeconds + 10
                             else 10
                             onDoubleTapSeekState(DoubleTapSeekState(isForward = true, totalSeconds = accum))
+                        } else {
+                            viewModel.togglePlay()
                         }
                     },
                     onTap = { onToggleControls() }
@@ -287,12 +293,38 @@ fun VolumeIndicator(
     modifier: Modifier = Modifier
 ) {
     if (visible) {
-        Box(
+        androidx.compose.foundation.layout.Column(
             modifier = modifier
                 .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "Volume: $volume%", color = Color.White, fontSize = 16.sp)
+            Icon(
+                imageVector = Icons.Default.VolumeUp,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Box(
+                modifier = Modifier
+                    .height(100.dp)
+                    .width(4.dp)
+                    .background(Color.White.copy(alpha = 0.3f), RoundedCornerShape(2.dp)),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight((volume / 100f).coerceIn(0f, 1f))
+                        .background(Color.White, RoundedCornerShape(2.dp))
+                )
+            }
+            Text(
+                text = "$volume%",
+                color = Color.White,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(top = 8.dp)
+            )
         }
     }
 }
@@ -304,12 +336,38 @@ fun BrightnessIndicator(
     modifier: Modifier = Modifier
 ) {
     if (visible) {
-        Box(
+        androidx.compose.foundation.layout.Column(
             modifier = modifier
                 .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "Brightness: ${(brightness * 100).roundToInt()}%", color = Color.White, fontSize = 16.sp)
+            Icon(
+                imageVector = Icons.Default.Brightness6,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Box(
+                modifier = Modifier
+                    .height(100.dp)
+                    .width(4.dp)
+                    .background(Color.White.copy(alpha = 0.3f), RoundedCornerShape(2.dp)),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(brightness.coerceIn(0f, 1f))
+                        .background(Color.White, RoundedCornerShape(2.dp))
+                )
+            }
+            Text(
+                text = "${(brightness * 100).roundToInt()}%",
+                color = Color.White,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(top = 8.dp)
+            )
         }
     }
 }

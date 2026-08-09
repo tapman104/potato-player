@@ -90,7 +90,7 @@ fun PlayerScreen(
     ) {
         if (controlsVisible && uiState.isPlaying && !isSeeking) {
             if (!uiState.isFastForwarding && !uiState.isSwipingVolumeOrBrightness) {
-                delay(4000L)
+                delay(3000L)
                 controlsVisible = false
             }
         }
