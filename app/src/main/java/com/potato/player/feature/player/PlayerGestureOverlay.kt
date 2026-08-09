@@ -167,8 +167,8 @@ fun PlayerGestureBox(
                                 gestureConsumed = true
                                 if (!isPanGesture) {
                                     viewModel.setSwipingVolumeOrBrightness(true)
-                                    if (isLeftSide) showVolumeIndicator = true
-                                    else showBrightnessIndicator = true
+                                    if (isLeftSide) showBrightnessIndicator = true
+                                    else showVolumeIndicator = true
                                 }
                             }
     
@@ -184,13 +184,13 @@ fun PlayerGestureBox(
                                     viewModel.setPan(currentPanX, currentPanY)
                                 } else {
                                     if (isLeftSide) {
-                                        // LEFT = volume
-                                        tempVolume = (tempVolume - (dy / size.height) * maxVolume).coerceIn(0f, maxVolume)
-                                        audioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, tempVolume.toInt(), 0)
-                                    } else {
-                                        // RIGHT = brightness
+                                        // LEFT = brightness
                                         brightnessLevel = (brightnessLevel - dy / size.height).coerceIn(0.01f, 1.0f)
                                         onBrightnessChange(brightnessLevel)
+                                    } else {
+                                        // RIGHT = volume
+                                        tempVolume = (tempVolume - (dy / size.height) * maxVolume).coerceIn(0f, maxVolume)
+                                        audioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, tempVolume.toInt(), 0)
                                     }
                                 }
                             }
@@ -291,12 +291,12 @@ fun PlayerGestureBox(
             VolumeIndicator(
                 volume = ((tempVolume / maxVolume) * 100).toInt(),
                 visible = showVolumeIndicator,
-                modifier = Modifier.align(Alignment.CenterStart).padding(start = 32.dp)
+                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 32.dp)
             )
             BrightnessIndicator(
                 brightness = brightnessLevel,
                 visible = showBrightnessIndicator,
-                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 32.dp)
+                modifier = Modifier.align(Alignment.CenterStart).padding(start = 32.dp)
             )
             ZoomIndicator(
                 zoom = currentZoom,
