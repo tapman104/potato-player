@@ -31,7 +31,7 @@ import com.potato.player.R
 fun FolderScreen(
     bucketId: Long,
     folderName: String,
-    onNavigateToPlayer: (videoUri: String, title: String) -> Unit,
+    onNavigateToPlayer: (uri: String, title: String, playlist: List<VideoItem>) -> Unit,
     onBack: () -> Unit,
     onNavigateToSettings: () -> Unit
 ) {
@@ -94,7 +94,7 @@ fun FolderScreen(
                             VideoRow(
                                 video = video,
                                 onClick = {
-                                    onNavigateToPlayer(video.uri.toString(), video.title)
+                                    onNavigateToPlayer(video.uri.toString(), video.title, videos)
                                 }
                             )
                         }

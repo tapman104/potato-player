@@ -492,4 +492,42 @@ class PlayerViewModel(
     fun resetZoom() {
         setVideoZoom(1.0f, 0f, 0f)
     }
+
+    // ── Playlist navigation ───────────────────────────────────────────────────
+
+    fun setPlaylist(playlist: List<String>, playlistTitles: List<String>, currentUri: String) {
+        val pairs = playlist.zip(playlistTitles)
+        val index = pairs.indexOfFirst { it.first == currentUri }
+        _uiState.update { it.copy(playlist = pairs, currentPlaylistIndex = index) }
+    }
+
+    fun hasPrevious(): Boolean {
+        val idx = _uiState.value.currentPlaylistIndex
+        return idx > 0
+    }
+
+    fun hasNext(): Boolean {
+        val idx = _uiState.value.currentPlaylistIndex
+        return idx >= 0 && idx < _uiState.value.playlist.size - 1
+    }
+
+    fun playPrevious(onNavigate: (uri: String, title: String) -> Unit) {
+        val state = _uiState.value
+        val idx = state.currentPlaylistIndex
+        if (idx > 0) {
+            val (uri, title) = state.playlist[idx - 1]
+            _uiState.update { it.copy(currentPlaylistIndex = idx - 1) }
+            onNavigate(uri, title)
+        }
+    }
+
+    fun playNext(onNavigate: (uri: String, title: String) -> Unit) {
+        val state = _uiState.value
+        val idx = state.currentPlaylistIndex
+        if (idx >= 0 && idx < state.playlist.size - 1) {
+            val (uri, title) = state.playlist[idx + 1]
+            _uiState.update { it.copy(currentPlaylistIndex = idx + 1) }
+            onNavigate(uri, title)
+        }
+    }
 }

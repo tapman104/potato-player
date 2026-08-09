@@ -43,5 +43,7 @@ data class PlayerUiState(
     val progressState: PlaybackProgressState = PlaybackProgressState(),
     val fitMode: VideoFitMode = VideoFitMode.FIT,
     val swipeSeekTargetSec: Double? = null,
-    val isSwipingVolumeOrBrightness: Boolean = false
+    val isSwipingVolumeOrBrightness: Boolean = false,
+    val playlist: List<Pair<String, String>> = emptyList(), // (uri, title) pairs
+    val currentPlaylistIndex: Int = -1
 )

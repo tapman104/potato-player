@@ -13,6 +13,8 @@ import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -42,6 +44,10 @@ fun PlayerBottomControls(
     onEnterPip: () -> Unit = {},
     isLocked: Boolean = false,
     onToggleLock: () -> Unit = {},
+    onPrevious: () -> Unit = {},
+    onNext: () -> Unit = {},
+    hasPrevious: Boolean = false,
+    hasNext: Boolean = false,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
@@ -163,6 +169,21 @@ fun PlayerBottomControls(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment     = Alignment.CenterVertically
             ) {
+                // Previous episode
+                IconButton(
+                    onClick = onPrevious,
+                    enabled = hasPrevious,
+                    modifier = buttonModifier
+                ) {
+                    Icon(
+                        imageVector        = Icons.Default.SkipPrevious,
+                        contentDescription = "Previous episode",
+                        tint               = if (hasPrevious) Color.White else Color.White.copy(alpha = 0.3f)
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Lock / Unlock
                 IconButton(onClick = onToggleLock, modifier = buttonModifier) {
                     Icon(
                         imageVector        = if (isLocked) Icons.Default.LockOpen else Icons.Default.Lock,
@@ -172,6 +193,21 @@ fun PlayerBottomControls(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
 
+                // Next episode
+                IconButton(
+                    onClick = onNext,
+                    enabled = hasNext,
+                    modifier = buttonModifier
+                ) {
+                    Icon(
+                        imageVector        = Icons.Default.SkipNext,
+                        contentDescription = "Next episode",
+                        tint               = if (hasNext) Color.White else Color.White.copy(alpha = 0.3f)
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Fit mode
                 IconButton(onClick = onToggleFitMode, modifier = buttonModifier) {
                     val icon = when (currentFitMode) {
                         VideoFitMode.FIT -> Icons.Default.FitScreen

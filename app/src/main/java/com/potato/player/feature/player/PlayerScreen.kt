@@ -42,6 +42,8 @@ fun PlayerScreen(
     title: String = "",
     viewModel: PlayerViewModel,
     isExternalIntent: Boolean = false,
+    playlist: List<String> = emptyList(),
+    playlistTitles: List<String> = emptyList(),
     onBack: () -> Unit,
     onBrightnessChange: (Float) -> Unit = {}
 ) {
@@ -124,6 +126,11 @@ fun PlayerScreen(
             viewModel.setSurfaceReadyCallback(null)
             viewModel.onSurfaceDestroyed()
         }
+    }
+
+    // Initialise playlist so Prev/Next buttons know their neighbours.
+    LaunchedEffect(videoUri) {
+        viewModel.setPlaylist(playlist, playlistTitles, videoUri)
     }
 
     Box(
@@ -287,7 +294,20 @@ fun PlayerScreen(
                     onToggleFitMode   = { viewModel.cycleFitMode() },
                     onEnterPip        = { enterPip(activity) },
                     isLocked          = uiState.isLocked,
-                    onToggleLock      = { viewModel.toggleLock() }
+                    onToggleLock      = { viewModel.toggleLock() },
+                    hasPrevious       = uiState.currentPlaylistIndex > 0,
+                    hasNext           = uiState.currentPlaylistIndex >= 0 &&
+                                        uiState.currentPlaylistIndex < uiState.playlist.size - 1,
+                    onPrevious        = {
+                        viewModel.playPrevious { uri, t ->
+                            viewModel.onSurfaceReady(uri, t)
+                        }
+                    },
+                    onNext            = {
+                        viewModel.playNext { uri, t ->
+                            viewModel.onSurfaceReady(uri, t)
+                        }
+                    }
                 )
             }
         }

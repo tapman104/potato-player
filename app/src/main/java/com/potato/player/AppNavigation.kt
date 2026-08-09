@@ -32,7 +32,9 @@ data class FolderRoute(
 data class PlayerRoute(
     val videoUri: String,
     val title: String = "",
-    val isExternal: Boolean = false
+    val isExternal: Boolean = false,
+    val playlist: List<String> = emptyList(),       // encoded URIs of all videos in folder, in order
+    val playlistTitles: List<String> = emptyList()  // titles matching playlist order
 )
 
 @Serializable
@@ -89,11 +91,13 @@ fun AppNavigation(
             FolderScreen(
                 bucketId = route.bucketId,
                 folderName = route.folderName,
-                onNavigateToPlayer = { uri, title ->
+                onNavigateToPlayer = { uri, title, playlist ->
                     navController.navigate(
                         PlayerRoute(
                             videoUri = android.net.Uri.encode(uri),
-                            title = android.net.Uri.encode(title)
+                            title = android.net.Uri.encode(title),
+                            playlist = playlist.map { android.net.Uri.encode(it.uri.toString()) },
+                            playlistTitles = playlist.map { android.net.Uri.encode(it.title) }
                         )
                     )
                 },
@@ -116,6 +120,8 @@ fun AppNavigation(
             val videoUri = android.net.Uri.decode(route.videoUri)
             val title = android.net.Uri.decode(route.title)
             val isExternal = route.isExternal
+            val playlist = route.playlist
+            val playlistTitles = route.playlistTitles
             val context = LocalContext.current
             val activity = context.findActivity()
 
@@ -129,10 +135,12 @@ fun AppNavigation(
             )
 
             PlayerScreen(
-                videoUri  = videoUri,
-                title     = title,
-                viewModel = playerViewModel,
+                videoUri       = videoUri,
+                title          = title,
+                viewModel      = playerViewModel,
                 isExternalIntent = isExternal,
+                playlist       = playlist,
+                playlistTitles = playlistTitles,
                 onBack    = {
                     activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                     navController.popBackStack()
