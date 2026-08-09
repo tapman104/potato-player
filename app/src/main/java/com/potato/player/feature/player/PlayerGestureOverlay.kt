@@ -85,6 +85,7 @@ fun PlayerGestureBox(
     var currentPanX by remember { mutableStateOf(0f) }
     var currentPanY by remember { mutableStateOf(0f) }
     var showZoomIndicator by remember { mutableStateOf(false) }
+    var lastPinchEndTime by remember { mutableStateOf(0L) }
     val coroutineScope = rememberCoroutineScope()
     var hideZoomJob by remember { mutableStateOf<Job?>(null) }
 
@@ -131,12 +132,13 @@ fun PlayerGestureBox(
                                 delay(1500)
                                 showZoomIndicator = false
                             }
+                            lastPinchEndTime = System.currentTimeMillis()
                             break
                         }
                     } while (event.changes.any { it.pressed })
                 }
             }
-            // ── Pass 2: single-finger vertical swipe — brightness / volume ──
+            // ── Pass 2: single-finger vertical swipe — brightness / volume / pan ──
             .pointerInput(Unit) {
                 if (activity?.isInPictureInPictureMode == true) return@pointerInput
                 awaitEachGesture {
@@ -144,6 +146,9 @@ fun PlayerGestureBox(
                     val startX = down.position.x
                     val startY = down.position.y
                     val isLeftSide = startX < size.width / 2f
+                    val isZoomed = currentZoom > 1.0f
+                    val withinPinchWindow = (System.currentTimeMillis() - lastPinchEndTime) < 700L
+                    val isPanGesture = isZoomed && !withinPinchWindow
                     var totalDx = 0f
                     var totalDy = 0f
                     var gestureConsumed = false
@@ -158,29 +163,41 @@ fun PlayerGestureBox(
                             totalDx += abs(change.positionChange().x)
                             totalDy += abs(change.positionChange().y)
     
-                            // Only claim this gesture once it's clearly more vertical than horizontal
-                            if (!gestureConsumed && totalDy > 12f && totalDy > totalDx * 1.5f) {
+                            if (!gestureConsumed && (isPanGesture || (totalDy > 12f && totalDy > totalDx * 1.5f))) {
                                 gestureConsumed = true
-                                viewModel.setSwipingVolumeOrBrightness(true)
-                                if (isLeftSide) showBrightnessIndicator = true
-                                else showVolumeIndicator = true
+                                if (!isPanGesture) {
+                                    viewModel.setSwipingVolumeOrBrightness(true)
+                                    if (isLeftSide) showVolumeIndicator = true
+                                    else showBrightnessIndicator = true
+                                }
                             }
     
                             if (gestureConsumed) {
                                 val dy = change.positionChange().y
+                                val dx = change.positionChange().x
                                 change.consume()
-                                if (isLeftSide) {
-                                    brightnessLevel = (brightnessLevel - dy / size.height).coerceIn(0.01f, 1.0f)
-                                    onBrightnessChange(brightnessLevel)
+                                if (isPanGesture) {
+                                    val maxPanX = (currentZoom - 1f) * 0.5f
+                                    val maxPanY = (currentZoom - 1f) * 0.5f
+                                    currentPanX = (currentPanX + dx / size.width).coerceIn(-maxPanX, maxPanX)
+                                    currentPanY = (currentPanY + dy / size.height).coerceIn(-maxPanY, maxPanY)
+                                    viewModel.setPan(currentPanX, currentPanY)
                                 } else {
-                                    tempVolume = (tempVolume - (dy / size.height) * maxVolume).coerceIn(0f, maxVolume)
-                                    audioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, tempVolume.toInt(), 0)
+                                    if (isLeftSide) {
+                                        // LEFT = volume
+                                        tempVolume = (tempVolume - (dy / size.height) * maxVolume).coerceIn(0f, maxVolume)
+                                        audioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, tempVolume.toInt(), 0)
+                                    } else {
+                                        // RIGHT = brightness
+                                        brightnessLevel = (brightnessLevel - dy / size.height).coerceIn(0.01f, 1.0f)
+                                        onBrightnessChange(brightnessLevel)
+                                    }
                                 }
                             }
                         } while (event.changes.any { it.pressed })
                     } finally {
-                        viewModel.setSwipingVolumeOrBrightness(false)
-                        if (gestureConsumed) {
+                        if (!isPanGesture) viewModel.setSwipingVolumeOrBrightness(false)
+                        if (gestureConsumed && !isPanGesture) {
                             showBrightnessIndicator = false
                             showVolumeIndicator = false
                         }
@@ -274,12 +291,12 @@ fun PlayerGestureBox(
             VolumeIndicator(
                 volume = ((tempVolume / maxVolume) * 100).toInt(),
                 visible = showVolumeIndicator,
-                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 32.dp)
+                modifier = Modifier.align(Alignment.CenterStart).padding(start = 32.dp)
             )
             BrightnessIndicator(
                 brightness = brightnessLevel,
                 visible = showBrightnessIndicator,
-                modifier = Modifier.align(Alignment.CenterStart).padding(start = 32.dp)
+                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 32.dp)
             )
             ZoomIndicator(
                 zoom = currentZoom,

@@ -72,6 +72,7 @@ fun PlayerLifecycleEffect(
         
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
             if (activity?.isFinishing == false) {
                 if (activity.isInPictureInPictureMode == false && window != null) {
                     val controller = androidx.core.view.WindowCompat.getInsetsController(window, view)

@@ -15,6 +15,7 @@ import com.potato.player.feature.player.PlayerScreen
 import com.potato.player.feature.player.PlayerViewModel
 import com.potato.player.feature.player.PlayerViewModelFactory
 import com.potato.player.feature.settings.SettingsScreen
+import android.content.pm.ActivityInfo
 import com.potato.player.util.findActivity
 import kotlinx.serialization.Serializable
 
@@ -133,6 +134,7 @@ fun AppNavigation(
                 viewModel = playerViewModel,
                 isExternalIntent = isExternal,
                 onBack    = {
+                    activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                     navController.popBackStack()
                 },
                 onBrightnessChange = { brightness ->
