@@ -4,6 +4,8 @@ import android.content.pm.ActivityInfo
 import androidx.compose.runtime.*
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.potato.player.util.lockOrientation
 
@@ -60,7 +62,16 @@ fun PlayerLifecycleEffect(
 
         updateOrientation()
         
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_PAUSE) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && activity?.isInPictureInPictureMode == true) return@LifecycleEventObserver
+                viewModel.onPlayerPause()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        
         onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
             if (activity?.isFinishing == false) {
                 if (activity.isInPictureInPictureMode == false && window != null) {
                     val controller = androidx.core.view.WindowCompat.getInsetsController(window, view)

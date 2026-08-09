@@ -48,6 +48,8 @@ class PlayerViewModel(
     private var normalPlaybackSpeed = 1.0
     private var isSliderSeeking = false
     private var pendingResumePosition: Long = 0L
+    private var autoSubApplied = false
+    private var currentPreferredSubLang: String = "eng"
 
     private val eventProcessor = MpvEventProcessor(
         onPlaybackStarted = { _uiState.update { it.copy(isLoading = false, isPlaying = true) } },
@@ -69,6 +71,7 @@ class PlayerViewModel(
                 val audioTracks = tracks.filter { it.type == TrackType.AUDIO }.map { it.toUiModel() }
                 val subtitleTracks = tracks.filter { it.type == TrackType.SUBTITLE }.map { it.toUiModel() }
                 _uiState.update { it.copy(audioTracks = audioTracks, subtitleTracks = subtitleTracks) }
+                applyPreferredSubtitleTrack()
             } else {
                 loadTracks()
             }
@@ -94,6 +97,7 @@ class PlayerViewModel(
             val isPaused = wrapper.getPropertyBoolean(MpvProp.PAUSE) ?: false
             _uiState.update { it.copy(fileLoaded = true, isLoading = false, isPlaying = !isPaused, fitMode = VideoFitMode.FIT) }
             loadTracks()
+            applyPreferredSubtitleTrack()
             if (pendingResumePosition > 0L) {
                 wrapper.seekTo(pendingResumePosition)
                 pendingResumePosition = 0L
@@ -118,6 +122,12 @@ class PlayerViewModel(
         viewModelScope.launch {
             wrapper.events.collect { event ->
                 eventProcessor.process(event)
+            }
+        }
+
+        viewModelScope.launch {
+            prefsRepository.preferredSubLangFlow.collect { lang ->
+                currentPreferredSubLang = lang
             }
         }
 
@@ -162,6 +172,29 @@ class PlayerViewModel(
         _uiState.update { it.copy(audioTracks = audioTracks, subtitleTracks = subtitleTracks, currentAudioTrackId = aid, currentSubtitleTrackId = sid) }
     }
 
+    private fun applyPreferredSubtitleTrack() {
+        if (autoSubApplied || currentPreferredSubLang == "off") return
+        val currentTracks = _uiState.value.subtitleTracks
+        if (currentTracks.isEmpty()) return
+
+        // 1. Try exact match on language code (case-insensitive)
+        var match = currentTracks.find { it.lang?.equals(currentPreferredSubLang, ignoreCase = true) == true }
+        
+        // 2. Fallback to matching "english" in title if preference is English
+        if (match == null && (currentPreferredSubLang == "eng" || currentPreferredSubLang == "en")) {
+            match = currentTracks.find { it.title?.contains("english", ignoreCase = true) == true }
+        }
+
+        if (match != null) {
+            val sid = _uiState.value.currentSubtitleTrackId
+            if (sid != match.id) {
+                wrapper.setSubTrack(match.id)
+                _uiState.update { it.copy(currentSubtitleTrackId = match.id) }
+            }
+            autoSubApplied = true
+        }
+    }
+
     val surfaceCallback: SurfaceHolder.Callback get() = wrapper.surfaceCallback
 
     fun onSurfaceReady(uri: String, title: String = "") {
@@ -191,6 +224,7 @@ class PlayerViewModel(
         currentUri = uri
         currentTitle = title
         pendingResumePosition = resumePosition
+        autoSubApplied = false
         val initialName = if (title.isNotBlank()) title else "Video"
         _uiState.update { it.copy(fileName = initialName, isLoading = true, isPlaying = false, fileLoaded = false, error = null) }
         if (title.isBlank()) {
@@ -208,6 +242,10 @@ class PlayerViewModel(
     
     fun pause() {
         wrapper.pause()
+    }
+
+    fun onPlayerPause() {
+        saveHistoryIfNeeded()
     }
 
     fun toggleLock() {
@@ -390,11 +428,19 @@ class PlayerViewModel(
 
     private fun saveHistoryIfNeeded() {
         if (currentUri.isEmpty() || _uiState.value.progressState.durationSec <= 0.0) return
+        
+        val currentPos = _uiState.value.progressState.positionSec
+        val duration = _uiState.value.progressState.durationSec
+        
+        // If at the end of the file, the player might reset position to 0. 
+        // We fallback to duration if it's near zero and not playing.
+        val posToSave = if (currentPos < 1.0 && duration > 0.0 && !_uiState.value.isPlaying) duration else currentPos
+
         val entry = VideoHistory(
             uri = currentUri,
             title = currentTitle.ifEmpty { currentUri.substringAfterLast('/') },
-            lastPlayedPositionSec = _uiState.value.progressState.positionSec,
-            durationSec = _uiState.value.progressState.durationSec,
+            lastPlayedPositionSec = posToSave,
+            durationSec = duration,
             lastAudioTrackId = _uiState.value.currentAudioTrackId,
             lastSubtitleTrackId = _uiState.value.currentSubtitleTrackId,
             lastPlayedTimestamp = System.currentTimeMillis()

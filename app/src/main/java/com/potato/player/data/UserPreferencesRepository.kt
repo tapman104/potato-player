@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -19,6 +20,7 @@ class UserPreferencesRepository(private val context: Context) {
         val SUB_SCALE    = doublePreferencesKey("sub_scale")
         val SUB_POS      = intPreferencesKey("sub_pos")
         val AUTO_ROTATION = booleanPreferencesKey("auto_rotation")
+        val PREFERRED_SUB_LANG = stringPreferencesKey("preferred_sub_lang")
     }
 
     val subScaleFlow: Flow<Double> = context.dataStore.data.map { preferences ->
@@ -31,6 +33,10 @@ class UserPreferencesRepository(private val context: Context) {
 
     val autoRotationFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[AUTO_ROTATION] ?: false
+    }
+
+    val preferredSubLangFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[PREFERRED_SUB_LANG] ?: "eng"
     }
 
     suspend fun setSubScale(scale: Double) {
@@ -48,6 +54,12 @@ class UserPreferencesRepository(private val context: Context) {
     suspend fun setAutoRotation(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[AUTO_ROTATION] = enabled
+        }
+    }
+
+    suspend fun setPreferredSubLang(lang: String) {
+        context.dataStore.edit { preferences ->
+            preferences[PREFERRED_SUB_LANG] = lang
         }
     }
 }
