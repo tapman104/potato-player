@@ -501,33 +501,23 @@ class PlayerViewModel(
         _uiState.update { it.copy(playlist = pairs, currentPlaylistIndex = index) }
     }
 
-    fun hasPrevious(): Boolean {
-        val idx = _uiState.value.currentPlaylistIndex
-        return idx > 0
-    }
-
-    fun hasNext(): Boolean {
-        val idx = _uiState.value.currentPlaylistIndex
-        return idx >= 0 && idx < _uiState.value.playlist.size - 1
-    }
-
-    fun playPrevious(onNavigate: (uri: String, title: String) -> Unit) {
+    fun playPrevious() {
         val state = _uiState.value
         val idx = state.currentPlaylistIndex
         if (idx > 0) {
             val (uri, title) = state.playlist[idx - 1]
             _uiState.update { it.copy(currentPlaylistIndex = idx - 1) }
-            onNavigate(uri, title)
+            onSurfaceReady(uri, title)
         }
     }
 
-    fun playNext(onNavigate: (uri: String, title: String) -> Unit) {
+    fun playNext() {
         val state = _uiState.value
         val idx = state.currentPlaylistIndex
         if (idx >= 0 && idx < state.playlist.size - 1) {
             val (uri, title) = state.playlist[idx + 1]
             _uiState.update { it.copy(currentPlaylistIndex = idx + 1) }
-            onNavigate(uri, title)
+            onSurfaceReady(uri, title)
         }
     }
 }

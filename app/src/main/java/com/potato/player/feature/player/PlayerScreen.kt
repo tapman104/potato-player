@@ -298,16 +298,8 @@ fun PlayerScreen(
                     hasPrevious       = uiState.currentPlaylistIndex > 0,
                     hasNext           = uiState.currentPlaylistIndex >= 0 &&
                                         uiState.currentPlaylistIndex < uiState.playlist.size - 1,
-                    onPrevious        = {
-                        viewModel.playPrevious { uri, t ->
-                            viewModel.onSurfaceReady(uri, t)
-                        }
-                    },
-                    onNext            = {
-                        viewModel.playNext { uri, t ->
-                            viewModel.onSurfaceReady(uri, t)
-                        }
-                    }
+                    onPrevious        = { viewModel.playPrevious() },
+                    onNext            = { viewModel.playNext() }
                 )
             }
         }

@@ -183,16 +183,6 @@ fun PlayerBottomControls(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
 
-                // Lock / Unlock
-                IconButton(onClick = onToggleLock, modifier = buttonModifier) {
-                    Icon(
-                        imageVector        = if (isLocked) Icons.Default.LockOpen else Icons.Default.Lock,
-                        contentDescription = if (isLocked) "Unlock" else "Lock",
-                        tint               = Color.White
-                    )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-
                 // Next episode
                 IconButton(
                     onClick = onNext,
@@ -203,6 +193,16 @@ fun PlayerBottomControls(
                         imageVector        = Icons.Default.SkipNext,
                         contentDescription = "Next episode",
                         tint               = if (hasNext) Color.White else Color.White.copy(alpha = 0.3f)
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Lock / Unlock
+                IconButton(onClick = onToggleLock, modifier = buttonModifier) {
+                    Icon(
+                        imageVector        = if (isLocked) Icons.Default.LockOpen else Icons.Default.Lock,
+                        contentDescription = if (isLocked) "Unlock" else "Lock",
+                        tint               = Color.White
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
