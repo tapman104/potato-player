@@ -25,6 +25,9 @@ import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.potato.player.feature.player.controls.DoubleTapSeekState
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -74,6 +77,8 @@ fun PlayerGestureBox(
     var currentPanX by remember { mutableStateOf(0f) }
     var currentPanY by remember { mutableStateOf(0f) }
     var showZoomIndicator by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+    var hideZoomJob by remember { mutableStateOf<Job?>(null) }
 
     LaunchedEffect(fileLoaded) {
         if (fileLoaded) {
@@ -99,6 +104,7 @@ fun PlayerGestureBox(
                         if (pointers.size >= 2) {
                             // Two fingers — handle pinch/pan until all lift
                             showZoomIndicator = true
+                            hideZoomJob?.cancel()
                             do {
                                 val e2 = awaitPointerEvent(PointerEventPass.Main)
                                 val zoom = e2.calculateZoom()
@@ -113,7 +119,10 @@ fun PlayerGestureBox(
                                 viewModel.setZoom(currentZoom)
                                 viewModel.setPan(currentPanX, currentPanY)
                             } while (e2.changes.any { it.pressed })
-                            showZoomIndicator = currentZoom > 1.0f
+                            hideZoomJob = coroutineScope.launch {
+                                delay(1500)
+                                showZoomIndicator = false
+                            }
                             break
                         }
                     } while (event.changes.any { it.pressed })
@@ -264,6 +273,7 @@ fun PlayerGestureBox(
             )
             ZoomIndicator(
                 zoom = currentZoom,
+                visible = showZoomIndicator,
                 modifier = Modifier.align(Alignment.TopEnd).padding(top = 32.dp, end = 32.dp)
             )
         }
@@ -307,9 +317,10 @@ fun BrightnessIndicator(
 @Composable
 fun ZoomIndicator(
     zoom: Float,
+    visible: Boolean,
     modifier: Modifier = Modifier
 ) {
-    if (zoom > 1.0f) {
+    if (visible && zoom > 1.0f) {
         Box(
             modifier = modifier
                 .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
