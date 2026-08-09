@@ -185,11 +185,26 @@ class PlayerViewModel(
         val currentTracks = _uiState.value.subtitleTracks
         if (currentTracks.isEmpty()) return
 
-        // 1. Try exact match on language code (case-insensitive)
-        var match = currentTracks.find { it.language.equals(preferredSubLangState.value, ignoreCase = true) }
-        
-        // 2. Fallback to matching "english" in title if preference is English
-        if (match == null && (preferredSubLangState.value == "eng" || preferredSubLangState.value == "en")) {
+        val prefLang = preferredSubLangState.value
+
+        // Map both ISO 639-1 and ISO 639-2 codes for each supported language
+        val langAliases = mapOf(
+            "eng" to setOf("eng", "en"),
+            "en"  to setOf("eng", "en"),
+            "jpn" to setOf("jpn", "ja"),
+            "ja"  to setOf("jpn", "ja"),
+            "kor" to setOf("kor", "ko"),
+            "ko"  to setOf("kor", "ko")
+        )
+
+        val acceptedLangs = langAliases[prefLang.lowercase()] ?: setOf(prefLang.lowercase())
+
+        var match = currentTracks.find { track ->
+            track.language.lowercase() in acceptedLangs
+        }
+
+        // Fallback: title contains language name (English only)
+        if (match == null && ("en" in acceptedLangs || "eng" in acceptedLangs)) {
             match = currentTracks.find { it.title.contains("english", ignoreCase = true) }
         }
 
