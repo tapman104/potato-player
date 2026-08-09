@@ -62,7 +62,7 @@ fun PlayerSeekBar(
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(2.dp)
+                    .height(4.dp)
             ) {
                 val w = size.width
                 val h = size.height
@@ -97,7 +97,7 @@ fun PlayerSeekBar(
         thumb = {
             Box(
                 modifier = Modifier
-                    .size(10.dp)
+                    .size(16.dp)
                     .clip(CircleShape)
                     .background(Color.White)
             )
