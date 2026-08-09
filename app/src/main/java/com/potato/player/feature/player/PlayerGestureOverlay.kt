@@ -85,7 +85,7 @@ fun PlayerGestureBox(
     var currentPanX by remember { mutableStateOf(0f) }
     var currentPanY by remember { mutableStateOf(0f) }
     var showZoomIndicator by remember { mutableStateOf(false) }
-    var lastPinchEndTime by remember { mutableStateOf(0L) }
+
     val coroutineScope = rememberCoroutineScope()
     var hideZoomJob by remember { mutableStateOf<Job?>(null) }
 
@@ -132,7 +132,6 @@ fun PlayerGestureBox(
                                 delay(1500)
                                 showZoomIndicator = false
                             }
-                            lastPinchEndTime = System.currentTimeMillis()
                             break
                         }
                     } while (event.changes.any { it.pressed })
@@ -146,9 +145,7 @@ fun PlayerGestureBox(
                     val startX = down.position.x
                     val startY = down.position.y
                     val isLeftSide = startX < size.width / 2f
-                    val isZoomed = currentZoom > 1.0f
-                    val withinPinchWindow = (System.currentTimeMillis() - lastPinchEndTime) < 700L
-                    val isPanGesture = isZoomed && !withinPinchWindow
+                    val isPanGesture = currentZoom > 1.0f
                     var totalDx = 0f
                     var totalDy = 0f
                     var gestureConsumed = false
