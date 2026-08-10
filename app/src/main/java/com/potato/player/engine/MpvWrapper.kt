@@ -61,7 +61,14 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
 
     private var currentSurface: Surface? = null
 
+    fun reset() {
+        if (destroyed.get()) return
+        MPVLib.command("stop")
+        detachSurface()
+    }
+
     fun attachSurface(surface: Surface) {
+        if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping attachSurface — wrapper already destroyed"); return }
         if (!surface.isValid) return
         currentSurface = surface
         MPVLib.attachSurface(surface)
@@ -70,6 +77,7 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
     }
 
     fun detachSurface() {
+        if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping detachSurface — wrapper already destroyed"); return }
         // Tell the VO to stop rendering before physically removing the surface.
         // Reversing this order can cause MPV to write to an already-released surface.
         MPVLib.setPropertyString("vo", "null")
@@ -79,73 +87,98 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
     }
 
     fun play(uri: String) {
+        if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping play — wrapper already destroyed"); return }
         MPVLib.command("loadfile", uri, "replace")
         MPVLib.setPropertyBoolean(MpvProp.PAUSE, false)
     }
 
     fun pause() {
+        if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping pause — wrapper already destroyed"); return }
         MPVLib.setPropertyBoolean(MpvProp.PAUSE, true)
     }
 
     fun togglePlay() {
+        if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping togglePlay — wrapper already destroyed"); return }
         MPVLib.command("cycle", MpvProp.PAUSE)
     }
 
     fun resume() {
+        if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping resume — wrapper already destroyed"); return }
         MPVLib.setPropertyBoolean(MpvProp.PAUSE, false)
     }
 
     fun seekTo(ms: Long) {
+        if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping seekTo — wrapper already destroyed"); return }
         val safeMs = ms.coerceAtLeast(0L)
         MPVLib.command("seek", (safeMs / 1000.0).toString(), "absolute+exact")
     }
 
     fun seekRelative(sec: Double) {
+        if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping seekRelative — wrapper already destroyed"); return }
         MPVLib.command("seek", sec.toString(), "relative+exact")
     }
 
     fun setAudioTrack(id: Int) {
+        if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping setAudioTrack — wrapper already destroyed"); return }
         MPVLib.setPropertyString(MpvProp.AID, if (id == -1) "no" else id.toString())
     }
 
     fun setSubTrack(id: Int) {
+        if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping setSubTrack — wrapper already destroyed"); return }
         val valStr = if (id == -1) "no" else id.toString()
         MPVLib.setPropertyString(MpvProp.SID, valStr)
     }
 
     fun setSpeed(speed: Double) {
+        if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping setSpeed — wrapper already destroyed"); return }
         MPVLib.setPropertyString(MpvProp.SPEED, speed.toString())
     }
 
     fun setDecoder(hwdec: String) {
+        if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping setDecoder — wrapper already destroyed"); return }
         MPVLib.setPropertyString(MpvProp.HWDEC, hwdec)
     }
 
     fun setSubScale(scale: Double) {
+        if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping setSubScale — wrapper already destroyed"); return }
         MPVLib.setPropertyDouble(MpvProp.SUB_SCALE, scale)
     }
 
     fun setSubPos(pos: Int) {
+        if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping setSubPos — wrapper already destroyed"); return }
         MPVLib.setPropertyInt(MpvProp.SUB_POS, pos)
     }
 
     fun addExternalSubtitle(path: String) {
+        if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping addExternalSubtitle — wrapper already destroyed"); return }
         MPVLib.command("sub-add", path, "select")
     }
 
-    fun getPropertyInt(name: String): Int? = MPVLib.getPropertyInt(name)
-    fun getPropertyString(name: String): String? = MPVLib.getPropertyString(name)
-    fun getPropertyBoolean(name: String): Boolean? = MPVLib.getPropertyBoolean(name)
+    fun getPropertyInt(name: String): Int? {
+        if (destroyed.get()) return null
+        return MPVLib.getPropertyInt(name)
+    }
+    fun getPropertyString(name: String): String? {
+        if (destroyed.get()) return null
+        return MPVLib.getPropertyString(name)
+    }
+    fun getPropertyBoolean(name: String): Boolean? {
+        if (destroyed.get()) return null
+        return MPVLib.getPropertyBoolean(name)
+    }
 
     fun setPropertyInt(name: String, value: Int) {
+        if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping setPropertyInt — wrapper already destroyed"); return }
         MPVLib.setPropertyInt(name, value)
     }
 
     fun setPropertyDouble(name: String, value: Double) {
+        if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping setPropertyDouble — wrapper already destroyed"); return }
         MPVLib.setPropertyDouble(name, value)
     }
 
     fun setPropertyString(name: String, value: String) {
+        if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping setPropertyString — wrapper already destroyed"); return }
         MPVLib.setPropertyString(name, value)
     }
 

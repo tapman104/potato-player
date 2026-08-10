@@ -43,6 +43,8 @@ class PlayerViewModel(
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
 
+    private val isActive = java.util.concurrent.atomic.AtomicBoolean(true)
+
     private var lastSeekTime = 0L
 
     private var currentUri = ""
@@ -236,14 +238,17 @@ class PlayerViewModel(
 
 
     fun setSurfaceReadyCallback(cb: (() -> Unit)?) {
+        if (!isActive.get()) return
         wrapper.onSurfaceReady = cb
     }
 
     fun onSurfaceDestroyed() {
+        if (!isActive.get()) return
         wrapper.onSurfaceReady = null
     }
 
     fun loadFile(uri: String, title: String = "", resumePosition: Long = 0L) {
+        if (!isActive.get()) return
         currentUri = uri
         currentTitle = title
         pendingResumePosition = resumePosition
@@ -260,10 +265,12 @@ class PlayerViewModel(
     }
 
     fun togglePlay() {
+        if (!isActive.get()) return
         wrapper.togglePlay()
     }
     
     fun pause() {
+        if (!isActive.get()) return
         wrapper.pause()
     }
 
@@ -291,6 +298,7 @@ class PlayerViewModel(
     }
 
     fun cycleFitMode() {
+        if (!isActive.get()) return
         val next = when (_uiState.value.fitMode) {
             VideoFitMode.FIT -> VideoFitMode.FILL
             VideoFitMode.FILL -> VideoFitMode.STRETCH
@@ -317,21 +325,25 @@ class PlayerViewModel(
     }
 
     fun setDecoder(mode: String) {
+        if (!isActive.get()) return
         val hwdec = when (mode) { "no" -> "SW"; "mediacodec" -> "HW"; else -> "HW+" }
         _uiState.update { it.copy(hwdecCurrent = hwdec) }
         wrapper.setDecoder(mode)
     }
 
     fun seekRelative(offsetSec: Double) {
+        if (!isActive.get()) return
         val target = (_uiState.value.progressState.positionSec + offsetSec).coerceIn(0.0, _uiState.value.progressState.durationSec.takeIf { it > 0.0 } ?: Double.MAX_VALUE)
         wrapper.seekTo((target * 1000).toLong())
     }
 
     fun seekExactRelative(offsetSec: Int) {
+        if (!isActive.get()) return
         wrapper.seekRelative(offsetSec.toDouble())
     }
 
     fun startFastForward() {
+        if (!isActive.get()) return
         if (!_uiState.value.isFastForwarding) {
             normalPlaybackSpeed = _uiState.value.playbackSpeed
             _uiState.update { it.copy(isFastForwarding = true) }
@@ -340,6 +352,7 @@ class PlayerViewModel(
     }
 
     fun stopFastForward() {
+        if (!isActive.get()) return
         if (_uiState.value.isFastForwarding) {
             _uiState.update { it.copy(isFastForwarding = false) }
             wrapper.setSpeed(normalPlaybackSpeed)
@@ -353,6 +366,7 @@ class PlayerViewModel(
     }
 
     fun onSliderDragChange(posSec: Double) {
+        if (!isActive.get()) return
         _uiState.update { it.copy(progressState = it.progressState.copy(dragPositionSec = posSec)) }
         // The old code used seekGesture which just stored a value, but since MPV has its own thread and queue
         // we could just use absolute+exact if we want to seek during drag. Since we deleted the debouncer,
@@ -362,12 +376,14 @@ class PlayerViewModel(
     }
 
     fun onSliderDragEnd(posSec: Double) {
+        if (!isActive.get()) return
         isSliderSeeking = false
         wrapper.seekTo((posSec * 1000).toLong())
         _uiState.update { it.copy(progressState = it.progressState.copy(dragPositionSec = null)) }
     }
 
     fun onSwipeSeek(positionSec: Double) {
+        if (!isActive.get()) return
         _uiState.update { it.copy(swipeSeekTargetSec = positionSec) }
         if (System.currentTimeMillis() - lastSeekTime >= 100L) {
             wrapper.seekTo((positionSec * 1000).toLong())
@@ -376,6 +392,7 @@ class PlayerViewModel(
     }
 
     fun onSwipeSeekFinished() {
+        if (!isActive.get()) return
         val target = _uiState.value.swipeSeekTargetSec
         _uiState.update { it.copy(swipeSeekTargetSec = null) }
         if (target != null) {
@@ -389,6 +406,7 @@ class PlayerViewModel(
     }
 
     fun setPlaybackSpeed(speed: Double) {
+        if (!isActive.get()) return
         val clamped = speed.coerceIn(0.25, 4.0)
         normalPlaybackSpeed = clamped
         if (!_uiState.value.isFastForwarding) {
@@ -398,18 +416,21 @@ class PlayerViewModel(
     }
 
     fun onSelectAudioTrack(id: Int) {
+        if (!isActive.get()) return
         wrapper.setAudioTrack(id)
         _uiState.update { it.copy(currentAudioTrackId = id) }
         dismissDialog()
     }
 
     fun onSelectSubtitleTrack(id: Int) {
+        if (!isActive.get()) return
         wrapper.setSubTrack(id)
         _uiState.update { it.copy(currentSubtitleTrackId = id) }
         dismissDialog()
     }
 
     fun onLoadExternalSubtitle(uri: Uri, context: Context) {
+        if (!isActive.get()) return
         viewModelScope.launch(Dispatchers.IO) {
             val path = MediaMetadataRepository.resolveSubtitlePath(context, uri) ?: uri.toString()
             wrapper.addExternalSubtitle(path)
@@ -419,10 +440,17 @@ class PlayerViewModel(
         dismissDialog()
     }
 
-    fun setSubScale(scale: Double) { wrapper.setSubScale(scale) }
-    fun setSubPos(pos: Int) { wrapper.setSubPos(pos) }
+    fun setSubScale(scale: Double) { 
+        if (!isActive.get()) return
+        wrapper.setSubScale(scale) 
+    }
+    fun setSubPos(pos: Int) { 
+        if (!isActive.get()) return
+        wrapper.setSubPos(pos) 
+    }
 
     fun setSubtitleAppearance(scale: Double, pos: Int) {
+        if (!isActive.get()) return
         wrapper.setSubScale(scale)
         wrapper.setSubPos(pos)
         viewModelScope.launch {
@@ -432,6 +460,7 @@ class PlayerViewModel(
     }
 
     fun resetSubtitleAppearance() {
+        if (!isActive.get()) return
         _uiState.update { it.copy(subScale = 1.0, subPos = 100) }
         wrapper.setSubScale(1.0)
         wrapper.setSubPos(100)
@@ -472,12 +501,14 @@ class PlayerViewModel(
     }
 
     override fun onCleared() {
+        isActive.set(false)
         super.onCleared()
         saveHistoryIfNeeded()
-        wrapper.destroy()
+        wrapper.reset()
     }
 
     fun setVolume(volume: Int) {
+        if (!isActive.get()) return
         val clamped = volume.coerceIn(0, 150)
         wrapper.setPropertyInt("volume", clamped)
         _uiState.update { it.copy(volume = clamped) }
@@ -492,6 +523,7 @@ class PlayerViewModel(
     }
 
     fun setVideoZoom(zoom: Float, panX: Float, panY: Float) {
+        if (!isActive.get()) return
         val clampedZoom = zoom.coerceIn(1.0f, 4.0f)
         val finalPanX = if (clampedZoom == 1.0f) 0f else panX
         val finalPanY = if (clampedZoom == 1.0f) 0f else panY
