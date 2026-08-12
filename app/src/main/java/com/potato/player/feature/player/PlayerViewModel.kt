@@ -46,13 +46,13 @@ class PlayerViewModel(
     private val isActive = java.util.concurrent.atomic.AtomicBoolean(true)
 
     private var lastSeekTime = 0L
+    private var pendingSeekPosition: Long = 0L
 
     private var currentUri = ""
     private var currentTitle = ""
     
     private var normalPlaybackSpeed = 1.0
     private var isSliderSeeking = false
-    private var pendingResumePosition: Long = 0L
     private var autoSubApplied = false
 
     private val preferredSubLangState = prefsRepository.preferredSubLangFlow
@@ -106,6 +106,10 @@ class PlayerViewModel(
         onFileLoaded = {
             val isPaused = wrapper.getPropertyBoolean(MpvProp.PAUSE) ?: false
             _uiState.update { it.copy(fileLoaded = true, isLoading = false, isPlaying = !isPaused, fitMode = VideoFitMode.FIT) }
+            if (pendingSeekPosition > 0L) {
+                wrapper.seekTo(pendingSeekPosition)
+                pendingSeekPosition = 0L
+            }
             loadTracks()
             viewModelScope.launch {
                 // Wait until DataStore has emitted at least once before applying subtitle preference.
@@ -113,10 +117,6 @@ class PlayerViewModel(
                 // upstream has already emitted, or suspends briefly until it does.
                 preferredSubLangState.first { true }
                 applyPreferredSubtitleTrack()
-            }
-            if (pendingResumePosition > 0L) {
-                wrapper.seekTo(pendingResumePosition)
-                pendingResumePosition = 0L
             }
         },
         onCacheTimeChanged = { sec -> _uiState.update { it.copy(progressState = it.progressState.copy(cachedSec = sec)) } },
@@ -222,14 +222,14 @@ class PlayerViewModel(
 
     val surfaceCallback: SurfaceHolder.Callback get() = wrapper.surfaceCallback
 
-    fun onSurfaceReady(uri: String, title: String = "") {
-        if (currentUri != uri || !_uiState.value.fileLoaded) {
+    fun onSurfaceReady(defaultUri: String, defaultTitle: String = "") {
+        if (!_uiState.value.fileLoaded && !_uiState.value.isLoading) {
             viewModelScope.launch(Dispatchers.IO) {
-                val history = historyRepository.getByUri(uri)
+                val history = historyRepository.getByUri(defaultUri)
                 val resumePos = if (history != null && history.lastPlayedPositionSec > 0)
                     (history.lastPlayedPositionSec * 1000).toLong() else 0L
                 withContext(Dispatchers.Main) {
-                    loadFile(uri, title, resumePos)
+                    executeLoadFile(defaultUri, defaultTitle, resumePos)
                 }
             }
         }
@@ -239,7 +239,13 @@ class PlayerViewModel(
 
     fun setSurfaceReadyCallback(cb: (() -> Unit)?) {
         if (!isActive.get()) return
-        wrapper.onSurfaceReady = cb
+        if (cb == null) {
+            wrapper.onSurfaceReady = null
+        } else {
+            wrapper.onSurfaceReady = {
+                cb.invoke()
+            }
+        }
     }
 
     fun onSurfaceDestroyed() {
@@ -249,9 +255,12 @@ class PlayerViewModel(
 
     fun loadFile(uri: String, title: String = "", resumePosition: Long = 0L) {
         if (!isActive.get()) return
+        executeLoadFile(uri, title, resumePosition)
+    }
+
+    private fun executeLoadFile(uri: String, title: String, resumePosition: Long) {
         currentUri = uri
         currentTitle = title
-        pendingResumePosition = resumePosition
         autoSubApplied = false
         val initialName = if (title.isNotBlank()) title else "Video"
         _uiState.update { it.copy(fileName = initialName, isLoading = true, isPlaying = false, fileLoaded = false, error = null) }
@@ -261,6 +270,7 @@ class PlayerViewModel(
                 _uiState.update { it.copy(fileName = resolvedName) }
             }
         }
+        pendingSeekPosition = resumePosition
         wrapper.play(uri)
     }
 
@@ -410,7 +420,6 @@ class PlayerViewModel(
         val clamped = speed.coerceIn(0.25, 4.0)
         normalPlaybackSpeed = clamped
         if (!_uiState.value.isFastForwarding) {
-            _uiState.update { it.copy(playbackSpeed = clamped) }
             wrapper.setSpeed(clamped)
         }
     }
@@ -511,7 +520,6 @@ class PlayerViewModel(
         if (!isActive.get()) return
         val clamped = volume.coerceIn(0, 150)
         wrapper.setPropertyInt("volume", clamped)
-        _uiState.update { it.copy(volume = clamped) }
     }
 
     fun setZoom(zoom: Float) {
