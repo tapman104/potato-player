@@ -53,7 +53,6 @@ fun PlayerScreen(
 
     BackHandler {
         if (!uiState.isLocked) {
-            viewModel.pause()
             if (isExternalIntent) {
                 activity?.finish()
             } else {

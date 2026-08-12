@@ -65,18 +65,26 @@ fun PlayerLifecycleEffect(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_PAUSE) {
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && activity?.isInPictureInPictureMode == true) return@LifecycleEventObserver
-                viewModel.onPlayerPause()
+                if (activity?.isChangingConfigurations == false) {
+                    viewModel.onPlayerPause()
+                }
+            } else if (event == Lifecycle.Event.ON_RESUME) {
+                if (activity?.isChangingConfigurations == false) {
+                    viewModel.onPlayerResume()
+                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-            if (activity?.isFinishing == false) {
-                if (activity.isInPictureInPictureMode == false && window != null) {
-                    val controller = androidx.core.view.WindowCompat.getInsetsController(window, view)
-                    controller.show(WindowInsetsCompat.Type.systemBars())
+            if (activity?.isChangingConfigurations == false) {
+                activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                if (activity.isFinishing == false) {
+                    if (activity.isInPictureInPictureMode == false && window != null) {
+                        val controller = androidx.core.view.WindowCompat.getInsetsController(window, view)
+                        controller.show(WindowInsetsCompat.Type.systemBars())
+                    }
                 }
             }
         }

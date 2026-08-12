@@ -48,6 +48,8 @@ class PlayerViewModel(
     private var lastSeekTime = 0L
     private var pendingSeekPosition: Long = 0L
 
+    private var wasPlayingBeforePause: Boolean = false
+
     private var currentUri = ""
     private var currentTitle = ""
     
@@ -285,7 +287,15 @@ class PlayerViewModel(
     }
 
     fun onPlayerPause() {
+        wasPlayingBeforePause = _uiState.value.isPlaying
+        wrapper.pause()
         saveHistoryIfNeeded()
+    }
+
+    fun onPlayerResume() {
+        if (wasPlayingBeforePause) {
+            wrapper.resume()
+        }
     }
 
     fun toggleLock() {
