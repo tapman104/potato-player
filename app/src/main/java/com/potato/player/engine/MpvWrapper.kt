@@ -18,14 +18,13 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
     // DROP_OLDEST ensures the buffer never blocks the MPV event thread and never
     // silently returns false. Chatty property events (time-pos, etc.) are shed first;
     // infrequent lifecycle events (FILE_LOADED, END_FILE) always get a slot.
+    private val configurator = MpvOptionsConfigurator()
+
     private val _events = MutableSharedFlow<MpvEvent>(
         extraBufferCapacity = 128,
         onBufferOverflow    = BufferOverflow.DROP_OLDEST
     )
     val events: SharedFlow<MpvEvent> = _events.asSharedFlow()
-
-    private val configurator = MpvOptionsConfigurator()
-
 
     init {
         configurator.copyFontAssets(appContext)
@@ -72,10 +71,14 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
     /** True when MPV has a valid surface attached and is ready to render. */
     val isSurfaceAttached: Boolean get() = currentSurface?.isValid == true
 
-    fun reset() {
+    private var activePlaybackUri: String? = null
+
+    fun stopPlaybackIfActive(uri: String?) {
         if (destroyed.get()) return
-        MPVLib.command("stop")
-        detachSurface()
+        if (uri != null && activePlaybackUri == uri) {
+            MPVLib.command("stop")
+            activePlaybackUri = null
+        }
     }
 
     fun attachSurface(surface: Surface) {
@@ -83,7 +86,7 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
         if (!surface.isValid) return
         currentSurface = surface
         MPVLib.attachSurface(surface)
-        MPVLib.setOptionString("force-window", "yes")
+        MPVLib.setPropertyString("force-window", "yes")
         MPVLib.setPropertyString("vo", "gpu")
     }
 
@@ -99,6 +102,7 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
 
     fun play(uri: String) {
         if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping play — wrapper already destroyed"); return }
+        activePlaybackUri = uri
         // Defensive VO reattach: if detachSurface() was called since the last file (e.g. during a
         // lifecycle pause or back-press) the VO is left as "null". Without this guard the second
         // file would play audio-only with a black screen because MPV has no video output target.
@@ -211,7 +215,13 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
 
     fun destroy() {
         if (!destroyed.compareAndSet(false, true)) return
-        detachSurface()
+        // Bypass the destroyed guard in detachSurface() by calling MPV directly.
+        // detachSurface() checks destroyed == true and returns early, so we must
+        // do the teardown inline here before the flag is read by anything else.
+        MPVLib.setPropertyString("vo", "null")
+        MPVLib.setPropertyString("force-window", "no")
+        MPVLib.detachSurface()
+        currentSurface = null
         MPVLib.removeObserver(this)
         MPVLib.destroy()
     }

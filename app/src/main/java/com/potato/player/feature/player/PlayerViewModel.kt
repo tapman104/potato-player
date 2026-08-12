@@ -532,7 +532,7 @@ class PlayerViewModel(
         isActive.set(false)
         super.onCleared()
         saveHistoryIfNeeded()
-        wrapper.reset()
+        wrapper.stopPlaybackIfActive(currentUri)
     }
 
     fun setVolume(volume: Int) {
