@@ -84,9 +84,11 @@ fun PlayerLifecycleEffect(
             }
             if (activity?.isChangingConfigurations == false) {
                 if (activity.isFinishing == false) {
-                    if (activity.isInPictureInPictureMode == false && window != null) {
-                        val controller = androidx.core.view.WindowCompat.getInsetsController(window, view)
-                        controller.show(WindowInsetsCompat.Type.systemBars())
+                    if (activity.isInPictureInPictureMode == false) {
+                        if (window != null) {
+                            val controller = androidx.core.view.WindowCompat.getInsetsController(window, view)
+                            controller.show(WindowInsetsCompat.Type.systemBars())
+                        }
                     }
                 }
             }
