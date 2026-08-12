@@ -51,7 +51,7 @@ fun PlayerLifecycleEffect(
     }
 
     val view = androidx.compose.ui.platform.LocalView.current
-    DisposableEffect(lifecycleOwner, activity, view) {
+    DisposableEffect(lifecycleOwner, activity) {
         val window = activity?.window
         if (window != null) {
             androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -78,8 +78,11 @@ fun PlayerLifecycleEffect(
         
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            if (activity?.isChangingConfigurations == false) {
+            if (activity?.isChangingConfigurations == false && 
+                lifecycleOwner.lifecycle.currentState == Lifecycle.State.DESTROYED) {
                 activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            }
+            if (activity?.isChangingConfigurations == false) {
                 if (activity.isFinishing == false) {
                     if (activity.isInPictureInPictureMode == false && window != null) {
                         val controller = androidx.core.view.WindowCompat.getInsetsController(window, view)
