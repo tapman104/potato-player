@@ -554,7 +554,7 @@ class PlayerViewModel(
         if (idx > 0) {
             val (uri, title) = state.playlist[idx - 1]
             _uiState.update { it.copy(currentPlaylistIndex = idx - 1) }
-            onSurfaceReady(uri, title)
+            loadFile(uri, title)
         }
     }
 
@@ -564,7 +564,7 @@ class PlayerViewModel(
         if (idx >= 0 && idx < state.playlist.size - 1) {
             val (uri, title) = state.playlist[idx + 1]
             _uiState.update { it.copy(currentPlaylistIndex = idx + 1) }
-            onSurfaceReady(uri, title)
+            loadFile(uri, title)
         }
     }
 }
