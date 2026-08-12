@@ -88,6 +88,18 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
 
     fun play(uri: String) {
         if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping play — wrapper already destroyed"); return }
+        // Defensive VO reattach: if detachSurface() was called since the last file (e.g. during a
+        // lifecycle pause or back-press) the VO is left as "null". Without this guard the second
+        // file would play audio-only with a black screen because MPV has no video output target.
+        // This is a no-op when the surface is already attached and vo=gpu.
+        val surface = currentSurface
+        if (surface != null && surface.isValid) {
+            val currentVo = MPVLib.getPropertyString("vo")
+            if (currentVo == null || currentVo == "null") {
+                MPVLib.setPropertyString("vo", "gpu")
+                MPVLib.attachSurface(surface)
+            }
+        }
         MPVLib.command("loadfile", uri, "replace")
         MPVLib.setPropertyBoolean(MpvProp.PAUSE, false)
     }
