@@ -225,14 +225,16 @@ class PlayerViewModel(
     val surfaceCallback: SurfaceHolder.Callback get() = wrapper.surfaceCallback
 
     fun onSurfaceReady(defaultUri: String, defaultTitle: String = "") {
-        if (!_uiState.value.fileLoaded && !_uiState.value.isLoading) {
-            viewModelScope.launch(Dispatchers.IO) {
-                val history = historyRepository.getByUri(defaultUri)
-                val resumePos = if (history != null && history.lastPlayedPositionSec > 0)
-                    (history.lastPlayedPositionSec * 1000).toLong() else 0L
-                withContext(Dispatchers.Main) {
-                    executeLoadFile(defaultUri, defaultTitle, resumePos)
-                }
+        // Do not guard on fileLoaded/isLoading here. This function is only ever called
+        // when the surface becomes available for a specific URI. If we are already
+        // loading or loaded, we should still start a new load for the given URI so that
+        // a reopen after navigating back to the same ViewModel instance works correctly.
+        viewModelScope.launch(Dispatchers.IO) {
+            val history = historyRepository.getByUri(defaultUri)
+            val resumePos = if (history != null && history.lastPlayedPositionSec > 0)
+                (history.lastPlayedPositionSec * 1000).toLong() else 0L
+            withContext(Dispatchers.Main) {
+                executeLoadFile(defaultUri, defaultTitle, resumePos)
             }
         }
     }
@@ -245,6 +247,13 @@ class PlayerViewModel(
             wrapper.onSurfaceReady = null
         } else {
             wrapper.onSurfaceReady = {
+                cb.invoke()
+            }
+            // If the SurfaceView already exists (its surfaceCreated already fired), the
+            // callback registered above will never be triggered by the surface lifecycle.
+            // Fire it immediately so the new URI is loaded without needing a surface
+            // recreate — this is the common case when the user reopens the player.
+            if (wrapper.isSurfaceAttached) {
                 cb.invoke()
             }
         }

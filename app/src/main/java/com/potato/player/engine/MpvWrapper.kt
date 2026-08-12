@@ -55,11 +55,22 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
         }
 
         override fun surfaceDestroyed(holder: SurfaceHolder) {
-            detachSurface()
+            // Only detach if the surface being destroyed is the one MPV is currently
+            // rendering to. When the user closes Video A and immediately opens Video B,
+            // the new SurfaceView's surfaceCreated can fire (attaching the new surface)
+            // BEFORE the old SurfaceView's surfaceDestroyed fires. Without this guard,
+            // the stale destroy call would wipe currentSurface and set vo="null",
+            // causing a black screen on the second video.
+            if (holder.surface === currentSurface) {
+                detachSurface()
+            }
         }
     }
 
     private var currentSurface: Surface? = null
+
+    /** True when MPV has a valid surface attached and is ready to render. */
+    val isSurfaceAttached: Boolean get() = currentSurface?.isValid == true
 
     fun reset() {
         if (destroyed.get()) return

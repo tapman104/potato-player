@@ -78,17 +78,15 @@ fun PlayerLifecycleEffect(
         
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            if (activity?.isChangingConfigurations == false && 
-                lifecycleOwner.lifecycle.currentState == Lifecycle.State.DESTROYED) {
+            // Do NOT reset orientation while the activity is finishing — the OS renders one
+            // more frame in the new orientation before the window closes, causing a visible
+            // flash. Only unlock if we are NOT finishing (e.g. unexpected recomposition).
+            if (activity?.isChangingConfigurations == false && activity?.isFinishing == false) {
                 activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-            }
-            if (activity?.isChangingConfigurations == false) {
-                if (activity.isFinishing == false) {
-                    if (activity.isInPictureInPictureMode == false) {
-                        if (window != null) {
-                            val controller = androidx.core.view.WindowCompat.getInsetsController(window, view)
-                            controller.show(WindowInsetsCompat.Type.systemBars())
-                        }
+                if (activity.isInPictureInPictureMode == false) {
+                    if (window != null) {
+                        val controller = androidx.core.view.WindowCompat.getInsetsController(window, view)
+                        controller.show(WindowInsetsCompat.Type.systemBars())
                     }
                 }
             }
