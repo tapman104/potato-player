@@ -554,7 +554,12 @@ class PlayerViewModel(
         if (idx > 0) {
             val (uri, title) = state.playlist[idx - 1]
             _uiState.update { it.copy(currentPlaylistIndex = idx - 1) }
-            loadFile(uri, title)
+            viewModelScope.launch(Dispatchers.IO) {
+                val history = historyRepository.getByUri(uri)
+                val resumePos = if (history != null && history.lastPlayedPositionSec > 0)
+                    (history.lastPlayedPositionSec * 1000).toLong() else 0L
+                withContext(Dispatchers.Main) { loadFile(uri, title, resumePos) }
+            }
         }
     }
 
@@ -564,7 +569,12 @@ class PlayerViewModel(
         if (idx >= 0 && idx < state.playlist.size - 1) {
             val (uri, title) = state.playlist[idx + 1]
             _uiState.update { it.copy(currentPlaylistIndex = idx + 1) }
-            loadFile(uri, title)
+            viewModelScope.launch(Dispatchers.IO) {
+                val history = historyRepository.getByUri(uri)
+                val resumePos = if (history != null && history.lastPlayedPositionSec > 0)
+                    (history.lastPlayedPositionSec * 1000).toLong() else 0L
+                withContext(Dispatchers.Main) { loadFile(uri, title, resumePos) }
+            }
         }
     }
 }
