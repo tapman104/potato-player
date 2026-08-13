@@ -214,6 +214,7 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
         // Bypass the destroyed guard in detachSurface() by calling MPV directly.
         // detachSurface() checks destroyed == true and returns early, so we must
         // do the teardown inline here before the flag is read by anything else.
+        onSurfaceReady = null
         MPVLib.setPropertyString("vo", "null")
         MPVLib.setPropertyString("force-window", "no")
         MPVLib.detachSurface()

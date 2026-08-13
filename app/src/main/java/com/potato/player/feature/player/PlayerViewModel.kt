@@ -44,6 +44,7 @@ class PlayerViewModel(
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
 
     private val isActive = java.util.concurrent.atomic.AtomicBoolean(true)
+    private val callbackGeneration = java.util.concurrent.atomic.AtomicInteger(0)
 
     private var lastSeekTime = 0L
     private var pendingSeekPosition: Long = 0L
@@ -244,19 +245,15 @@ class PlayerViewModel(
 
     fun setSurfaceReadyCallback(cb: (() -> Unit)?) {
         if (!isActive.get()) return
-        if (cb == null) {
-            wrapper.onSurfaceReady = null
-        } else {
-            wrapper.onSurfaceReady = {
+        if (cb == null) return
+        val myGen = callbackGeneration.incrementAndGet()
+        wrapper.onSurfaceReady = {
+            if (callbackGeneration.get() == myGen) {
                 cb.invoke()
             }
-            // If the SurfaceView already exists (its surfaceCreated already fired), the
-            // callback registered above will never be triggered by the surface lifecycle.
-            // Fire it immediately so the new URI is loaded without needing a surface
-            // recreate — this is the common case when the user reopens the player.
-            if (wrapper.isSurfaceAttached) {
-                cb.invoke()
-            }
+        }
+        if (wrapper.isSurfaceAttached) {
+            cb.invoke()
         }
     }
 
@@ -534,6 +531,7 @@ class PlayerViewModel(
         super.onCleared()
         saveHistoryIfNeeded()
         wrapper.stopIfGeneration(myPlaybackGeneration)
+        wrapper.onSurfaceReady = null
     }
 
     fun setVolume(volume: Int) {

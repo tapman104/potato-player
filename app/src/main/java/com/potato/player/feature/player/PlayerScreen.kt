@@ -122,7 +122,6 @@ fun PlayerScreen(
     DisposableEffect(viewModel, videoUri) {
         viewModel.setSurfaceReadyCallback { viewModel.onSurfaceReady(videoUri, title) }
         onDispose {
-            viewModel.setSurfaceReadyCallback(null)
             viewModel.onSurfaceDestroyed()
         }
     }
