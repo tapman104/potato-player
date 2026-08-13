@@ -259,7 +259,6 @@ class PlayerViewModel(
 
     fun onSurfaceDestroyed() {
         if (!isActive.get()) return
-        wrapper.onSurfaceReady = null
     }
 
     fun loadFile(uri: String, title: String = "", resumePosition: Long = 0L) {

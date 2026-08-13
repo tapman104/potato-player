@@ -43,13 +43,14 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
 
     val surfaceCallback = object : SurfaceHolder.Callback {
         override fun surfaceCreated(holder: SurfaceHolder) {
-            attachSurface(holder.surface)
-            onSurfaceReady?.invoke()
+            // Wait for surfaceChanged — surfaceCreated gives a 0×0 surface with no dimensions yet
         }
 
         override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
             if (width > 0 && height > 0) {
+                attachSurface(holder.surface)
                 MPVLib.setPropertyString("android-surface-size", "${width}x${height}")
+                onSurfaceReady?.invoke()
             }
         }
 
