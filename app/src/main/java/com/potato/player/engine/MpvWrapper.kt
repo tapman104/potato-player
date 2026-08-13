@@ -71,15 +71,7 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
     /** True when MPV has a valid surface attached and is ready to render. */
     val isSurfaceAttached: Boolean get() = currentSurface?.isValid == true
 
-    private var activePlaybackUri: String? = null
-
-    fun stopPlaybackIfActive(uri: String?) {
-        if (destroyed.get()) return
-        if (uri != null && activePlaybackUri == uri) {
-            MPVLib.command("stop")
-            activePlaybackUri = null
-        }
-    }
+    @Volatile private var playbackGeneration: Int = 0
 
     fun attachSurface(surface: Surface) {
         if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping attachSurface — wrapper already destroyed"); return }
@@ -100,13 +92,8 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
         currentSurface = null
     }
 
-    fun play(uri: String) {
-        if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping play — wrapper already destroyed"); return }
-        activePlaybackUri = uri
-        // Defensive VO reattach: if detachSurface() was called since the last file (e.g. during a
-        // lifecycle pause or back-press) the VO is left as "null". Without this guard the second
-        // file would play audio-only with a black screen because MPV has no video output target.
-        // This is a no-op when the surface is already attached and vo=gpu.
+    fun play(uri: String): Int {
+        if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping play — wrapper already destroyed"); return -1 }
         val surface = currentSurface
         if (surface != null && surface.isValid) {
             val currentVo = MPVLib.getPropertyString("vo")
@@ -115,8 +102,17 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
                 MPVLib.attachSurface(surface)
             }
         }
+        val gen = ++playbackGeneration
         MPVLib.command("loadfile", uri, "replace")
         MPVLib.setPropertyBoolean(MpvProp.PAUSE, false)
+        return gen
+    }
+
+    fun stopIfGeneration(gen: Int) {
+        if (destroyed.get()) return
+        if (gen == playbackGeneration) {
+            MPVLib.command("stop")
+        }
     }
 
     fun pause() {

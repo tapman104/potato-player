@@ -52,6 +52,7 @@ class PlayerViewModel(
 
     private var currentUri = ""
     private var currentTitle = ""
+    private var myPlaybackGeneration: Int = -1
     
     private var normalPlaybackSpeed = 1.0
     private var isSliderSeeking = false
@@ -282,7 +283,7 @@ class PlayerViewModel(
             }
         }
         pendingSeekPosition = resumePosition
-        wrapper.play(uri)
+        myPlaybackGeneration = wrapper.play(uri)
     }
 
     fun togglePlay() {
@@ -532,7 +533,7 @@ class PlayerViewModel(
         isActive.set(false)
         super.onCleared()
         saveHistoryIfNeeded()
-        wrapper.stopPlaybackIfActive(currentUri)
+        wrapper.stopIfGeneration(myPlaybackGeneration)
     }
 
     fun setVolume(volume: Int) {
