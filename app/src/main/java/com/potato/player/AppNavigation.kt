@@ -46,6 +46,9 @@ fun AppNavigation(
     wrapper: MpvWrapper,
     startDestination: PlayerStartDestination = PlayerStartDestination.Home
 ) {
+    val context = LocalContext.current
+    val activity = context.findActivity()
+
     // Map the semantic start destination to a concrete nav route.
     // This mapping runs before the first NavHost composition — HomeScreen is
     // never rendered when startDestination is PlayerStartDestination.Player.
@@ -65,6 +68,7 @@ fun AppNavigation(
         composable<HomeRoute> {
             HomeScreen(
                 onNavigateToPlayer = { uri, title ->
+                    activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                     navController.navigate(
                         PlayerRoute(
                             videoUri = android.net.Uri.encode(uri),
@@ -92,6 +96,7 @@ fun AppNavigation(
                 bucketId = route.bucketId,
                 folderName = route.folderName,
                 onNavigateToPlayer = { uri, title, playlist ->
+                    activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                     navController.navigate(
                         PlayerRoute(
                             videoUri = android.net.Uri.encode(uri),
