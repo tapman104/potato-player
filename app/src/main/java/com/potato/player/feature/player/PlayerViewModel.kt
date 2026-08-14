@@ -45,6 +45,7 @@ class PlayerViewModel(
 
     private val isActive = java.util.concurrent.atomic.AtomicBoolean(true)
     private val callbackGeneration = java.util.concurrent.atomic.AtomicInteger(0)
+    private val wrapperToken = vmTokenGenerator.incrementAndGet()
 
     private var lastSeekTime = 0L
     private var pendingSeekPosition: Long = 0L
@@ -247,7 +248,7 @@ class PlayerViewModel(
         if (!isActive.get()) return
         if (cb == null) return
         val myGen = callbackGeneration.incrementAndGet()
-        wrapper.onSurfaceReady = {
+        wrapper.setSurfaceReadyCallback(wrapperToken) {
             if (callbackGeneration.get() == myGen) {
                 cb.invoke()
             }
@@ -530,7 +531,7 @@ class PlayerViewModel(
         super.onCleared()
         saveHistoryIfNeeded()
         wrapper.stopIfGeneration(myPlaybackGeneration)
-        wrapper.onSurfaceReady = null
+        wrapper.clearSurfaceReadyCallback(wrapperToken)
     }
 
     fun setVolume(volume: Int) {
@@ -601,5 +602,9 @@ class PlayerViewModel(
                 withContext(Dispatchers.Main) { loadFile(uri, title, resumePos) }
             }
         }
+    }
+
+    companion object {
+        private val vmTokenGenerator = java.util.concurrent.atomic.AtomicInteger(0)
     }
 }

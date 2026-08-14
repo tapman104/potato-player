@@ -39,7 +39,20 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
         MPVLib.init()
     }
 
-    var onSurfaceReady: (() -> Unit)? = null
+    private var onSurfaceReady: (() -> Unit)? = null
+    private var surfaceReadyToken: Int = -1
+
+    fun setSurfaceReadyCallback(token: Int, cb: () -> Unit) {
+        surfaceReadyToken = token
+        onSurfaceReady = cb
+    }
+
+    fun clearSurfaceReadyCallback(token: Int) {
+        if (surfaceReadyToken == token) {
+            onSurfaceReady = null
+            surfaceReadyToken = -1
+        }
+    }
 
     val surfaceCallback = object : SurfaceHolder.Callback {
         override fun surfaceCreated(holder: SurfaceHolder) {
