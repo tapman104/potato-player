@@ -119,11 +119,8 @@ fun PlayerScreen(
     }
 
     // Load the video once the surface is ready; also handles config-change re-attach.
-    DisposableEffect(viewModel, videoUri) {
-        viewModel.setSurfaceReadyCallback { viewModel.onSurfaceReady(videoUri, title) }
-        onDispose {
-            viewModel.onSurfaceDestroyed()
-        }
+    LaunchedEffect(viewModel, videoUri) {
+        viewModel.prepareUri(videoUri, title)
     }
 
     // Initialise playlist so Prev/Next buttons know their neighbours.

@@ -39,58 +39,11 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
         MPVLib.init()
     }
 
-    private var onSurfaceReady: (() -> Unit)? = null
-    private var surfaceReadyToken: Int = -1
-
-    fun setSurfaceReadyCallback(token: Int, cb: () -> Unit) {
-        surfaceReadyToken = token
-        onSurfaceReady = cb
-    }
-
-    fun clearSurfaceReadyCallback(token: Int) {
-        if (surfaceReadyToken == token) {
-            onSurfaceReady = null
-            surfaceReadyToken = -1
-        }
-    }
-
-    val surfaceCallback = object : SurfaceHolder.Callback {
-        override fun surfaceCreated(holder: SurfaceHolder) {
-            // Wait for surfaceChanged — surfaceCreated gives a 0×0 surface with no dimensions yet
-        }
-
-        override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-            if (width > 0 && height > 0) {
-                attachSurface(holder.surface)
-                MPVLib.setPropertyString("android-surface-size", "${width}x${height}")
-                onSurfaceReady?.invoke()
-            }
-        }
-
-        override fun surfaceDestroyed(holder: SurfaceHolder) {
-            // Only detach if the surface being destroyed is the one MPV is currently
-            // rendering to. When the user closes Video A and immediately opens Video B,
-            // the new SurfaceView's surfaceCreated can fire (attaching the new surface)
-            // BEFORE the old SurfaceView's surfaceDestroyed fires. Without this guard,
-            // the stale destroy call would wipe currentSurface and set vo="null",
-            // causing a black screen on the second video.
-            if (holder.surface === currentSurface) {
-                detachSurface()
-            }
-        }
-    }
-
-    private var currentSurface: Surface? = null
-
-    /** True when MPV has a valid surface attached and is ready to render. */
-    val isSurfaceAttached: Boolean get() = currentSurface?.isValid == true
-
     @Volatile private var playbackGeneration: Int = 0
 
     fun attachSurface(surface: Surface) {
         if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping attachSurface — wrapper already destroyed"); return }
         if (!surface.isValid) return
-        currentSurface = surface
         MPVLib.attachSurface(surface)
         MPVLib.setPropertyString("force-window", "yes")
         MPVLib.setPropertyString("vo", "gpu")
@@ -103,30 +56,26 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
         MPVLib.setPropertyString("vo", "null")
         MPVLib.setPropertyString("force-window", "no")
         MPVLib.detachSurface()
-        currentSurface = null
     }
 
-    fun play(uri: String): Int {
+    fun play(): Int {
         if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping play — wrapper already destroyed"); return -1 }
-        val surface = currentSurface
-        if (surface != null && surface.isValid) {
-            val currentVo = MPVLib.getPropertyString("vo")
-            if (currentVo == null || currentVo == "null") {
-                MPVLib.setPropertyString("vo", "gpu")
-                MPVLib.attachSurface(surface)
-            }
-        }
-        val gen = ++playbackGeneration
+        return ++playbackGeneration
+    }
+
+    fun loadFile(uri: String) {
+        if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping loadFile — wrapper already destroyed"); return }
         MPVLib.command("loadfile", uri, "replace")
         MPVLib.setPropertyBoolean(MpvProp.PAUSE, false)
-        return gen
     }
 
-    fun stopIfGeneration(gen: Int) {
-        if (destroyed.get()) return
+    fun stopIfGeneration(gen: Int): Boolean {
+        if (destroyed.get()) return false
         if (gen == playbackGeneration) {
             MPVLib.command("stop")
+            return true
         }
+        return false
     }
 
     fun pause() {
@@ -228,11 +177,9 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
         // Bypass the destroyed guard in detachSurface() by calling MPV directly.
         // detachSurface() checks destroyed == true and returns early, so we must
         // do the teardown inline here before the flag is read by anything else.
-        onSurfaceReady = null
         MPVLib.setPropertyString("vo", "null")
         MPVLib.setPropertyString("force-window", "no")
         MPVLib.detachSurface()
-        currentSurface = null
         MPVLib.removeObserver(this)
         MPVLib.destroy()
     }

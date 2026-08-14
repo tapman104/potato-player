@@ -44,8 +44,8 @@ class PlayerViewModel(
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
 
     private val isActive = java.util.concurrent.atomic.AtomicBoolean(true)
-    private val callbackGeneration = java.util.concurrent.atomic.AtomicInteger(0)
-    private val wrapperToken = vmTokenGenerator.incrementAndGet()
+    private var pendingUri: String? = null
+    private var mySurface: android.view.Surface? = null
 
     private var lastSeekTime = 0L
     private var pendingSeekPosition: Long = 0L
@@ -225,13 +225,39 @@ class PlayerViewModel(
         }
     }
 
-    val surfaceCallback: SurfaceHolder.Callback get() = wrapper.surfaceCallback
+    val surfaceCallback = object : SurfaceHolder.Callback {
+        override fun surfaceCreated(holder: SurfaceHolder) {
+        }
 
-    fun onSurfaceReady(defaultUri: String, defaultTitle: String = "") {
-        // Do not guard on fileLoaded/isLoading here. This function is only ever called
-        // when the surface becomes available for a specific URI. If we are already
-        // loading or loaded, we should still start a new load for the given URI so that
-        // a reopen after navigating back to the same ViewModel instance works correctly.
+        override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
+            if (width > 0 && height > 0) {
+                mySurface = holder.surface
+                wrapper.setPropertyString("android-surface-size", "${width}x${height}")
+                handleSurfaceReady(holder.surface)
+            }
+        }
+
+        override fun surfaceDestroyed(holder: SurfaceHolder) {
+            if (holder.surface === mySurface) {
+                wrapper.detachSurface()
+                mySurface = null
+            }
+        }
+    }
+
+    private fun handleSurfaceReady(surface: android.view.Surface) {
+        wrapper.attachSurface(surface)
+        val uri = pendingUri ?: return
+        wrapper.loadFile(uri)
+        pendingUri = null
+    }
+
+    private var lastLoadedUri: String? = null
+
+    fun prepareUri(defaultUri: String, defaultTitle: String = "") {
+        if (lastLoadedUri == defaultUri) return
+        lastLoadedUri = defaultUri
+
         viewModelScope.launch(Dispatchers.IO) {
             val history = historyRepository.getByUri(defaultUri)
             val resumePos = if (history != null && history.lastPlayedPositionSec > 0)
@@ -242,32 +268,13 @@ class PlayerViewModel(
         }
     }
 
-
-
-    fun setSurfaceReadyCallback(cb: (() -> Unit)?) {
-        if (!isActive.get()) return
-        if (cb == null) return
-        val myGen = callbackGeneration.incrementAndGet()
-        wrapper.setSurfaceReadyCallback(wrapperToken) {
-            if (callbackGeneration.get() == myGen) {
-                cb.invoke()
-            }
-        }
-        if (wrapper.isSurfaceAttached) {
-            cb.invoke()
-        }
-    }
-
-    fun onSurfaceDestroyed() {
-        if (!isActive.get()) return
-    }
-
     fun loadFile(uri: String, title: String = "", resumePosition: Long = 0L) {
         if (!isActive.get()) return
         executeLoadFile(uri, title, resumePosition)
     }
 
     private fun executeLoadFile(uri: String, title: String, resumePosition: Long) {
+        lastLoadedUri = uri
         currentUri = uri
         currentTitle = title
         autoSubApplied = false
@@ -280,7 +287,10 @@ class PlayerViewModel(
             }
         }
         pendingSeekPosition = resumePosition
-        myPlaybackGeneration = wrapper.play(uri)
+        myPlaybackGeneration = wrapper.play()
+        pendingUri = uri
+
+        mySurface?.let { handleSurfaceReady(it) }
     }
 
     fun togglePlay() {
@@ -531,7 +541,6 @@ class PlayerViewModel(
         super.onCleared()
         saveHistoryIfNeeded()
         wrapper.stopIfGeneration(myPlaybackGeneration)
-        wrapper.clearSurfaceReadyCallback(wrapperToken)
     }
 
     fun setVolume(volume: Int) {
@@ -604,7 +613,5 @@ class PlayerViewModel(
         }
     }
 
-    companion object {
-        private val vmTokenGenerator = java.util.concurrent.atomic.AtomicInteger(0)
-    }
+
 }
