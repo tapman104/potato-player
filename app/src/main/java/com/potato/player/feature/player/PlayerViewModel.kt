@@ -225,31 +225,23 @@ class PlayerViewModel(
         }
     }
 
-    val surfaceCallback = object : SurfaceHolder.Callback {
-        override fun surfaceCreated(holder: SurfaceHolder) {
-        }
-
-        override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-            if (width > 0 && height > 0) {
-                mySurface = holder.surface
-                wrapper.setPropertyString("android-surface-size", "${width}x${height}")
-                handleSurfaceReady(holder.surface)
-            }
-        }
-
-        override fun surfaceDestroyed(holder: SurfaceHolder) {
-            if (holder.surface === mySurface) {
-                wrapper.detachSurface()
-                mySurface = null
-            }
-        }
+    fun setSurfaceSize(width: Int, height: Int) {
+        wrapper.setPropertyString("android-surface-size", "${width}x${height}")
     }
 
-    private fun handleSurfaceReady(surface: android.view.Surface) {
+    fun handleSurfaceReady(surface: android.view.Surface) {
+        mySurface = surface
         wrapper.attachSurface(surface)
         val uri = pendingUri ?: return
         wrapper.loadFile(uri)
         pendingUri = null
+    }
+
+    fun handleSurfaceDestroyed() {
+        if (mySurface != null) {
+            wrapper.detachSurface()
+            mySurface = null
+        }
     }
 
     private var lastLoadedUri: String? = null
@@ -288,9 +280,11 @@ class PlayerViewModel(
         }
         pendingSeekPosition = resumePosition
         myPlaybackGeneration = wrapper.play()
-        pendingUri = uri
-
-        mySurface?.let { handleSurfaceReady(it) }
+        if (mySurface != null) {
+            wrapper.loadFile(uri)
+        } else {
+            pendingUri = uri
+        }
     }
 
     fun togglePlay() {
