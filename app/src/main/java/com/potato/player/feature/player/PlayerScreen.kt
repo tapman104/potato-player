@@ -1,5 +1,9 @@
 package com.potato.player.feature.player
 
+import com.potato.player.feature.player.ui.PlayerErrorState
+import com.potato.player.feature.player.ui.PlayerLoadingIndicator
+import com.potato.player.feature.player.ui.PlayerUnlockButton
+import com.potato.player.feature.player.ui.SwipeSeekOverlay
 import android.os.Build
 import android.app.PictureInPictureParams
 import androidx.compose.animation.*
@@ -175,46 +179,11 @@ fun PlayerScreen(
             DoubleTapSeekOverlay(seekState = doubleTapSeekState)
         }
 
-        // ── Swipe Seek Overlay ───────────────────────────────────────────────
-        if (swipeSeekTargetSec != null && !(activity?.isInPictureInPictureMode == true)) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                androidx.compose.foundation.layout.Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .background(Color.Black.copy(alpha = 0.6f), androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
-                        .padding(16.dp)
-                ) {
-                    val target = swipeSeekTargetSec!!
-                    val delta = target - swipeDragStartSec
-                    val sign = if (delta >= 0) "+" else "-"
-                    
-                    val hours = (target / 3600).toInt()
-                    val minutes = ((target % 3600) / 60).toInt()
-                    val seconds = (target % 60).toInt()
-                    val timeString = if (hours > 0) {
-                        String.format(java.util.Locale.US, "%d:%02d:%02d", hours, minutes, seconds)
-                    } else {
-                        String.format(java.util.Locale.US, "%02d:%02d", minutes, seconds)
-                    }
-                    
-                    Text(
-                        text = timeString,
-                        color = Color.White,
-                        fontSize = 24.sp,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "[$sign${kotlin.math.abs(delta).toInt()}s]",
-                        color = Color.White,
-                        fontSize = 16.sp
-                    )
-                }
-            }
-        }
+        SwipeSeekOverlay(
+            targetSec = swipeSeekTargetSec,
+            dragStartSec = swipeDragStartSec,
+            isPipMode = activity?.isInPictureInPictureMode == true
+        )
 
         // ── Top Hold for 2x Fast-Forward Banner ──────────────────────────────
         if (!(activity?.isInPictureInPictureMode == true)) {
@@ -226,22 +195,9 @@ fun PlayerScreen(
             )
         }
 
-        // ── Loading indicator ────────────────────────────────────────────────
-        if (uiState.isLoading) {
-            CircularProgressIndicator(
-                color    = Color.White,
-                modifier = Modifier.align(Alignment.Center)
-            )
-        }
+        PlayerLoadingIndicator(isLoading = uiState.isLoading)
 
-        // ── Error message ────────────────────────────────────────────────────
-        uiState.error?.let { msg ->
-            Text(
-                text     = "Error: $msg",
-                color    = Color.Red,
-                modifier = Modifier.align(Alignment.Center)
-            )
-        }
+        PlayerErrorState(error = uiState.error)
 
         if (uiState.fileLoaded && !(activity?.isInPictureInPictureMode == true)) {
 
@@ -314,20 +270,11 @@ fun PlayerScreen(
             }
         }
 
-        // ── Centered Unlock Button ───────────────────────────────────────────
-        if (uiState.isLocked && !(activity?.isInPictureInPictureMode == true)) {
-            IconButton(
-                onClick = viewModel::toggleLock,
-                modifier = Modifier.align(Alignment.Center)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = "Unlock",
-                    tint = Color.White.copy(alpha = 0.6f),
-                    modifier = Modifier.size(32.dp)
-                )
-            }
-        }
+        PlayerUnlockButton(
+            isLocked = uiState.isLocked,
+            isPipMode = activity?.isInPictureInPictureMode == true,
+            onUnlock = viewModel::toggleLock
+        )
 
         // ponytail: move only, zero new logic
         if (!(activity?.isInPictureInPictureMode == true)) {
