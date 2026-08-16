@@ -16,6 +16,23 @@ internal object MpvProp {
     const val SUB_POS            = "sub-pos"
     const val VIDEO_PARAMS_W     = "video-params/w"
     const val VIDEO_PARAMS_H     = "video-params/h"
+
+    // Track list properties
+    const val PROP_TRACK_LIST_TYPE = "type"
+    const val PROP_TRACK_LIST_ID = "id"
+    const val PROP_TRACK_LIST_TITLE = "title"
+    const val PROP_TRACK_LIST_LANG = "lang"
+    const val PROP_TRACK_LIST_EXTERNAL = "external"
+    const val PROP_TRACK_LIST = "track-list"
+
+    // Playback properties
+    const val PROP_ANDROID_SURFACE_SIZE = "android-surface-size"
+    const val PROP_VIDEO_ASPECT_OVERRIDE = "video-aspect-override"
+    const val PROP_PANSCAN = "panscan"
+    const val PROP_VOLUME = "volume"
+    const val PROP_VIDEO_ZOOM = "video-zoom"
+    const val PROP_VIDEO_PAN_X = "video-pan-x"
+    const val PROP_VIDEO_PAN_Y = "video-pan-y"
 }
 
 

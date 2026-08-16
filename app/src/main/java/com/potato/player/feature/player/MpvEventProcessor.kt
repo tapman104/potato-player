@@ -50,7 +50,7 @@ class MpvEventProcessor(
                     MpvProp.DEMUXER_CACHE_DURATION -> onCacheDurationChanged(event.value)
                     MpvProp.SPEED -> onSpeedChanged(event.value)
                     MpvProp.SUB_SCALE -> onSubScaleChanged(event.value)
-                    "volume" -> onVolumeChanged(event.value.toInt())
+                    MpvProp.PROP_VOLUME -> onVolumeChanged(event.value.toInt())
                 }
             }
             is MpvEvent.PropertyLong -> {
@@ -58,13 +58,13 @@ class MpvEventProcessor(
                     MpvProp.SUB_POS -> onSubPosChanged(event.value.toInt())
                     MpvProp.VIDEO_PARAMS_W -> onVideoWidthChanged(event.value.toInt())
                     MpvProp.VIDEO_PARAMS_H -> onVideoHeightChanged(event.value.toInt())
-                    "volume" -> onVolumeChanged(event.value.toInt())
+                    MpvProp.PROP_VOLUME -> onVolumeChanged(event.value.toInt())
                 }
             }
             is MpvEvent.PropertyString -> {
                 when (event.name) {
                     MpvProp.HWDEC_CURRENT -> onHwdecChanged(event.value)
-                    "track-list" -> onTracksChanged(event.value)
+                    MpvProp.PROP_TRACK_LIST -> onTracksChanged(event.value)
                 }
             }
         }

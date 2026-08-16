@@ -80,8 +80,8 @@ class PlayerViewModel(
         onTracksChanged = { json ->
             val tracks = TrackListParser.parse(json)
             if (tracks.isNotEmpty()) {
-                val audioTracks = tracks.filter { it.type == TrackType.AUDIO }.map { it.toUiModel() }
-                val subtitleTracks = tracks.filter { it.type == TrackType.SUBTITLE }.map { it.toUiModel() }
+                val audioTracks = tracks.filter { it.type == TrackType.AUDIO }.map { it.toUiModel(appContext) }
+                val subtitleTracks = tracks.filter { it.type == TrackType.SUBTITLE }.map { it.toUiModel(appContext) }
                 _uiState.update { it.copy(audioTracks = audioTracks, subtitleTracks = subtitleTracks) }
                 viewModelScope.launch {
                     preferredSubLangState.first { true }
@@ -170,21 +170,21 @@ class PlayerViewModel(
         val count = wrapper.getPropertyInt(MpvProp.TRACK_LIST_COUNT) ?: 0
         val list = mutableListOf<TrackInfo>()
         for (i in 0 until count) {
-            val trackType = when (wrapper.getPropertyString("track-list/$i/type")) {
+            val trackType = when (wrapper.getPropertyString("track-list/$i/${MpvProp.PROP_TRACK_LIST_TYPE}")) {
                 "audio" -> TrackType.AUDIO
                 "sub"   -> TrackType.SUBTITLE
                 else    -> continue
             }
-            val id = wrapper.getPropertyInt("track-list/$i/id") ?: continue
-            val title = wrapper.getPropertyString("track-list/$i/title")
-            val lang = wrapper.getPropertyString("track-list/$i/lang")
-            val extStr = wrapper.getPropertyString("track-list/$i/external")
+            val id = wrapper.getPropertyInt("track-list/$i/${MpvProp.PROP_TRACK_LIST_ID}") ?: continue
+            val title = wrapper.getPropertyString("track-list/$i/${MpvProp.PROP_TRACK_LIST_TITLE}")
+            val lang = wrapper.getPropertyString("track-list/$i/${MpvProp.PROP_TRACK_LIST_LANG}")
+            val extStr = wrapper.getPropertyString("track-list/$i/${MpvProp.PROP_TRACK_LIST_EXTERNAL}")
             list.add(TrackInfo(id = id, type = trackType, title = title, lang = lang, isExternal = extStr == "yes" || extStr == "true"))
         }
         val aid = wrapper.getPropertyString(MpvProp.AID)?.toIntOrNull() ?: -1
         val sid = wrapper.getPropertyString(MpvProp.SID)?.toIntOrNull() ?: -1
-        val audioTracks = list.filter { it.type == TrackType.AUDIO }.map { it.toUiModel() }
-        val subtitleTracks = list.filter { it.type == TrackType.SUBTITLE }.map { it.toUiModel() }
+        val audioTracks = list.filter { it.type == TrackType.AUDIO }.map { it.toUiModel(appContext) }
+        val subtitleTracks = list.filter { it.type == TrackType.SUBTITLE }.map { it.toUiModel(appContext) }
         _uiState.update { it.copy(audioTracks = audioTracks, subtitleTracks = subtitleTracks, currentAudioTrackId = aid, currentSubtitleTrackId = sid) }
     }
 
@@ -227,7 +227,7 @@ class PlayerViewModel(
     }
 
     fun setSurfaceSize(width: Int, height: Int) {
-        wrapper.setPropertyString("android-surface-size", "${width}x${height}")
+        wrapper.setPropertyString(MpvProp.PROP_ANDROID_SURFACE_SIZE, "${width}x${height}")
     }
 
     fun handleSurfaceReady(surface: android.view.Surface) {
@@ -338,19 +338,19 @@ class PlayerViewModel(
         _uiState.update { it.copy(fitMode = next) }
         when (next) {
             VideoFitMode.FIT -> {
-                wrapper.setPropertyString("video-aspect-override", "-1")
-                wrapper.setPropertyString("panscan", "0.0")
+                wrapper.setPropertyString(MpvProp.PROP_VIDEO_ASPECT_OVERRIDE, "-1")
+                wrapper.setPropertyString(MpvProp.PROP_PANSCAN, "0.0")
             }
             VideoFitMode.FILL -> {
-                wrapper.setPropertyString("panscan", "1.0")
-                wrapper.setPropertyString("video-aspect-override", "-1")
+                wrapper.setPropertyString(MpvProp.PROP_PANSCAN, "1.0")
+                wrapper.setPropertyString(MpvProp.PROP_VIDEO_ASPECT_OVERRIDE, "-1")
             }
             VideoFitMode.STRETCH -> {
-                wrapper.setPropertyString("panscan", "0.0")
+                wrapper.setPropertyString(MpvProp.PROP_PANSCAN, "0.0")
                 val metrics = appContext.resources.displayMetrics
                 val screenWidth = metrics.widthPixels
                 val screenHeight = metrics.heightPixels
-                wrapper.setPropertyString("video-aspect-override", "${screenWidth}/${screenHeight}")
+                wrapper.setPropertyString(MpvProp.PROP_VIDEO_ASPECT_OVERRIDE, "${screenWidth}/${screenHeight}")
             }
         }
     }
@@ -540,7 +540,7 @@ class PlayerViewModel(
     fun setVolume(volume: Int) {
         if (!isActive.get()) return
         val clamped = volume.coerceIn(0, 150)
-        wrapper.setPropertyInt("volume", clamped)
+        wrapper.setPropertyInt(MpvProp.PROP_VOLUME, clamped)
     }
 
     fun setZoom(zoom: Float) {
@@ -558,9 +558,9 @@ class PlayerViewModel(
         val finalPanY = if (clampedZoom == 1.0f) 0f else panY
         
         val mpvZoom = kotlin.math.ln(clampedZoom.toDouble()) / kotlin.math.ln(2.0)
-        wrapper.setPropertyDouble("video-zoom", mpvZoom)
-        wrapper.setPropertyDouble("video-pan-x", finalPanX.toDouble())
-        wrapper.setPropertyDouble("video-pan-y", finalPanY.toDouble())
+        wrapper.setPropertyDouble(MpvProp.PROP_VIDEO_ZOOM, mpvZoom)
+        wrapper.setPropertyDouble(MpvProp.PROP_VIDEO_PAN_X, finalPanX.toDouble())
+        wrapper.setPropertyDouble(MpvProp.PROP_VIDEO_PAN_Y, finalPanY.toDouble())
         
         _uiState.update { it.copy(videoZoom = clampedZoom, videoPanX = finalPanX, videoPanY = finalPanY) }
     }

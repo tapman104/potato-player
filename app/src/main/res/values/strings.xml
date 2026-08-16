@@ -18,4 +18,5 @@
     <string name="navigate_back">Navigate back</string>
     <string name="pill_videos">Videos</string>
     <string name="pill_file">File</string>
+    <string name="player_track_label_fallback">Track %1$d</string>
 </resources>
