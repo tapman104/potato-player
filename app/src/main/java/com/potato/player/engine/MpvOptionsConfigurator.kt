@@ -31,12 +31,12 @@ class MpvOptionsConfigurator {
         // Core engine config
         MPVLib.setOptionString("config",       "yes")
         MPVLib.setOptionString("config-dir",   filesDir)
-        MPVLib.setOptionString("force-window", "no")
+        MPVLib.setOptionString("force-window", "yes")
         MPVLib.setOptionString("idle",         "once")
 
         // Video output
         MPVLib.setOptionString("profile",      "fast")
-        MPVLib.setOptionString("vo",           "null")
+        MPVLib.setOptionString("vo",           "gpu")
         MPVLib.setOptionString("gpu-context",  "android")
 
         // Hardware decoding: HW+ → HW → SW fallback chain
