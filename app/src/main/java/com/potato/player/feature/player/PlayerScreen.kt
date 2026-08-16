@@ -141,11 +141,12 @@ fun PlayerScreen(
         // ── Video surface ────────────────────────────────────────────────────
         val surfaceCallback = remember(viewModel) {
             object : android.view.SurfaceHolder.Callback {
-                override fun surfaceCreated(holder: android.view.SurfaceHolder) {}
+                override fun surfaceCreated(holder: android.view.SurfaceHolder) {
+                    viewModel.handleSurfaceReady(holder.surface)
+                }
                 override fun surfaceChanged(holder: android.view.SurfaceHolder, format: Int, width: Int, height: Int) {
                     if (width > 0 && height > 0) {
                         viewModel.setSurfaceSize(width, height)
-                        viewModel.handleSurfaceReady(holder.surface)
                     }
                 }
                 override fun surfaceDestroyed(holder: android.view.SurfaceHolder) {

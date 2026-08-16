@@ -11,5 +11,7 @@ tailrec fun Context.findActivity(): Activity? = when (this) {
 }
 
 fun lockOrientation(activity: Activity?, orientation: Int) {
-    activity?.requestedOrientation = orientation
+    if (activity != null && activity.requestedOrientation != orientation) {
+        activity.requestedOrientation = orientation
+    }
 }

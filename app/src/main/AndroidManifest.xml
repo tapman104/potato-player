@@ -16,7 +16,7 @@
 
         <activity
             android:name=".MainActivity"
-            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout|density"
             android:exported="true"
             android:screenOrientation="user"
             android:supportsPictureInPicture="true"

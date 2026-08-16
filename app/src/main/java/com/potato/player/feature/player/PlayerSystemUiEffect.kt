@@ -82,7 +82,9 @@ fun PlayerLifecycleEffect(
             // more frame in the new orientation before the window closes, causing a visible
             // flash. Only unlock if we are NOT finishing (e.g. unexpected recomposition).
             if (activity?.isChangingConfigurations == false && activity?.isFinishing == false) {
-                activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                if (activity.requestedOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
+                    activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                }
                 if (activity.isInPictureInPictureMode == false) {
                     if (window != null) {
                         val controller = androidx.core.view.WindowCompat.getInsetsController(window, view)

@@ -42,24 +42,23 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
     @Volatile private var playbackGeneration: Int = 0
 
     fun attachSurface(surface: Surface) {
-        if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping attachSurface — wrapper already destroyed"); return }
+        if (destroyed.get()) return
         if (!surface.isValid) return
         MPVLib.attachSurface(surface)
         MPVLib.setPropertyString("force-window", "yes")
         MPVLib.setPropertyString("vo", "gpu")
-    }
-
-    fun reattachRenderer() {
-        if (destroyed.get()) return
-        MPVLib.setPropertyString("force-window", "yes")
-        MPVLib.setPropertyString("vo", "gpu")
-        MPVLib.command("vo-cmdline", "")
+        // Seek in place to force the renderer to reinitialize on the new surface.
+        // Without this kick, mpv holds a stale VO state and the screen stays black.
+        val pos = MPVLib.getPropertyDouble("time-pos")
+        if (pos != null && pos > 0.0) {
+            MPVLib.command("seek", pos.toString(), "absolute+exact")
+        }
     }
 
     fun detachSurface() {
-        if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping detachSurface — wrapper already destroyed"); return }
-        // Tell the VO to stop rendering before physically removing the surface.
-        // Reversing this order can cause MPV to write to an already-released surface.
+        if (destroyed.get()) return
+        // Switch VO to null FIRST so mpv stops rendering before the surface is gone.
+        MPVLib.setPropertyString("vo", "null")
         MPVLib.setPropertyString("force-window", "no")
         MPVLib.detachSurface()
     }
