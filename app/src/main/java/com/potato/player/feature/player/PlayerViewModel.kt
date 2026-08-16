@@ -140,6 +140,7 @@ class PlayerViewModel(
     )
 
     init {
+        myPlaybackGeneration = wrapper.play()
         viewModelScope.launch {
             wrapper.events.collect { event ->
                 eventProcessor.process(event)
@@ -279,7 +280,6 @@ class PlayerViewModel(
             }
         }
         pendingSeekPosition = resumePosition
-        myPlaybackGeneration = wrapper.play()
         if (mySurface != null) {
             wrapper.loadFile(uri)
         } else {
