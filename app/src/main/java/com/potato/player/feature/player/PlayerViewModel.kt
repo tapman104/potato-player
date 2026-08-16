@@ -233,9 +233,15 @@ class PlayerViewModel(
     fun handleSurfaceReady(surface: android.view.Surface) {
         mySurface = surface
         wrapper.attachSurface(surface)
-        val uri = pendingUri ?: return
-        wrapper.loadFile(uri)
+        val uri = pendingUri
+        if (uri == null) {
+            // Resume after background — surface reattached,
+            // kick renderer to redraw current frame
+            wrapper.reattachRenderer()
+            return
+        }
         pendingUri = null
+        wrapper.loadFile(uri)
     }
 
     fun handleSurfaceDestroyed() {
