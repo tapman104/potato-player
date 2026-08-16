@@ -8,10 +8,4 @@ data class TrackInfo(
     val title: String?,     // track-list/N/title (nullable)
     val lang: String?,      // track-list/N/lang (nullable)
     val isExternal: Boolean // track-list/N/external
-) {
-    fun displayLabel(): String = when {
-        !title.isNullOrBlank() -> title
-        !lang.isNullOrBlank()  -> lang
-        else                   -> "Track $id"
-    }
-}
+)

@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class MpvWrapper(context: Context) : MPVLib.EventObserver {
 
-    val appContext: Context = context.applicationContext
+    private val appContext: Context = context.applicationContext
 
     // DROP_OLDEST ensures the buffer never blocks the MPV event thread and never
     // silently returns false. Chatty property events (time-pos, etc.) are shed first;
