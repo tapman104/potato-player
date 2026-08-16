@@ -5,13 +5,14 @@ import com.potato.player.feature.player.ui.VolumeIndicator
 import com.potato.player.feature.player.ui.ZoomIndicator
 import android.app.Activity
 import android.content.Context
-import android.media.AudioManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -49,6 +50,7 @@ fun PlayerGestureBox(
     viewModel: PlayerViewModel,
     onToggleControls: () -> Unit,
     onBrightnessChange: (Float) -> Unit,
+    onVolumeChange: (Int) -> Unit,
     fileLoaded: Boolean,
     doubleTapSeekState: DoubleTapSeekState?,
     onDoubleTapSeekState: (DoubleTapSeekState?) -> Unit,
@@ -74,15 +76,8 @@ fun PlayerGestureBox(
     var showBrightnessIndicator by remember { mutableStateOf(false) }
     var showVolumeIndicator by remember { mutableStateOf(false) }
 
-    val audioManager = remember {
-        activity?.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
-    }
-    val maxVolume = remember {
-        audioManager?.getStreamMaxVolume(AudioManager.STREAM_MUSIC)?.toFloat() ?: 15f
-    }
-    var tempVolume by remember {
-        mutableStateOf(audioManager?.getStreamVolume(AudioManager.STREAM_MUSIC)?.toFloat() ?: 0f)
-    }
+    val maxVolume = 100f
+    var tempVolume by remember { mutableStateOf(100f) }
 
     var currentZoom by remember { mutableStateOf(1.0f) }
     var currentPanX by remember { mutableStateOf(0f) }
@@ -92,6 +87,7 @@ fun PlayerGestureBox(
 
     val coroutineScope = rememberCoroutineScope()
     var hideZoomJob by remember { mutableStateOf<Job?>(null) }
+    val haptic = LocalHapticFeedback.current
 
     LaunchedEffect(fileLoaded) {
         if (fileLoaded) {
@@ -188,12 +184,20 @@ fun PlayerGestureBox(
                                 } else {
                                     if (isLeftSide) {
                                         // LEFT = brightness
-                                        brightnessLevel = (brightnessLevel - dy / size.height).coerceIn(0.01f, 1.0f)
+                                        val newBrightness = (brightnessLevel - dy / size.height).coerceIn(0.01f, 1.0f)
+                                        if (newBrightness != brightnessLevel && (newBrightness == 0.01f || newBrightness == 1.0f)) {
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        }
+                                        brightnessLevel = newBrightness
                                         onBrightnessChange(brightnessLevel)
                                     } else {
                                         // RIGHT = volume
-                                        tempVolume = (tempVolume - (dy / size.height) * maxVolume).coerceIn(0f, maxVolume)
-                                        audioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, tempVolume.toInt(), 0)
+                                        val newVolume = (tempVolume - (dy / size.height) * maxVolume).coerceIn(0f, maxVolume)
+                                        if (newVolume != tempVolume && (newVolume == 0f || newVolume == maxVolume)) {
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        }
+                                        tempVolume = newVolume
+                                        onVolumeChange(tempVolume.toInt())
                                     }
                                 }
                             }

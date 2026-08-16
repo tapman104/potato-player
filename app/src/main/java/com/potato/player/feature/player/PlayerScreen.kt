@@ -167,6 +167,7 @@ fun PlayerScreen(
                 viewModel = viewModel,
                 onToggleControls = { controlsVisible = !controlsVisible },
                 onBrightnessChange = onBrightnessChange,
+                onVolumeChange = { viewModel.setVolume(it) },
                 fileLoaded = uiState.fileLoaded,
                 doubleTapSeekState = doubleTapSeekState,
                 onDoubleTapSeekState = { doubleTapSeekState = it },
