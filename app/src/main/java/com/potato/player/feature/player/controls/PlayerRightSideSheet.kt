@@ -105,7 +105,7 @@ fun PlayerRightSideSheet(
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(modifier = Modifier.weight(1f))
-                            IconButton(onClick = onDismiss) {
+                            IconButton(onClick = onDismiss, modifier = PlayerControlsStyles.dialogIconButtonModifier) {
                                 Icon(
                                     imageVector = Icons.Default.Close,
                                     contentDescription = "Close",

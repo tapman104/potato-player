@@ -17,4 +17,14 @@ internal object PlayerControlsStyles {
         .size(40.dp)
         .background(Color.Black.copy(alpha = 0.5f), shape = CircleShape)
 
+    val centerPlayPauseModifier: Modifier = Modifier
+        .size(64.dp)
+        .background(Color.Black.copy(alpha = 0.5f), shape = CircleShape)
+
+    val dialogIconButtonModifier: Modifier = Modifier
+        .size(40.dp)
+        .background(Color.Black.copy(alpha = 0.5f), shape = CircleShape)
+
+    val accentColor = Color(0xFF90CAF9)
+
 }

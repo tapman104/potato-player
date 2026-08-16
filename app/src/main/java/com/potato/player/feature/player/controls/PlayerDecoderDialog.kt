@@ -199,7 +199,8 @@ fun PlayerDecoderDialog(
                             }
                             Spacer(modifier = Modifier.width(8.dp))
                             IconButton(
-                                onClick = { expandedStates[option.mpvValue] = !isExpanded }
+                                onClick = { expandedStates[option.mpvValue] = !isExpanded },
+                                modifier = PlayerControlsStyles.dialogIconButtonModifier
                             ) {
                                 Icon(
                                     imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,

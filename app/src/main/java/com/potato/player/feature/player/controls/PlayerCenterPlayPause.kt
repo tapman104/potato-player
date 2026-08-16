@@ -20,9 +20,7 @@ internal fun PlayerCenterPlayPause(
 ) {
     IconButton(
         onClick  = onClick,
-        modifier = Modifier
-            .size(64.dp)
-            .background(Color.Black.copy(alpha = 0.5f), shape = CircleShape)
+        modifier = PlayerControlsStyles.centerPlayPauseModifier
     ) {
         Icon(
             imageVector        = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,

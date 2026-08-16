@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.util.Locale
 import kotlin.math.abs
+import com.potato.player.feature.player.controls.PlayerControlsStyles
 
 @Composable
 fun SwipeSeekOverlay(
@@ -83,12 +84,12 @@ fun PlayerUnlockButton(
         Box(modifier = Modifier.fillMaxSize()) {
             IconButton(
                 onClick = onUnlock,
-                modifier = Modifier.align(Alignment.Center)
+                modifier = Modifier.align(Alignment.Center).then(PlayerControlsStyles.iconButtonModifier)
             ) {
                 Icon(
                     imageVector = Icons.Default.Lock,
                     contentDescription = "Unlock",
-                    tint = Color.White.copy(alpha = 0.6f),
+                    tint = Color.White,
                     modifier = Modifier.size(32.dp)
                 )
             }
