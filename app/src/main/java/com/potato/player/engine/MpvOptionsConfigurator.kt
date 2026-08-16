@@ -31,8 +31,7 @@ class MpvOptionsConfigurator {
         // Core engine config
         MPVLib.setOptionString("config",       "yes")
         MPVLib.setOptionString("config-dir",   filesDir)
-        MPVLib.setOptionString("force-window", "yes")
-        MPVLib.setOptionString("idle",         "once")
+        MPVLib.setOptionString("idle",         "yes")
 
         // Video output
         MPVLib.setOptionString("profile",      "fast")

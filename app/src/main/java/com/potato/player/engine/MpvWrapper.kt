@@ -45,12 +45,15 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
         if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping attachSurface — wrapper already destroyed"); return }
         if (!surface.isValid) return
         MPVLib.attachSurface(surface)
+        MPVLib.setPropertyString("force-window", "yes")
+        MPVLib.setPropertyString("vo", "gpu")
     }
 
     fun detachSurface() {
         if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping detachSurface — wrapper already destroyed"); return }
         // Tell the VO to stop rendering before physically removing the surface.
         // Reversing this order can cause MPV to write to an already-released surface.
+        MPVLib.setPropertyString("force-window", "no")
         MPVLib.detachSurface()
     }
 
