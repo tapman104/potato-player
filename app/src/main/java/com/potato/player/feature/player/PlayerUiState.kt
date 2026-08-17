@@ -6,6 +6,8 @@ enum class ActiveDialog { None, Audio, Subtitle, Speed, AspectRatio, MoreMenu, D
 
 enum class OrientationMode { AUTO, LOCK_LANDSCAPE, LOCK_PORTRAIT }
 
+enum class VideoFitMode { FIT, FILL, STRETCH }
+
 data class PlaybackProgressState(
     val positionSec: Double = 0.0,
     val durationSec: Double = 0.0,
