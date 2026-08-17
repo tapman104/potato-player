@@ -43,17 +43,19 @@ import com.potato.player.feature.home.PillBarTab
 import com.potato.player.feature.home.PotatoPillBar
 import kotlinx.coroutines.launch
 
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
-    onNavigateToHome: () -> Unit
+    onNavigateToHome: () -> Unit,
+    onNavigateToAbout: () -> Unit,
+    viewModel: SettingsViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
-    val prefsRepository = remember(context) { UserPreferencesRepository(context) }
-    val preferredSubLang by prefsRepository.preferredSubLangFlow.collectAsStateWithLifecycle(initialValue = "eng")
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showSubLangDialog by remember { mutableStateOf(false) }
-    val coroutineScope = rememberCoroutineScope()
     Scaffold(
         topBar = {
             TopAppBar(
@@ -93,12 +95,12 @@ fun SettingsScreen(
                 ListItem(
                     headlineContent = { Text("Default subtitle language") },
                     supportingContent = { 
-                        val label = when(preferredSubLang) {
+                        val label = when(uiState.preferredSubLang) {
                             "eng" -> "English (eng)"
                             "jpn" -> "Japanese (jpn)"
                             "kor" -> "Korean (kor)"
                             "off" -> "None (off)"
-                            else -> preferredSubLang
+                            else -> uiState.preferredSubLang
                         }
                         Text(label) 
                     },
@@ -109,37 +111,11 @@ fun SettingsScreen(
             item { HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp)) }
 
             item {
-                Text(
-                    text = stringResource(R.string.about),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-            }
-            item {
                 ListItem(
-                    headlineContent = {
-                        Text(stringResource(R.string.app_name))
-                    },
-                    supportingContent = {
-                        Text("Potato Player")
-                    },
-                    leadingContent = {
-                        Icon(Icons.Default.Movie, contentDescription = null)
-                    }
-                )
-            }
-            item {
-                ListItem(
-                    headlineContent = {
-                        Text(stringResource(R.string.app_version_label))
-                    },
-                    supportingContent = {
-                        Text("1.0.0")
-                    },
-                    leadingContent = {
-                        Icon(Icons.Default.Info, contentDescription = null)
-                    }
+                    headlineContent = { Text(stringResource(R.string.about)) },
+                    supportingContent = { Text("Version ${uiState.appVersion}") },
+                    leadingContent = { Icon(Icons.Default.Info, contentDescription = null) },
+                    modifier = Modifier.clickable(onClick = onNavigateToAbout)
                 )
             }
             item { HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp)) }
@@ -157,9 +133,9 @@ fun SettingsScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .selectable(
-                                        selected = (code == preferredSubLang),
+                                        selected = (code == uiState.preferredSubLang),
                                         onClick = {
-                                            coroutineScope.launch { prefsRepository.setPreferredSubLang(code) }
+                                            viewModel.setPreferredSubLang(code)
                                             showSubLangDialog = false
                                         }
                                     )
@@ -167,7 +143,7 @@ fun SettingsScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(
-                                    selected = (code == preferredSubLang),
+                                    selected = (code == uiState.preferredSubLang),
                                     onClick = null // handled by row
                                 )
                                 Text(

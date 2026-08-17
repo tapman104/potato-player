@@ -40,6 +40,9 @@ data class PlayerRoute(
 @Serializable
 data object SettingsRoute
 
+@Serializable
+data object AboutRoute
+
 @Composable
 fun AppNavigation(
     navController: NavHostController,
@@ -116,7 +119,17 @@ fun AppNavigation(
                 onBack = { navController.popBackStack() },
                 onNavigateToHome = {
                     navController.popBackStack(HomeRoute, inclusive = false)
-                }
+                },
+                onNavigateToAbout = { navController.navigate(AboutRoute) }
+            )
+        }
+
+        composable<AboutRoute> {
+            com.potato.player.feature.settings.AboutScreen(
+                onBack = { navController.popBackStack() },
+                onChangelog = { },
+                onLicenses = { },
+                onPrivacyPolicy = { }
             )
         }
 

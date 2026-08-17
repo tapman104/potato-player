@@ -19,4 +19,7 @@
     <string name="pill_videos">Videos</string>
     <string name="pill_file">File</string>
     <string name="player_track_label_fallback">Track %1$d</string>
+    <string name="changelog">Changelog</string>
+    <string name="licenses">Open-source licenses</string>
+    <string name="privacy_policy">Privacy Policy</string>
 </resources>

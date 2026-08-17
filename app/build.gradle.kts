@@ -51,6 +51,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     // Wire the local MPV AAR from the root libs/ folder
