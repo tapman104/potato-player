@@ -126,8 +126,7 @@ fun PlayerGestureBox(
                                 val maxPanY = (currentZoom - 1f) * 0.5f
                                 currentPanX = (currentPanX + pan.x / size.width).coerceIn(-maxPanX, maxPanX)
                                 currentPanY = (currentPanY + pan.y / size.height).coerceIn(-maxPanY, maxPanY)
-                                viewModel.setZoom(currentZoom)
-                                viewModel.setPan(currentPanX, currentPanY)
+                                viewModel.setVideoZoom(currentZoom, currentPanX, currentPanY)
                             } while (e2.changes.any { it.pressed })
                             isPinchActive = false
                             hideZoomJob = coroutineScope.launch {
@@ -180,7 +179,7 @@ fun PlayerGestureBox(
                                     val maxPanY = (currentZoom - 1f) * 0.5f
                                     currentPanX = (currentPanX + dx / size.width).coerceIn(-maxPanX, maxPanX)
                                     currentPanY = (currentPanY + dy / size.height).coerceIn(-maxPanY, maxPanY)
-                                    viewModel.setPan(currentPanX, currentPanY)
+                                    viewModel.setVideoZoom(currentZoom, currentPanX, currentPanY)
                                 } else {
                                     if (isLeftSide) {
                                         // LEFT = brightness

@@ -99,7 +99,6 @@ class PlayerViewModel(
             }
             _uiState.update { it.copy(hwdecCurrent = hwdec) }
         },
-        onIdleEntered = { },
         onEndFileReached = {
             _uiState.update { it.copy(isPlaying = false) }
             saveHistoryIfNeeded()
@@ -195,17 +194,7 @@ class PlayerViewModel(
 
         val prefLang = preferredSubLangState.value
 
-        // Map both ISO 639-1 and ISO 639-2 codes for each supported language
-        val langAliases = mapOf(
-            "eng" to setOf("eng", "en"),
-            "en"  to setOf("eng", "en"),
-            "jpn" to setOf("jpn", "ja"),
-            "ja"  to setOf("jpn", "ja"),
-            "kor" to setOf("kor", "ko"),
-            "ko"  to setOf("kor", "ko")
-        )
-
-        val acceptedLangs = langAliases[prefLang.lowercase()] ?: setOf(prefLang.lowercase())
+        val acceptedLangs = LANG_ALIASES[prefLang.lowercase()] ?: setOf(prefLang.lowercase())
 
         var match = currentTracks.find { track ->
             track.language.lowercase() in acceptedLangs
@@ -362,12 +351,6 @@ class PlayerViewModel(
         wrapper.setDecoder(mode)
     }
 
-    fun seekRelative(offsetSec: Double) {
-        if (!isActive.get()) return
-        val target = (_uiState.value.progressState.positionSec + offsetSec).coerceIn(0.0, _uiState.value.progressState.durationSec.takeIf { it > 0.0 } ?: Double.MAX_VALUE)
-        wrapper.seekTo((target * 1000).toLong())
-    }
-
     fun seekExactRelative(offsetSec: Int) {
         if (!isActive.get()) return
         wrapper.seekRelative(offsetSec.toDouble())
@@ -385,9 +368,8 @@ class PlayerViewModel(
     fun stopFastForward() {
         if (!isActive.get()) return
         if (_uiState.value.isFastForwarding) {
-            _uiState.update { it.copy(isFastForwarding = false) }
             wrapper.setSpeed(normalPlaybackSpeed)
-            _uiState.update { it.copy(playbackSpeed = normalPlaybackSpeed) }
+            _uiState.update { it.copy(isFastForwarding = false, playbackSpeed = normalPlaybackSpeed) }
         }
     }
 
@@ -399,11 +381,10 @@ class PlayerViewModel(
     fun onSliderDragChange(posSec: Double) {
         if (!isActive.get()) return
         _uiState.update { it.copy(progressState = it.progressState.copy(dragPositionSec = posSec)) }
-        // The old code used seekGesture which just stored a value, but since MPV has its own thread and queue
-        // we could just use absolute+exact if we want to seek during drag. Since we deleted the debouncer,
-        // it's better not to spam it, but actually `seekTo` should be fine. However, old `seekGesture`
-        // was non-blocking. MPV natively drops rapidly queued seeks anyway. Let's do `seekTo`.
-        wrapper.seekTo((posSec * 1000).toLong())
+        if (System.currentTimeMillis() - lastSeekTime >= 80L) {
+            wrapper.seekTo((posSec * 1000).toLong())
+            lastSeekTime = System.currentTimeMillis()
+        }
     }
 
     fun onSliderDragEnd(posSec: Double) {
@@ -543,14 +524,6 @@ class PlayerViewModel(
         wrapper.setPropertyInt(MpvProp.PROP_VOLUME, clamped)
     }
 
-    fun setZoom(zoom: Float) {
-        setVideoZoom(zoom, uiState.value.videoPanX, uiState.value.videoPanY)
-    }
-
-    fun setPan(panX: Float, panY: Float) {
-        setVideoZoom(uiState.value.videoZoom, panX, panY)
-    }
-
     fun setVideoZoom(zoom: Float, panX: Float, panY: Float) {
         if (!isActive.get()) return
         val clampedZoom = zoom.coerceIn(1.0f, 4.0f)
@@ -608,4 +581,14 @@ class PlayerViewModel(
     }
 
 
+    companion object {
+        private val LANG_ALIASES = mapOf(
+            "eng" to setOf("eng", "en"),
+            "en"  to setOf("eng", "en"),
+            "jpn" to setOf("jpn", "ja"),
+            "ja"  to setOf("jpn", "ja"),
+            "kor" to setOf("kor", "ko"),
+            "ko"  to setOf("kor", "ko")
+        )
+    }
 }

@@ -2,7 +2,7 @@ package com.potato.player.feature.player
 
 
 
-enum class ActiveDialog { None, Audio, Subtitle, Speed, AspectRatio, MoreMenu, Decoder }
+enum class ActiveDialog { None, Audio, Subtitle, Speed, MoreMenu, Decoder }
 
 enum class OrientationMode { AUTO, LOCK_LANDSCAPE, LOCK_PORTRAIT }
 

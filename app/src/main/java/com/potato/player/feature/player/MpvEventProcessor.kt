@@ -15,7 +15,6 @@ class MpvEventProcessor(
     private val onPositionChanged: (ms: Long) -> Unit,
     private val onTracksChanged: (json: String) -> Unit,
     private val onHwdecChanged: (mode: String) -> Unit,
-    private val onIdleEntered: () -> Unit,
     private val onEndFileReached: () -> Unit,
     private val onFileLoaded: () -> Unit,
     private val onCacheTimeChanged: (sec: Double) -> Unit,

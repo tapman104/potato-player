@@ -128,7 +128,7 @@ fun SubtitleTrackDialog(
                             items(tracks, key = { it.id }) { track ->
                                 val isSelected = track.id == currentTrackId
                                 TrackSelectionRow(
-                                    label = track.displayLabel(),
+                                    label = track.displayLabel,
                                     isSelected = isSelected,
                                     onClick = { onSelectTrack(track.id) }
                                 )
