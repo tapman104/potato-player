@@ -38,8 +38,12 @@ fun rememberControlsVisibility(
     }
 
     val onUserInteraction: () -> Unit = {
-        controlsVisible = true
-        interactionTick = System.currentTimeMillis()
+        if (controlsVisible) {
+            controlsVisible = false
+        } else {
+            controlsVisible = true
+            interactionTick = System.currentTimeMillis()
+        }
     }
 
     return Pair(controlsVisible, onUserInteraction)
