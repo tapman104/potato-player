@@ -26,8 +26,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.potato.player.feature.player.TrackUiModel
-import com.potato.player.feature.player.PlayerUiState
+import com.potato.player.feature.player.state.TrackUiModel
+import com.potato.player.feature.player.state.PlayerUiState
 import kotlin.math.roundToInt
 
 

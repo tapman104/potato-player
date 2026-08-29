@@ -1,6 +1,8 @@
-package com.potato.player.feature.player
+package com.potato.player.feature.player.state
 
 
+
+import com.potato.player.feature.player.VideoFitMode
 
 enum class ActiveDialog { None, Audio, Subtitle, Speed, MoreMenu, Decoder }
 

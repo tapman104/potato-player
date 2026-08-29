@@ -11,7 +11,7 @@ import androidx.navigation.toRoute
 import com.potato.player.engine.MpvWrapper
 import com.potato.player.feature.home.FolderScreen
 import com.potato.player.feature.home.HomeScreen
-import com.potato.player.feature.player.PlayerScreen
+import com.potato.player.feature.player.ui.PlayerScreen
 import com.potato.player.feature.player.PlayerViewModel
 import com.potato.player.feature.player.PlayerViewModelFactory
 import com.potato.player.feature.settings.SettingsScreen

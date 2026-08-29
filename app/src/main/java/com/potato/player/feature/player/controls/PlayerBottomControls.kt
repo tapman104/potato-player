@@ -27,7 +27,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import com.potato.player.util.TimeFormatter
 
-import com.potato.player.feature.player.PlaybackProgressState
+import com.potato.player.feature.player.state.PlaybackProgressState
 import com.potato.player.feature.player.VideoFitMode
 
 @Composable

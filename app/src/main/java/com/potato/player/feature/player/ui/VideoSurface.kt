@@ -1,4 +1,4 @@
-package com.potato.player.feature.player
+package com.potato.player.feature.player.ui
 
 import android.view.SurfaceHolder
 import android.view.SurfaceView

@@ -1,8 +1,8 @@
-package com.potato.player.feature.player
+package com.potato.player.feature.player.ui
 
 import com.potato.player.feature.player.ui.BrightnessIndicator
-import com.potato.player.feature.player.ui.VolumeIndicator
-import com.potato.player.feature.player.ui.ZoomIndicator
+import com.potato.player.feature.player.state.*
+import com.potato.player.feature.player.PlayerViewModel
 import android.app.Activity
 import android.content.Context
 import androidx.compose.foundation.background

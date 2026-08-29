@@ -1,4 +1,4 @@
-package com.potato.player.feature.player
+package com.potato.player.feature.player.state
 
 import android.content.Context
 import com.potato.player.R

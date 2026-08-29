@@ -1,6 +1,8 @@
-package com.potato.player.feature.player
+package com.potato.player.feature.player.ui
 
 import android.content.pm.ActivityInfo
+import com.potato.player.feature.player.state.*
+import com.potato.player.feature.player.PlayerViewModel
 import androidx.compose.runtime.*
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat

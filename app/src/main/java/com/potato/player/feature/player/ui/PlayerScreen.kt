@@ -1,9 +1,8 @@
-package com.potato.player.feature.player
+package com.potato.player.feature.player.ui
 
-import com.potato.player.feature.player.ui.PlayerErrorState
-import com.potato.player.feature.player.ui.PlayerLoadingIndicator
-import com.potato.player.feature.player.ui.PlayerUnlockButton
-import com.potato.player.feature.player.ui.SwipeSeekOverlay
+import com.potato.player.feature.player.PlayerViewModel
+import com.potato.player.feature.player.VideoFitMode
+import com.potato.player.feature.player.state.*
 import android.os.Build
 import android.app.PictureInPictureParams
 import androidx.compose.animation.*

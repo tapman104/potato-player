@@ -15,7 +15,7 @@ import com.potato.player.engine.TrackInfo
 import com.potato.player.engine.TrackListParser
 import com.potato.player.engine.TrackType
 
-import com.potato.player.feature.player.toUiModel
+import com.potato.player.feature.player.state.*
 import com.potato.player.util.MediaMetadataRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow

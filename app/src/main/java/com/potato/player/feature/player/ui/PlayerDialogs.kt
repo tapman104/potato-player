@@ -1,7 +1,9 @@
-package com.potato.player.feature.player
+package com.potato.player.feature.player.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import com.potato.player.feature.player.PlayerViewModel
+import com.potato.player.feature.player.state.*
 import com.potato.player.feature.player.controls.AudioTrackDialog
 import com.potato.player.feature.player.controls.PlayerDecoderDialog
 import com.potato.player.feature.player.controls.PlayerRightSideSheet
