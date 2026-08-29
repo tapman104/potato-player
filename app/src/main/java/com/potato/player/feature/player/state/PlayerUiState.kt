@@ -16,6 +16,15 @@ data class PlaybackProgressState(
     val dragPositionSec: Double? = null
 )
 
+data class PlayerGestureState(
+    val swipeSeekTargetSec: Double? = null,
+    val isSwipingVolumeOrBrightness: Boolean = false,
+    val volume: Int = 100,
+    val videoZoom: Float = 1.0f,
+    val videoPanX: Float = 0f,
+    val videoPanY: Float = 0f
+)
+
 data class PlayerUiState(
     val fileName:        String = "",
     val isPlaying:       Boolean = false,
@@ -37,15 +46,8 @@ data class PlayerUiState(
     val orientationMode: OrientationMode = OrientationMode.AUTO,
     val isAutoRotation: Boolean = false,
     val isInPipMode: Boolean = false,
-    val volume: Int = 100,
-    val videoZoom: Float = 1.0f,
-    val videoPanX: Float = 0f,
-    val videoPanY: Float = 0f,
     val isLocked: Boolean = false,
-    val progressState: PlaybackProgressState = PlaybackProgressState(),
     val fitMode: VideoFitMode = VideoFitMode.FIT,
-    val swipeSeekTargetSec: Double? = null,
-    val isSwipingVolumeOrBrightness: Boolean = false,
     val playlist: List<Pair<String, String>> = emptyList(), // (uri, title) pairs
     val currentPlaylistIndex: Int = -1
 )

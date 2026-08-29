@@ -53,6 +53,8 @@ fun PlayerScreen(
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val progressState by viewModel.progressState.collectAsStateWithLifecycle()
+    val gestureState by viewModel.gestureState.collectAsStateWithLifecycle()
 
     BackHandler {
         if (!uiState.isLocked) {
@@ -79,10 +81,10 @@ fun PlayerScreen(
     var controlsVisible by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
 
     var doubleTapSeekState by remember { mutableStateOf<DoubleTapSeekState?>(null) }
-    val swipeSeekTargetSec = uiState.swipeSeekTargetSec
+    val swipeSeekTargetSec = gestureState.swipeSeekTargetSec
     var swipeDragStartSec by remember { mutableStateOf(0.0) }
     
-    val isSeeking = uiState.progressState.dragPositionSec != null
+    val isSeeking = progressState.dragPositionSec != null
     LaunchedEffect(
         controlsVisible, 
         uiState.isPlaying, 
@@ -90,10 +92,10 @@ fun PlayerScreen(
         doubleTapSeekState,
         uiState.isFastForwarding,
         uiState.isLocked,
-        uiState.isSwipingVolumeOrBrightness
+        gestureState.isSwipingVolumeOrBrightness
     ) {
         if (controlsVisible && uiState.isPlaying && !isSeeking) {
-            if (!uiState.isFastForwarding && !uiState.isSwipingVolumeOrBrightness) {
+            if (!uiState.isFastForwarding && !gestureState.isSwipingVolumeOrBrightness) {
                 delay(3000L)
                 controlsVisible = false
             }
@@ -162,7 +164,7 @@ fun PlayerScreen(
         // ── Gesture & Tap Overlay ────────────────────────────────────────────
         if (!uiState.isLocked) {
             PlayerGestureBox(
-                uiState = uiState,
+                gestureState = gestureState,
                 viewModel = viewModel,
                 onToggleControls = { controlsVisible = !controlsVisible },
                 onBrightnessChange = onBrightnessChange,
@@ -249,13 +251,13 @@ fun PlayerScreen(
                     .systemBarsPadding()
             ) {
                 PlayerBottomControls(
-                    progressState     = uiState.progressState,
+                    progressState     = progressState,
                     isAutoRotation    = uiState.isAutoRotation,
                     currentFitMode    = uiState.fitMode,
                     contentPadding    = WindowInsets.displayCutout.asPaddingValues(),
                     onSeekGesture     = { ms -> viewModel.onSliderDragChange(ms / 1000.0) },
                     onSeekCommit      = { ms -> viewModel.onSliderDragEnd(ms / 1000.0) },
-                    onDragStart       = { viewModel.onSliderDragStart(uiState.progressState.positionSec) },
+                    onDragStart       = { viewModel.onSliderDragStart(progressState.positionSec) },
                     onDragEnd         = { /* already handled inside onSeekCommit path */ },
                     onToggleAutoRotation = { viewModel.toggleAutoRotation() },
                     onToggleFitMode   = { viewModel.cycleFitMode() },

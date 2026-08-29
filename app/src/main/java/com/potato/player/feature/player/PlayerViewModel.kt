@@ -43,6 +43,12 @@ class PlayerViewModel(
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
 
+    private val _progressState = MutableStateFlow(PlaybackProgressState())
+    val progressState: StateFlow<PlaybackProgressState> = _progressState.asStateFlow()
+
+    private val _gestureState = MutableStateFlow(PlayerGestureState())
+    val gestureState: StateFlow<PlayerGestureState> = _gestureState.asStateFlow()
+
     private val isActive = java.util.concurrent.atomic.AtomicBoolean(true)
     private var pendingUri: String? = null
     private var mySurface: android.view.Surface? = null
@@ -72,9 +78,9 @@ class PlayerViewModel(
             val isPaused = wrapper.getPropertyBoolean(MpvProp.PAUSE) ?: false
             _uiState.update { it.copy(isLoading = false, isPlaying = !isPaused) }
         },
-        onDurationChanged = { ms -> _uiState.update { it.copy(progressState = it.progressState.copy(durationSec = ms / 1000.0)) } },
+        onDurationChanged = { ms -> _progressState.update { it.copy(durationSec = ms / 1000.0) } },
         onPositionChanged = { ms -> 
-            if (!isSliderSeeking) _uiState.update { it.copy(progressState = it.progressState.copy(positionSec = ms / 1000.0)) } 
+            if (!isSliderSeeking) _progressState.update { it.copy(positionSec = ms / 1000.0) } 
         },
         onTracksChanged = { json ->
             val tracks = TrackListParser.parse(json)
@@ -122,8 +128,8 @@ class PlayerViewModel(
                 applyPreferredSubtitleTrack()
             }
         },
-        onCacheTimeChanged = { sec -> _uiState.update { it.copy(progressState = it.progressState.copy(cachedSec = sec)) } },
-        onCacheDurationChanged = { sec -> _uiState.update { it.copy(progressState = it.progressState.copy(cacheDurationSec = sec)) } },
+        onCacheTimeChanged = { sec -> _progressState.update { it.copy(cachedSec = sec) } },
+        onCacheDurationChanged = { sec -> _progressState.update { it.copy(cacheDurationSec = sec) } },
         onSpeedChanged = { speed ->
             if (!_uiState.value.isFastForwarding) {
                 _uiState.update { it.copy(playbackSpeed = speed) }
@@ -134,7 +140,7 @@ class PlayerViewModel(
         onSubPosChanged = { pos -> _uiState.update { it.copy(subPos = pos) } },
         onVideoWidthChanged = { w -> _uiState.update { it.copy(videoWidth = w) } },
         onVideoHeightChanged = { h -> _uiState.update { it.copy(videoHeight = h) } },
-        onVolumeChanged = { v -> _uiState.update { it.copy(volume = v) } }
+        onVolumeChanged = { v -> _gestureState.update { it.copy(volume = v) } }
     )
 
     init {
@@ -378,37 +384,37 @@ class PlayerViewModel(
 
     fun onSliderDragStart(posSec: Double) {
         isSliderSeeking = true
-        _uiState.update { it.copy(progressState = it.progressState.copy(dragPositionSec = posSec)) }
+        _progressState.update { it.copy(dragPositionSec = posSec) }
     }
 
     fun onSliderDragChange(posSec: Double) {
         if (!isActive.get()) return
-        _uiState.update { it.copy(progressState = it.progressState.copy(dragPositionSec = posSec)) }
+        _progressState.update { it.copy(dragPositionSec = posSec) }
     }
 
     fun onSliderDragEnd(posSec: Double) {
         if (!isActive.get()) return
         isSliderSeeking = false
         wrapper.seekTo((posSec * 1000).toLong(), exact = true)
-        _uiState.update { it.copy(progressState = it.progressState.copy(dragPositionSec = null)) }
+        _progressState.update { it.copy(dragPositionSec = null) }
     }
 
     fun onSwipeSeek(positionSec: Double) {
         if (!isActive.get()) return
-        _uiState.update { it.copy(swipeSeekTargetSec = positionSec) }
+        _gestureState.update { it.copy(swipeSeekTargetSec = positionSec) }
     }
 
     fun onSwipeSeekFinished() {
         if (!isActive.get()) return
-        val target = _uiState.value.swipeSeekTargetSec
-        _uiState.update { it.copy(swipeSeekTargetSec = null) }
+        val target = _gestureState.value.swipeSeekTargetSec
+        _gestureState.update { it.copy(swipeSeekTargetSec = null) }
         if (target != null) {
             wrapper.seekTo((target * 1000).toLong(), exact = true)
         }
     }
 
     fun setSwipingVolumeOrBrightness(isSwiping: Boolean) {
-        _uiState.update { it.copy(isSwipingVolumeOrBrightness = isSwiping) }
+        _gestureState.update { it.copy(isSwipingVolumeOrBrightness = isSwiping) }
     }
 
     fun setPlaybackSpeed(speed: Double) {
@@ -484,10 +490,10 @@ class PlayerViewModel(
     }
 
     private fun saveHistoryIfNeeded() {
-        if (currentUri.isEmpty() || _uiState.value.progressState.durationSec <= 0.0) return
+        if (currentUri.isEmpty() || _progressState.value.durationSec <= 0.0) return
         
-        val currentPos = _uiState.value.progressState.positionSec
-        val duration = _uiState.value.progressState.durationSec
+        val currentPos = _progressState.value.positionSec
+        val duration = _progressState.value.durationSec
         
         // If at the end of the file, the player might reset position to 0. 
         // We fallback to duration if it's near zero and not playing.
@@ -529,7 +535,7 @@ class PlayerViewModel(
         wrapper.setPropertyDouble(MpvProp.PROP_VIDEO_PAN_X, finalPanX.toDouble())
         wrapper.setPropertyDouble(MpvProp.PROP_VIDEO_PAN_Y, finalPanY.toDouble())
         
-        _uiState.update { it.copy(videoZoom = clampedZoom, videoPanX = finalPanX, videoPanY = finalPanY) }
+        _gestureState.update { it.copy(videoZoom = clampedZoom, videoPanX = finalPanX, videoPanY = finalPanY) }
     }
 
     fun resetZoom() {
