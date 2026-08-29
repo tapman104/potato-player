@@ -47,7 +47,6 @@ class PlayerViewModel(
     private var pendingUri: String? = null
     private var mySurface: android.view.Surface? = null
 
-    private var lastSeekTime = 0L
     private var pendingSeekPosition: Long = 0L
 
     private var wasPlayingBeforePause: Boolean = false
@@ -166,25 +165,29 @@ class PlayerViewModel(
 
 
     private fun loadTracks() {
-        val count = wrapper.getPropertyInt(MpvProp.TRACK_LIST_COUNT) ?: 0
-        val list = mutableListOf<TrackInfo>()
-        for (i in 0 until count) {
-            val trackType = when (wrapper.getPropertyString("track-list/$i/${MpvProp.PROP_TRACK_LIST_TYPE}")) {
-                "audio" -> TrackType.AUDIO
-                "sub"   -> TrackType.SUBTITLE
-                else    -> continue
+        viewModelScope.launch(Dispatchers.IO) {
+            val count = wrapper.getPropertyInt(MpvProp.TRACK_LIST_COUNT) ?: 0
+            val list = mutableListOf<TrackInfo>()
+            for (i in 0 until count) {
+                val trackType = when (wrapper.getPropertyString("track-list/$i/${MpvProp.PROP_TRACK_LIST_TYPE}")) {
+                    "audio" -> TrackType.AUDIO
+                    "sub"   -> TrackType.SUBTITLE
+                    else    -> continue
+                }
+                val id = wrapper.getPropertyInt("track-list/$i/${MpvProp.PROP_TRACK_LIST_ID}") ?: continue
+                val title = wrapper.getPropertyString("track-list/$i/${MpvProp.PROP_TRACK_LIST_TITLE}")
+                val lang = wrapper.getPropertyString("track-list/$i/${MpvProp.PROP_TRACK_LIST_LANG}")
+                val extStr = wrapper.getPropertyString("track-list/$i/${MpvProp.PROP_TRACK_LIST_EXTERNAL}")
+                list.add(TrackInfo(id = id, type = trackType, title = title, lang = lang, isExternal = extStr == "yes" || extStr == "true"))
             }
-            val id = wrapper.getPropertyInt("track-list/$i/${MpvProp.PROP_TRACK_LIST_ID}") ?: continue
-            val title = wrapper.getPropertyString("track-list/$i/${MpvProp.PROP_TRACK_LIST_TITLE}")
-            val lang = wrapper.getPropertyString("track-list/$i/${MpvProp.PROP_TRACK_LIST_LANG}")
-            val extStr = wrapper.getPropertyString("track-list/$i/${MpvProp.PROP_TRACK_LIST_EXTERNAL}")
-            list.add(TrackInfo(id = id, type = trackType, title = title, lang = lang, isExternal = extStr == "yes" || extStr == "true"))
+            val aid = wrapper.getPropertyString(MpvProp.AID)?.toIntOrNull() ?: -1
+            val sid = wrapper.getPropertyString(MpvProp.SID)?.toIntOrNull() ?: -1
+            val audioTracks = list.filter { it.type == TrackType.AUDIO }.map { it.toUiModel(appContext) }
+            val subtitleTracks = list.filter { it.type == TrackType.SUBTITLE }.map { it.toUiModel(appContext) }
+            withContext(Dispatchers.Main) {
+                _uiState.update { it.copy(audioTracks = audioTracks, subtitleTracks = subtitleTracks, currentAudioTrackId = aid, currentSubtitleTrackId = sid) }
+            }
         }
-        val aid = wrapper.getPropertyString(MpvProp.AID)?.toIntOrNull() ?: -1
-        val sid = wrapper.getPropertyString(MpvProp.SID)?.toIntOrNull() ?: -1
-        val audioTracks = list.filter { it.type == TrackType.AUDIO }.map { it.toUiModel(appContext) }
-        val subtitleTracks = list.filter { it.type == TrackType.SUBTITLE }.map { it.toUiModel(appContext) }
-        _uiState.update { it.copy(audioTracks = audioTracks, subtitleTracks = subtitleTracks, currentAudioTrackId = aid, currentSubtitleTrackId = sid) }
     }
 
     private fun applyPreferredSubtitleTrack() {
@@ -381,26 +384,18 @@ class PlayerViewModel(
     fun onSliderDragChange(posSec: Double) {
         if (!isActive.get()) return
         _uiState.update { it.copy(progressState = it.progressState.copy(dragPositionSec = posSec)) }
-        if (System.currentTimeMillis() - lastSeekTime >= 80L) {
-            wrapper.seekTo((posSec * 1000).toLong())
-            lastSeekTime = System.currentTimeMillis()
-        }
     }
 
     fun onSliderDragEnd(posSec: Double) {
         if (!isActive.get()) return
         isSliderSeeking = false
-        wrapper.seekTo((posSec * 1000).toLong())
+        wrapper.seekTo((posSec * 1000).toLong(), exact = true)
         _uiState.update { it.copy(progressState = it.progressState.copy(dragPositionSec = null)) }
     }
 
     fun onSwipeSeek(positionSec: Double) {
         if (!isActive.get()) return
         _uiState.update { it.copy(swipeSeekTargetSec = positionSec) }
-        if (System.currentTimeMillis() - lastSeekTime >= 100L) {
-            wrapper.seekTo((positionSec * 1000).toLong())
-            lastSeekTime = System.currentTimeMillis()
-        }
     }
 
     fun onSwipeSeekFinished() {
@@ -408,8 +403,7 @@ class PlayerViewModel(
         val target = _uiState.value.swipeSeekTargetSec
         _uiState.update { it.copy(swipeSeekTargetSec = null) }
         if (target != null) {
-            wrapper.seekTo((target * 1000).toLong())
-            lastSeekTime = System.currentTimeMillis()
+            wrapper.seekTo((target * 1000).toLong(), exact = true)
         }
     }
 

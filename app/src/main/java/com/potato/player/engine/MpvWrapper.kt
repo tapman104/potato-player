@@ -98,10 +98,11 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
         MPVLib.setPropertyBoolean(MpvProp.PAUSE, false)
     }
 
-    fun seekTo(ms: Long) {
+    fun seekTo(ms: Long, exact: Boolean = true) {
         if (destroyed.get()) { android.util.Log.w("MpvWrapper", "Skipping seekTo — wrapper already destroyed"); return }
         val safeMs = ms.coerceAtLeast(0L)
-        MPVLib.command("seek", (safeMs / 1000.0).toString(), "absolute+exact")
+        val mode = if (exact) "absolute+exact" else "absolute+keyframes"
+        MPVLib.command("seek", (safeMs / 1000.0).toString(), mode)
     }
 
     fun seekRelative(sec: Double) {
