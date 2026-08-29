@@ -195,7 +195,13 @@ fun PlayerScreen(
                 swipeSeekTargetSec = swipeSeekTargetSec,
                 fileName = uiState.fileName,
                 hwdecCurrent = uiState.hwdecCurrent,
-                onBack = onBack,
+                onBack = {
+                    if (isExternalIntent) {
+                        activity?.finish()
+                    } else {
+                        onBack()
+                    }
+                },
                 onSelectAudioTrack = { viewModel.showDialog(ActiveDialog.Audio) },
                 onSelectSubtitleTrack = { viewModel.showDialog(ActiveDialog.Subtitle) },
                 onSelectDecoder = { viewModel.showDialog(ActiveDialog.Decoder) },
