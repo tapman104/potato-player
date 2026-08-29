@@ -19,6 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -109,12 +111,6 @@ fun PlayerScreen(
     }
 
 
-    LaunchedEffect(swipeSeekTargetSec) {
-        if (swipeSeekTargetSec != null) {
-            controlsVisible = false
-        }
-    }
-
     // Clear double-tap seek overlay after animation
     LaunchedEffect(doubleTapSeekState?.triggerId) {
         if (doubleTapSeekState != null) {
@@ -158,23 +154,25 @@ fun PlayerScreen(
 
         PlayerSurface(
             callback = surfaceCallback,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize().semantics(mergeDescendants = false) {}
         )
 
         // ── Gesture & Tap Overlay ────────────────────────────────────────────
         if (!uiState.isLocked) {
-            PlayerGestureBox(
-                gestureState = gestureState,
-                viewModel = viewModel,
-                onToggleControls = { controlsVisible = !controlsVisible },
-                onBrightnessChange = onBrightnessChange,
-                onVolumeChange = { viewModel.setVolume(it) },
-                fileLoaded = uiState.fileLoaded,
-                doubleTapSeekState = doubleTapSeekState,
-                onDoubleTapSeekState = { doubleTapSeekState = it },
-                onSwipeSeekStart = { startSec -> swipeDragStartSec = startSec },
-                activity = activity
-            )
+            Box(modifier = Modifier.clearAndSetSemantics {}) {
+                PlayerGestureBox(
+                    gestureState = gestureState,
+                    viewModel = viewModel,
+                    onToggleControls = { controlsVisible = !controlsVisible },
+                    onBrightnessChange = onBrightnessChange,
+                    onVolumeChange = { viewModel.setVolume(it) },
+                    fileLoaded = uiState.fileLoaded,
+                    doubleTapSeekState = doubleTapSeekState,
+                    onDoubleTapSeekState = { doubleTapSeekState = it },
+                    onSwipeSeekStart = { startSec -> swipeDragStartSec = startSec },
+                    activity = activity
+                )
+            }
         }
 
         // ── Double-Tap Seek Overlay ──────────────────────────────────────────
@@ -205,72 +203,56 @@ fun PlayerScreen(
         if (uiState.fileLoaded && !(activity?.isInPictureInPictureMode == true)) {
 
             // ── Top bar ──────────────────────────────────────────────────────
-            AnimatedVisibility(
-                visible = controlsVisible && !uiState.isLocked && swipeSeekTargetSec == null,
-                enter = fadeIn() + slideInVertically { -it },
-                exit = fadeOut() + slideOutVertically { -it },
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .systemBarsPadding()
-                    .windowInsetsPadding(WindowInsets.displayCutout)
-            ) {
-                PlayerTopBar(
-                    fileName              = uiState.fileName,
-                    currentDecoder        = uiState.hwdecCurrent,
-                    onBack                = onBack,
-                    onSelectAudioTrack    = { viewModel.showDialog(ActiveDialog.Audio) },
-                    onSelectSubtitleTrack = { viewModel.showDialog(ActiveDialog.Subtitle) },
-                    onSelectDecoder       = { viewModel.showDialog(ActiveDialog.Decoder) },
-                    onMoreOptions         = { 
-                        if (uiState.activeDialog == ActiveDialog.MoreMenu) viewModel.dismissDialog()
-                        else viewModel.showDialog(ActiveDialog.MoreMenu)
-                    }
-                )
-            }
+            PlayerTopBarContainer(
+                controlsVisible = controlsVisible,
+                isLocked = uiState.isLocked,
+                swipeSeekTargetSec = swipeSeekTargetSec,
+                fileName = uiState.fileName,
+                hwdecCurrent = uiState.hwdecCurrent,
+                onBack = onBack,
+                onSelectAudioTrack = { viewModel.showDialog(ActiveDialog.Audio) },
+                onSelectSubtitleTrack = { viewModel.showDialog(ActiveDialog.Subtitle) },
+                onSelectDecoder = { viewModel.showDialog(ActiveDialog.Decoder) },
+                onMoreOptions = { 
+                    if (uiState.activeDialog == ActiveDialog.MoreMenu) viewModel.dismissDialog()
+                    else viewModel.showDialog(ActiveDialog.MoreMenu)
+                },
+                onHideControls = { controlsVisible = false },
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
 
             // ── Center play/pause ────────────────────────────────────────────
-            AnimatedVisibility(
-                visible = controlsVisible && !uiState.isLocked && swipeSeekTargetSec == null,
-                enter = fadeIn(),
-                exit = fadeOut(),
+            PlayerCenterContainer(
+                controlsVisible = controlsVisible,
+                isLocked = uiState.isLocked,
+                swipeSeekTargetSec = swipeSeekTargetSec,
+                isPlaying = uiState.isPlaying,
+                onTogglePlay = viewModel::togglePlay,
                 modifier = Modifier.align(Alignment.Center)
-            ) {
-                PlayerCenterPlayPause(
-                    isPlaying = uiState.isPlaying,
-                    onClick   = viewModel::togglePlay
-                )
-            }
+            )
 
             // ── Bottom controls ──────────────────────────────────────────────
-            AnimatedVisibility(
-                visible = controlsVisible && !uiState.isLocked && swipeSeekTargetSec == null,
-                enter = fadeIn() + slideInVertically { it },
-                exit = fadeOut() + slideOutVertically { it },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .systemBarsPadding()
-            ) {
-                PlayerBottomControls(
-                    progressState     = progressState,
-                    isAutoRotation    = uiState.isAutoRotation,
-                    currentFitMode    = uiState.fitMode,
-                    contentPadding    = WindowInsets.displayCutout.asPaddingValues(),
-                    onSeekGesture     = { ms -> viewModel.onSliderDragChange(ms / 1000.0) },
-                    onSeekCommit      = { ms -> viewModel.onSliderDragEnd(ms / 1000.0) },
-                    onDragStart       = { viewModel.onSliderDragStart(progressState.positionSec) },
-                    onDragEnd         = { /* already handled inside onSeekCommit path */ },
-                    onToggleAutoRotation = { viewModel.toggleAutoRotation() },
-                    onToggleFitMode   = { viewModel.cycleFitMode() },
-                    onEnterPip        = { enterPip(activity) },
-                    isLocked          = uiState.isLocked,
-                    onToggleLock      = { viewModel.toggleLock() },
-                    hasPrevious       = uiState.currentPlaylistIndex > 0,
-                    hasNext           = uiState.currentPlaylistIndex >= 0 &&
-                                        uiState.currentPlaylistIndex < uiState.playlist.size - 1,
-                    onPrevious        = { viewModel.playPrevious() },
-                    onNext            = { viewModel.playNext() }
-                )
-            }
+            PlayerBottomContainer(
+                controlsVisible = controlsVisible,
+                isLocked = uiState.isLocked,
+                swipeSeekTargetSec = swipeSeekTargetSec,
+                progressState = progressState,
+                isAutoRotation = uiState.isAutoRotation,
+                currentFitMode = uiState.fitMode,
+                hasPrevious = uiState.currentPlaylistIndex > 0,
+                hasNext = uiState.currentPlaylistIndex >= 0 &&
+                                    uiState.currentPlaylistIndex < uiState.playlist.size - 1,
+                onSeekGesture = { ms -> viewModel.onSliderDragChange(ms / 1000.0) },
+                onSeekCommit = { ms -> viewModel.onSliderDragEnd(ms / 1000.0) },
+                onDragStart = { viewModel.onSliderDragStart(progressState.positionSec) },
+                onToggleAutoRotation = { viewModel.toggleAutoRotation() },
+                onToggleFitMode = { viewModel.cycleFitMode() },
+                onEnterPip = { enterPip(activity) },
+                onToggleLock = { viewModel.toggleLock() },
+                onPrevious = { viewModel.playPrevious() },
+                onNext = { viewModel.playNext() },
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
 
         PlayerUnlockButton(
@@ -287,6 +269,118 @@ fun PlayerScreen(
                 onLaunchFilePicker = { subtitleLauncher.launch(arrayOf("*/*")) }
             )
         }
+    }
+}
+
+@Composable
+private fun PlayerTopBarContainer(
+    controlsVisible: Boolean,
+    isLocked: Boolean,
+    swipeSeekTargetSec: Double?,
+    fileName: String,
+    hwdecCurrent: String,
+    onBack: () -> Unit,
+    onSelectAudioTrack: () -> Unit,
+    onSelectSubtitleTrack: () -> Unit,
+    onSelectDecoder: () -> Unit,
+    onMoreOptions: () -> Unit,
+    onHideControls: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LaunchedEffect(swipeSeekTargetSec) {
+        if (swipeSeekTargetSec != null) {
+            onHideControls()
+        }
+    }
+    AnimatedVisibility(
+        visible = controlsVisible && !isLocked && swipeSeekTargetSec == null,
+        enter = fadeIn() + slideInVertically { -it },
+        exit = fadeOut() + slideOutVertically { -it },
+        modifier = modifier
+            .systemBarsPadding()
+            .windowInsetsPadding(WindowInsets.displayCutout)
+    ) {
+        PlayerTopBar(
+            fileName              = fileName,
+            currentDecoder        = hwdecCurrent,
+            onBack                = onBack,
+            onSelectAudioTrack    = onSelectAudioTrack,
+            onSelectSubtitleTrack = onSelectSubtitleTrack,
+            onSelectDecoder       = onSelectDecoder,
+            onMoreOptions         = onMoreOptions
+        )
+    }
+}
+
+@Composable
+private fun PlayerCenterContainer(
+    controlsVisible: Boolean,
+    isLocked: Boolean,
+    swipeSeekTargetSec: Double?,
+    isPlaying: Boolean,
+    onTogglePlay: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    AnimatedVisibility(
+        visible = controlsVisible && !isLocked && swipeSeekTargetSec == null,
+        enter = fadeIn(),
+        exit = fadeOut(),
+        modifier = modifier
+    ) {
+        PlayerCenterPlayPause(
+            isPlaying = isPlaying,
+            onClick   = onTogglePlay
+        )
+    }
+}
+
+@Composable
+private fun PlayerBottomContainer(
+    controlsVisible: Boolean,
+    isLocked: Boolean,
+    swipeSeekTargetSec: Double?,
+    progressState: PlaybackProgressState,
+    isAutoRotation: Boolean,
+    currentFitMode: VideoFitMode,
+    hasPrevious: Boolean,
+    hasNext: Boolean,
+    onSeekGesture: (Long) -> Unit,
+    onSeekCommit: (Long) -> Unit,
+    onDragStart: () -> Unit,
+    onToggleAutoRotation: () -> Unit,
+    onToggleFitMode: () -> Unit,
+    onEnterPip: () -> Unit,
+    onToggleLock: () -> Unit,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    AnimatedVisibility(
+        visible = controlsVisible && !isLocked && swipeSeekTargetSec == null,
+        enter = fadeIn() + slideInVertically { it },
+        exit = fadeOut() + slideOutVertically { it },
+        modifier = modifier
+            .systemBarsPadding()
+    ) {
+        PlayerBottomControls(
+            progressState        = progressState,
+            isAutoRotation       = isAutoRotation,
+            currentFitMode       = currentFitMode,
+            contentPadding       = WindowInsets.displayCutout.asPaddingValues(),
+            onSeekGesture        = onSeekGesture,
+            onSeekCommit         = onSeekCommit,
+            onDragStart          = onDragStart,
+            onDragEnd            = { /* already handled inside onSeekCommit path */ },
+            onToggleAutoRotation = onToggleAutoRotation,
+            onToggleFitMode      = onToggleFitMode,
+            onEnterPip           = onEnterPip,
+            isLocked             = isLocked,
+            onToggleLock         = onToggleLock,
+            hasPrevious          = hasPrevious,
+            hasNext              = hasNext,
+            onPrevious           = onPrevious,
+            onNext               = onNext
+        )
     }
 }
 
