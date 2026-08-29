@@ -57,6 +57,7 @@ class MpvOptionsConfigurator {
         MPVLib.setOptionString("cscale",              "bilinear")
         MPVLib.setOptionString("dscale",              "bilinear")
         MPVLib.setOptionString("vd-lavc-threads", "0")
+        MPVLib.setOptionString("vd-lavc-film-grain", "cpu")
 
         // Subtitle defaults — minimal setup, no auto-selection
         MPVLib.setOptionString("sub-font-provider", "none")
