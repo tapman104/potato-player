@@ -160,7 +160,6 @@ fun AppNavigation(
                 playlist       = playlist,
                 playlistTitles = playlistTitles,
                 onBack    = {
-                    activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                     navController.popBackStack()
                 },
                 onBrightnessChange = { brightness ->
