@@ -39,7 +39,7 @@ class MpvOptionsConfigurator {
         MPVLib.setOptionString("gpu-context",  "android")
 
         // Hardware decoding: HW+ → HW → SW fallback chain
-        MPVLib.setOptionString("hwdec",        "mediacodec,mediacodec-copy,no")
+        MPVLib.setOptionString("hwdec",        "mediacodec-copy")
         MPVLib.setOptionString("hwdec-codecs", "all")
 
         // Cache — capped for mobile memory
@@ -51,13 +51,12 @@ class MpvOptionsConfigurator {
         MPVLib.setOptionString("msg-level", "all=warn")
 
         // Rendering optimizations
-        MPVLib.setOptionString("vd-lavc-dr",          "yes")
-        MPVLib.setOptionString("opengl-pbo",          "yes")
         MPVLib.setOptionString("opengl-early-flush",  "no")
-        MPVLib.setOptionString("video-sync",          "audio")
+        MPVLib.setOptionString("video-sync",          "display-resample")
         MPVLib.setOptionString("scale",               "bilinear")
         MPVLib.setOptionString("cscale",              "bilinear")
         MPVLib.setOptionString("dscale",              "bilinear")
+        MPVLib.setOptionString("vd-lavc-threads", "0")
 
         // Subtitle defaults — minimal setup, no auto-selection
         MPVLib.setOptionString("sub-font-provider", "none")
@@ -110,7 +109,7 @@ private object MpvFmt {
 }
 
 private object MpvCache {
-    const val MAX_BYTES      = "50MiB"
-    const val MAX_BACK_BYTES = "20MiB"
-    const val SECS           = "30"
+    const val MAX_BYTES      = "150MiB"
+    const val MAX_BACK_BYTES = "50MiB"
+    const val SECS           = "60"
 }
