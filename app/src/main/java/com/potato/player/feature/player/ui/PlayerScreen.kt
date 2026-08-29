@@ -80,35 +80,21 @@ fun PlayerScreen(
     // ponytail: orientation + insets boilerplate extracted for readability
     PlayerLifecycleEffect(activity = activity, uiState = uiState, viewModel = viewModel)
 
-    var controlsVisible by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
-
     var doubleTapSeekState by remember { mutableStateOf<DoubleTapSeekState?>(null) }
     val swipeSeekTargetSec = gestureState.swipeSeekTargetSec
     var swipeDragStartSec by remember { mutableStateOf(0.0) }
     
     val isSeeking = progressState.dragPositionSec != null
-    LaunchedEffect(
-        controlsVisible, 
-        uiState.isPlaying, 
-        isSeeking,
-        doubleTapSeekState,
-        uiState.isFastForwarding,
-        uiState.isLocked,
-        gestureState.isSwipingVolumeOrBrightness
-    ) {
-        if (controlsVisible && uiState.isPlaying && !isSeeking) {
-            if (!uiState.isFastForwarding && !gestureState.isSwipingVolumeOrBrightness) {
-                delay(3000L)
-                controlsVisible = false
-            }
-        }
-    }
 
-    LaunchedEffect(activity?.isInPictureInPictureMode) {
-        if (activity?.isInPictureInPictureMode == true) {
-            controlsVisible = false
-        }
-    }
+    val (controlsVisible, onUserInteraction) = rememberControlsVisibility(
+        isPlaying = uiState.isPlaying,
+        isSeeking = isSeeking,
+        isFastForwarding = uiState.isFastForwarding,
+        isLocked = uiState.isLocked,
+        isSwipingVolumeOrBrightness = gestureState.isSwipingVolumeOrBrightness,
+        isPipMode = activity?.isInPictureInPictureMode == true,
+        swipeSeekTargetSec = swipeSeekTargetSec
+    )
 
 
     // Clear double-tap seek overlay after animation
@@ -163,7 +149,7 @@ fun PlayerScreen(
                 PlayerGestureBox(
                     gestureState = gestureState,
                     viewModel = viewModel,
-                    onToggleControls = { controlsVisible = !controlsVisible },
+                    onToggleControls = { onUserInteraction() },
                     onBrightnessChange = onBrightnessChange,
                     onVolumeChange = { viewModel.setVolume(it) },
                     fileLoaded = uiState.fileLoaded,
@@ -217,7 +203,6 @@ fun PlayerScreen(
                     if (uiState.activeDialog == ActiveDialog.MoreMenu) viewModel.dismissDialog()
                     else viewModel.showDialog(ActiveDialog.MoreMenu)
                 },
-                onHideControls = { controlsVisible = false },
                 modifier = Modifier.align(Alignment.TopCenter)
             )
 
@@ -284,14 +269,8 @@ private fun PlayerTopBarContainer(
     onSelectSubtitleTrack: () -> Unit,
     onSelectDecoder: () -> Unit,
     onMoreOptions: () -> Unit,
-    onHideControls: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    LaunchedEffect(swipeSeekTargetSec) {
-        if (swipeSeekTargetSec != null) {
-            onHideControls()
-        }
-    }
     AnimatedVisibility(
         visible = controlsVisible && !isLocked && swipeSeekTargetSec == null,
         enter = fadeIn() + slideInVertically { -it },
