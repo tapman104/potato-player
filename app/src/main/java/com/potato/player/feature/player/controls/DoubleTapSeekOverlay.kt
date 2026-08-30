@@ -1,6 +1,9 @@
 package com.potato.player.feature.player.controls
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -15,9 +18,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 
 data class DoubleTapSeekState(
     val isForward: Boolean,
@@ -42,6 +47,22 @@ fun DoubleTapSeekOverlay(
         modifier = modifier.fillMaxSize()
     ) {
         lastState.value?.let { state ->
+            // Pulse scale on each new tap
+            var scale by remember { mutableFloatStateOf(1f) }
+            LaunchedEffect(state.triggerId) {
+                scale = 1.15f
+                delay(80)
+                scale = 1f
+            }
+            val animatedScale by animateFloatAsState(
+                targetValue = scale,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessHigh
+                ),
+                label = "seekPulse"
+            )
+
             Box(
                 modifier = Modifier.fillMaxSize()
             ) {
@@ -56,7 +77,11 @@ fun DoubleTapSeekOverlay(
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.graphicsLayer {
+                            scaleX = animatedScale
+                            scaleY = animatedScale
+                        }
                     ) {
                         Icon(
                             imageVector = if (state.isForward) Icons.Default.FastForward else Icons.Default.FastRewind,
