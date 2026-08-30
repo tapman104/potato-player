@@ -91,6 +91,7 @@ fun PlayerScreen(
 
     val (controlsVisible, onUserInteraction) = rememberControlsVisibility(
         isPlaying = uiState.isPlaying,
+        hideDelayMs = uiState.controlsHideDelay.toLong(),
         isSeeking = isSeeking,
         isFastForwarding = uiState.isFastForwarding,
         isLocked = uiState.isLocked,
@@ -161,7 +162,8 @@ fun PlayerScreen(
                     doubleTapSeekState = doubleTapSeekState,
                     onDoubleTapSeekState = { doubleTapSeekState = it },
                     onSwipeSeekStart = { startSec -> swipeDragStartSec = startSec },
-                    activity = activity
+                    activity = activity,
+                    gesturesEnabled = uiState.gesturesEnabled
                 )
             }
         }
@@ -231,6 +233,7 @@ fun PlayerScreen(
             PlayerBottomContainer(
                 controlsVisible = controlsVisible,
                 isLocked = uiState.isLocked,
+                showLockButton = uiState.lockButtonEnabled,
                 swipeSeekTargetSec = swipeSeekTargetSec,
                 progressState = progressState,
                 isAutoRotation = uiState.isAutoRotation,
@@ -251,11 +254,13 @@ fun PlayerScreen(
             )
         }
 
-        PlayerUnlockButton(
-            isLocked = uiState.isLocked,
-            isPipMode = activity?.isInPictureInPictureMode == true,
-            onUnlock = viewModel::toggleLock
-        )
+        if (uiState.lockButtonEnabled) {
+            PlayerUnlockButton(
+                isLocked = uiState.isLocked,
+                isPipMode = activity?.isInPictureInPictureMode == true,
+                onUnlock = viewModel::toggleLock
+            )
+        }
 
         // ponytail: move only, zero new logic
         if (!(activity?.isInPictureInPictureMode == true)) {
@@ -328,6 +333,7 @@ private fun PlayerCenterContainer(
 private fun PlayerBottomContainer(
     controlsVisible: Boolean,
     isLocked: Boolean,
+    showLockButton: Boolean,
     swipeSeekTargetSec: Double?,
     progressState: PlaybackProgressState,
     isAutoRotation: Boolean,
@@ -366,6 +372,7 @@ private fun PlayerBottomContainer(
             onEnterPip           = onEnterPip,
             isLocked             = isLocked,
             onToggleLock         = onToggleLock,
+            showLockButton       = showLockButton,
             hasPrevious          = hasPrevious,
             hasNext              = hasNext,
             onPrevious           = onPrevious,
@@ -373,4 +380,3 @@ private fun PlayerBottomContainer(
         )
     }
 }
-

@@ -12,6 +12,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun rememberControlsVisibility(
     isPlaying: Boolean,
+    hideDelayMs: Long = 3000L,
     isSeeking: Boolean,
     isFastForwarding: Boolean,
     isLocked: Boolean,
@@ -24,7 +25,7 @@ fun rememberControlsVisibility(
 
     LaunchedEffect(interactionTick, isPlaying, isSeeking, isFastForwarding, isLocked, isSwipingVolumeOrBrightness) {
         if (controlsVisible && isPlaying && !isSeeking && !isFastForwarding && !isSwipingVolumeOrBrightness) {
-            delay(4000L)
+            delay(hideDelayMs)
             controlsVisible = false
         }
     }

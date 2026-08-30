@@ -3,6 +3,7 @@ package com.potato.player.feature.player.state
 
 
 import com.potato.player.feature.player.VideoFitMode
+import com.potato.player.data.UserPreferencesRepository
 
 enum class ActiveDialog { None, Audio, Subtitle, Speed, MoreMenu, Decoder }
 
@@ -42,6 +43,9 @@ data class PlayerUiState(
     val isAutoRotation: Boolean = false,
     val isInPipMode: Boolean = false,
     val isLocked: Boolean = false,
+    val gesturesEnabled: Boolean = true,
+    val lockButtonEnabled: Boolean = true,
+    val controlsHideDelay: Int = UserPreferencesRepository.DEFAULT_HIDE_DELAY_MS,
     val fitMode: VideoFitMode = VideoFitMode.FIT,
     val currentPlaylistIndex: Int = -1
 )

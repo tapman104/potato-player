@@ -57,7 +57,8 @@ fun PlayerGestureBox(
     doubleTapSeekState: DoubleTapSeekState?,
     onDoubleTapSeekState: (DoubleTapSeekState?) -> Unit,
     onSwipeSeekStart: (Double) -> Unit,
-    activity: Activity?
+    activity: Activity?,
+    gesturesEnabled: Boolean
 ) {
     var isLongPressActive by remember { mutableStateOf(false) }
 
@@ -103,8 +104,8 @@ fun PlayerGestureBox(
         modifier = Modifier
             .fillMaxSize()
             // ── Pass 1: multi-touch pinch/pan — intercepts BEFORE children ──
-            .pointerInput(Unit) {
-                if (activity?.isInPictureInPictureMode == true) return@pointerInput
+            .pointerInput(gesturesEnabled) {
+                if (!gesturesEnabled || activity?.isInPictureInPictureMode == true) return@pointerInput
                 awaitEachGesture {
                     // Wait for first finger down; don't consume it so tap detection still fires
                     awaitFirstDown(requireUnconsumed = false)
@@ -141,8 +142,8 @@ fun PlayerGestureBox(
                 }
             }
             // ── Pass 2: single-finger vertical swipe — brightness / volume / pan ──
-            .pointerInput(Unit) {
-                if (activity?.isInPictureInPictureMode == true) return@pointerInput
+            .pointerInput(gesturesEnabled) {
+                if (!gesturesEnabled || activity?.isInPictureInPictureMode == true) return@pointerInput
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
                     val startX = down.position.x
@@ -213,8 +214,8 @@ fun PlayerGestureBox(
                 }
             }
             // ── Pass 3: horizontal swipe seek ──────────────────────────────
-            .pointerInput(Unit) {
-                if (activity?.isInPictureInPictureMode == true) return@pointerInput
+            .pointerInput(gesturesEnabled) {
+                if (!gesturesEnabled || activity?.isInPictureInPictureMode == true) return@pointerInput
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
                     var totalDx = 0f
@@ -256,7 +257,7 @@ fun PlayerGestureBox(
                 }
             }
             // ── Pass 4: taps, double-tap, long-press ───────────────────────
-            .pointerInput(activity?.isInPictureInPictureMode == true) {
+            .pointerInput(gesturesEnabled, activity?.isInPictureInPictureMode == true) {
                 if (activity?.isInPictureInPictureMode == true) return@pointerInput
                 detectTapGestures(
                     onPress = {
@@ -269,24 +270,30 @@ fun PlayerGestureBox(
                         }
                     },
                     onLongPress = {
-                        isLongPressActive = true
-                        viewModel.startFastForward()
+                        if (gesturesEnabled) {
+                            isLongPressActive = true
+                            viewModel.startFastForward()
+                        }
                     },
                     onDoubleTap = { offset ->
-                        val current = doubleTapSeekState
-                        val thirdWidth = size.width / 3f
-                        if (offset.x < thirdWidth) {
-                            viewModel.seekExactRelative(-10)
-                            val accum = if (current != null && !current.isForward)
-                                current.totalSeconds + 10
-                            else 10
-                            onDoubleTapSeekState(DoubleTapSeekState(isForward = false, totalSeconds = accum))
-                        } else if (offset.x > 2 * thirdWidth) {
-                            viewModel.seekExactRelative(10)
-                            val accum = if (current != null && current.isForward)
-                                current.totalSeconds + 10
-                            else 10
-                            onDoubleTapSeekState(DoubleTapSeekState(isForward = true, totalSeconds = accum))
+                        if (gesturesEnabled) {
+                            val current = doubleTapSeekState
+                            val thirdWidth = size.width / 3f
+                            if (offset.x < thirdWidth) {
+                                viewModel.seekExactRelative(-10)
+                                val accum = if (current != null && !current.isForward)
+                                    current.totalSeconds + 10
+                                else 10
+                                onDoubleTapSeekState(DoubleTapSeekState(isForward = false, totalSeconds = accum))
+                            } else if (offset.x > 2 * thirdWidth) {
+                                viewModel.seekExactRelative(10)
+                                val accum = if (current != null && current.isForward)
+                                    current.totalSeconds + 10
+                                else 10
+                                onDoubleTapSeekState(DoubleTapSeekState(isForward = true, totalSeconds = accum))
+                            } else {
+                                viewModel.togglePlay()
+                            }
                         } else {
                             viewModel.togglePlay()
                         }

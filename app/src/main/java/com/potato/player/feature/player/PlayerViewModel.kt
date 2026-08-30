@@ -131,11 +131,18 @@ class PlayerViewModel(
         }
     }
 
-    private fun applyPrefs(prefs: Triple<Double, Int, Boolean>) {
-        val (scale, pos, autoRot) = prefs
-        wrapper.setSubtitleScale(scale)
-        wrapper.setSubtitlePosition(pos)
-        _uiState.update { it.copy(subScale = scale, subPos = pos, isAutoRotation = autoRot) }
+    private fun applyPrefs(prefs: PlayerPrefs) {
+        wrapper.setSubtitleScale(prefs.subScale)
+        wrapper.setSubtitlePosition(prefs.subPos)
+        _uiState.update { it.copy(
+            subScale          = prefs.subScale,
+            subPos            = prefs.subPos,
+            isAutoRotation    = prefs.autoRotation,
+            gesturesEnabled   = prefs.gesturesEnabled,
+            lockButtonEnabled = prefs.lockButtonEnabled,
+            controlsHideDelay = prefs.controlsHideDelay
+        )}
+        // default decoder and speed applied on file load, not here
     }
 
 
@@ -208,6 +215,19 @@ class PlayerViewModel(
             onSeekIfNeeded = { pos -> wrapper.seekAccurate(pos) },
             onTracksLoaded = {
                 loadTracks()
+                
+                // Apply default decoder and speed from prefs
+                viewModelScope.launch {
+                    prefsRepository.defaultDecoderFlow.first().let { mode ->
+                        wrapper.setDecoder(mode)
+                        _uiState.update { it.copy(hwdecCurrent = hwdecLabel(mode)) }
+                    }
+                    prefsRepository.defaultSpeedFlow.first().let { speed ->
+                        wrapper.setSpeed(speed)
+                        _uiState.update { it.copy(playbackSpeed = speed) }
+                    }
+                }
+                
                 viewModelScope.launch {
                     applyPreferredSubtitleTrack()
                 }
