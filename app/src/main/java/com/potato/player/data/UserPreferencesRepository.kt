@@ -21,9 +21,19 @@ class UserPreferencesRepository(private val context: Context) {
         val SUB_POS      = intPreferencesKey("sub_pos")
         val AUTO_ROTATION = booleanPreferencesKey("auto_rotation")
         val PREFERRED_SUB_LANG = stringPreferencesKey("preferred_sub_lang")
+        val DEFAULT_DECODER     = stringPreferencesKey("default_decoder")
+        val DEFAULT_SPEED       = doublePreferencesKey("default_speed")
+        val CONTROLS_HIDE_DELAY = intPreferencesKey("controls_hide_delay")
+        val GESTURES_ENABLED    = booleanPreferencesKey("gestures_enabled")
+        val LOCK_BUTTON_ENABLED = booleanPreferencesKey("lock_button_enabled")
 
         const val DEFAULT_SUB_SCALE = 1.0
         const val DEFAULT_SUB_POS = 100
+        const val DEFAULT_DECODER_VALUE      = "mediacodec-copy"   // HW+
+        const val DEFAULT_SPEED_VALUE        = 1.0
+        const val DEFAULT_HIDE_DELAY_MS      = 3000                // 3 seconds
+        const val DEFAULT_GESTURES_ENABLED   = true
+        const val DEFAULT_LOCK_BUTTON        = true
     }
 
     val subScaleFlow: Flow<Double> = context.dataStore.data.map { preferences ->
@@ -40,6 +50,26 @@ class UserPreferencesRepository(private val context: Context) {
 
     val preferredSubLangFlow: Flow<String> = context.dataStore.data.map { preferences ->
         preferences[PREFERRED_SUB_LANG] ?: "eng"
+    }
+
+    val defaultDecoderFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[DEFAULT_DECODER] ?: DEFAULT_DECODER_VALUE
+    }
+
+    val defaultSpeedFlow: Flow<Double> = context.dataStore.data.map { preferences ->
+        preferences[DEFAULT_SPEED] ?: DEFAULT_SPEED_VALUE
+    }
+
+    val controlsHideDelayFlow: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[CONTROLS_HIDE_DELAY] ?: DEFAULT_HIDE_DELAY_MS
+    }
+
+    val gesturesEnabledFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[GESTURES_ENABLED] ?: DEFAULT_GESTURES_ENABLED
+    }
+
+    val lockButtonEnabledFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[LOCK_BUTTON_ENABLED] ?: DEFAULT_LOCK_BUTTON
     }
 
     suspend fun setSubScale(scale: Double) {
@@ -70,6 +100,36 @@ class UserPreferencesRepository(private val context: Context) {
     suspend fun setPreferredSubLang(lang: String) {
         context.dataStore.edit { preferences ->
             preferences[PREFERRED_SUB_LANG] = lang
+        }
+    }
+
+    suspend fun setDefaultDecoder(mode: String) {
+        context.dataStore.edit { preferences ->
+            preferences[DEFAULT_DECODER] = mode
+        }
+    }
+
+    suspend fun setDefaultSpeed(speed: Double) {
+        context.dataStore.edit { preferences ->
+            preferences[DEFAULT_SPEED] = speed
+        }
+    }
+
+    suspend fun setControlsHideDelay(delayMs: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[CONTROLS_HIDE_DELAY] = delayMs
+        }
+    }
+
+    suspend fun setGesturesEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[GESTURES_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setLockButtonEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[LOCK_BUTTON_ENABLED] = enabled
         }
     }
 }
