@@ -13,6 +13,7 @@ import com.potato.player.engine.MpvProp
 import com.potato.player.engine.TrackInfo
 import com.potato.player.engine.TrackListParser
 import com.potato.player.engine.TrackType
+import com.potato.player.engine.PlayerEngineState
 
 import com.potato.player.feature.player.state.*
 import com.potato.player.util.MediaMetadataRepository
@@ -67,104 +68,68 @@ class PlayerViewModel(
     private var normalPlaybackSpeed = 1.0
     private var isSliderSeeking = false
 
+    private val engineEventHandler by lazy { EngineEventHandler(wrapper, prefsRepository, viewModelScope) }
+
     init {
         myPlaybackGeneration = wrapper.nextGeneration()
-        viewModelScope.launch {
-            wrapper.lifecycleEvents.collect { event ->
-                when (event) {
-                    is MpvEvent.Lifecycle.FileLoaded -> handleFileLoaded()
-                    is MpvEvent.Lifecycle.EndFile -> handleEndFile(event.reason)
-                    is MpvEvent.Lifecycle.PlaybackRestart -> handlePlaybackRestart()
-                    is MpvEvent.Lifecycle.Unknown -> Unit
-                }
-            }
-        }
+        engineEventHandler.start(
+            onLifecycleEvent = { handleLifecycleEvent(it) },
+            onEngineState = { handleEngineState(it) },
+            onPrefsChanged = { applyPrefs(it) }
+        )
+    }
 
-        viewModelScope.launch {
-            wrapper.engineState.collect { state ->
-                val isBuffering = state.pausedForCache || state.cacheBufferingState < 100
-                _uiState.update { it.copy(
-                    isPlaying = !state.paused,
-                    isLoading = it.fileLoaded && isBuffering,
-                    hwdecCurrent = state.hwdecActive,
-                    videoWidth = state.videoWidth.toInt(),
-                    videoHeight = state.videoHeight.toInt(),
-                    playbackSpeed = state.speed,
-                    subScale = state.subScale,
-                    subPos = state.subPos.toInt()
-                ) }
-                
-                if (!isSliderSeeking) {
-                    _progressState.update { it.copy(
-                        positionSec = state.positionMs / 1000.0,
-                        durationSec = state.durationMs / 1000.0,
-                        cachedSec = state.cacheTimeMs / 1000.0,
-                        cacheDurationSec = state.cacheDurMs / 1000.0
-                    ) }
-                } else {
-                    _progressState.update { it.copy(
-                        durationSec = state.durationMs / 1000.0,
-                        cachedSec = state.cacheTimeMs / 1000.0,
-                        cacheDurationSec = state.cacheDurMs / 1000.0
-                    ) }
-                }
-            }
+    private fun handleLifecycleEvent(event: MpvEvent.Lifecycle) {
+        when (event) {
+            is MpvEvent.Lifecycle.FileLoaded -> handleFileLoaded()
+            is MpvEvent.Lifecycle.EndFile -> handleEndFile(event.reason)
+            is MpvEvent.Lifecycle.PlaybackRestart -> handlePlaybackRestart()
+            is MpvEvent.Lifecycle.Unknown -> Unit
         }
+    }
 
-        viewModelScope.launch {
-            combine(
-                prefsRepository.subScaleFlow,
-                prefsRepository.subPosFlow,
-                prefsRepository.autoRotationFlow
-            ) { scale, pos, autoRot ->
-                Triple(scale, pos, autoRot)
-            }.collect { (scale, pos, autoRot) ->
-                wrapper.setSubScale(scale)
-                wrapper.setSubPos(pos)
-                _uiState.update { it.copy(subScale = scale, subPos = pos, isAutoRotation = autoRot) }
-            }
+    private fun handleEngineState(state: PlayerEngineState) {
+        val isBuffering = state.pausedForCache || state.cacheBufferingState < 100
+        _uiState.update { it.copy(
+            isPlaying = !state.paused,
+            isLoading = it.fileLoaded && isBuffering,
+            hwdecCurrent = state.hwdecActive,
+            videoWidth = state.videoWidth.toInt(),
+            videoHeight = state.videoHeight.toInt(),
+            playbackSpeed = state.speed,
+            subScale = state.subScale,
+            subPos = state.subPos.toInt()
+        ) }
+        
+        if (!isSliderSeeking) {
+            _progressState.update { it.copy(
+                positionSec = state.positionMs / 1000.0,
+                durationSec = state.durationMs / 1000.0,
+                cachedSec = state.cacheTimeMs / 1000.0,
+                cacheDurationSec = state.cacheDurMs / 1000.0
+            ) }
+        } else {
+            _progressState.update { it.copy(
+                durationSec = state.durationMs / 1000.0,
+                cachedSec = state.cacheTimeMs / 1000.0,
+                cacheDurationSec = state.cacheDurMs / 1000.0
+            ) }
         }
+    }
+
+    private fun applyPrefs(prefs: Triple<Double, Int, Boolean>) {
+        val (scale, pos, autoRot) = prefs
+        wrapper.setSubScale(scale)
+        wrapper.setSubPos(pos)
+        _uiState.update { it.copy(subScale = scale, subPos = pos, isAutoRotation = autoRot) }
     }
 
 
 
 
 
-    private fun loadTracks() {
-        viewModelScope.launch(Dispatchers.IO) {
-            val count = wrapper.getPropertyInt(MpvProp.TRACK_LIST_COUNT) ?: 0
-            val list = mutableListOf<TrackInfo>()
-            for (i in 0 until count) {
-                val trackType = when (wrapper.getPropertyString("track-list/$i/${MpvProp.TRACK_KEY_TYPE}")) {
-                    "audio" -> TrackType.AUDIO
-                    "sub"   -> TrackType.SUBTITLE
-                    else    -> continue
-                }
-                val id = wrapper.getPropertyInt("track-list/$i/${MpvProp.TRACK_KEY_ID}") ?: continue
-                val title = wrapper.getPropertyString("track-list/$i/${MpvProp.TRACK_KEY_TITLE}")
-                val lang = wrapper.getPropertyString("track-list/$i/${MpvProp.TRACK_KEY_LANG}")
-                val extStr = wrapper.getPropertyString("track-list/$i/${MpvProp.TRACK_KEY_EXTERNAL}")
-                list.add(TrackInfo(id = id, type = trackType, title = title, lang = lang, isExternal = extStr == "yes" || extStr == "true"))
-            }
-            val aid = wrapper.getPropertyString(MpvProp.AID)?.toIntOrNull() ?: -1
-            val sid = wrapper.getPropertyString(MpvProp.SID)?.toIntOrNull() ?: -1
-            withContext(Dispatchers.Main) {
-                trackManager.loadTracks(list, aid, sid, appContext)
-            }
-        }
-    }
-
-    private fun applyPreferredSubtitleTrack() {
-        val matchId = trackManager.getPreferredSubtitleTrackId()
-        if (matchId != null) {
-            val sid = trackManager.trackState.value.currentSubtitleTrackId
-            if (sid != matchId) {
-                wrapper.setSubTrack(matchId)
-                trackManager.setSubtitleTrack(matchId)
-            }
-            trackManager.markAutoSubApplied()
-        }
-    }
+    private fun loadTracks() = trackManager.loadTracks(wrapper, appContext)
+    private fun applyPreferredSubtitleTrack() = trackManager.applyPreferred { id -> wrapper.setSubTrack(id) }
 
     fun setSurfaceSize(width: Int, height: Int) {
         wrapper.setPropertyString(MpvProp.ANDROID_SURFACE_SIZE, "${width}x${height}")
@@ -399,88 +364,37 @@ class PlayerViewModel(
         }
     }
 
-    fun onSelectAudioTrack(id: Int) {
-        if (!isActive.get()) return
-        wrapper.setAudioTrack(id)
-        trackManager.setAudioTrack(id)
-        dismissDialog()
-    }
+    fun onSelectAudioTrack(id: Int) { trackManager.selectAudio(id); wrapper.setAudioTrack(id) }
+    fun onSelectSubtitleTrack(id: Int) { trackManager.selectSubtitle(id); wrapper.setSubTrack(id) }
+    fun onLoadExternalSubtitle(uri: Uri, context: Context) = trackManager.loadExternal(uri, context, wrapper)
 
-    fun onSelectSubtitleTrack(id: Int) {
-        if (!isActive.get()) return
-        wrapper.setSubTrack(id)
-        trackManager.setSubtitleTrack(id)
-        dismissDialog()
-    }
-
-    fun onLoadExternalSubtitle(uri: Uri, context: Context) {
-        if (!isActive.get()) return
-        viewModelScope.launch(Dispatchers.IO) {
-            val path = MediaMetadataRepository.resolveSubtitlePath(context, uri) ?: uri.toString()
-            wrapper.addExternalSubtitle(path)
-            // Reload tracks to reflect new subtitle
-            loadTracks()
-        }
-        dismissDialog()
-    }
-
-    fun setSubScale(scale: Double) { 
-        if (!isActive.get()) return
-        wrapper.setSubScale(scale) 
-    }
-    fun setSubPos(pos: Int) { 
-        if (!isActive.get()) return
-        wrapper.setSubPos(pos) 
+    fun previewSubtitleAppearance(scale: Double, pos: Int) {
+        wrapper.setSubScale(scale)
+        wrapper.setSubPos(pos)
     }
 
     fun setSubtitleAppearance(scale: Double, pos: Int) {
-        if (!isActive.get()) return
         wrapper.setSubScale(scale)
         wrapper.setSubPos(pos)
-        viewModelScope.launch {
-            prefsRepository.setSubScale(scale)
-            prefsRepository.setSubPos(pos)
-        }
+        viewModelScope.launch { prefsRepository.saveSubtitleAppearance(scale, pos) }
     }
 
-    fun resetSubtitleAppearance() {
-        if (!isActive.get()) return
-        _uiState.update { it.copy(subScale = 1.0, subPos = 100) }
-        wrapper.setSubScale(1.0)
-        wrapper.setSubPos(100)
-        viewModelScope.launch {
-            prefsRepository.setSubScale(1.0)
-            prefsRepository.setSubPos(100)
-        }
-    }
+    fun resetSubtitleAppearance() = setSubtitleAppearance(
+        scale = UserPreferencesRepository.DEFAULT_SUB_SCALE,
+        pos = UserPreferencesRepository.DEFAULT_SUB_POS
+    )
 
-    fun showDialog(dialog: ActiveDialog) {
-        dialogState.show(dialog)
-    }
+    fun showDialog(dialog: ActiveDialog) = dialogState.show(dialog)
+    fun dismissDialog() = dialogState.dismiss()
 
-    fun dismissDialog() {
-        dialogState.dismiss()
-    }
-
-    private fun saveHistoryIfNeeded() {
-        if (currentUri.isEmpty() || _progressState.value.durationSec <= 0.0) return
-        
-        val currentPos = _progressState.value.positionSec
-        val duration = _progressState.value.durationSec
-        
-        // If at the end of the file, the player might reset position to 0. 
-        // We fallback to duration if it's near zero and not playing.
-        val posToSave = if (currentPos < 1.0 && duration > 0.0 && !_uiState.value.isPlaying) duration else currentPos
-
-        historyManager.save(
-            uri = currentUri,
-            title = currentTitle.ifEmpty { currentUri.substringAfterLast('/') },
-            lastPlayedPositionSec = posToSave,
-            durationSec = duration,
-            lastAudioTrackId = trackManager.trackState.value.currentAudioTrackId,
-            lastSubtitleTrackId = trackManager.trackState.value.currentSubtitleTrackId
-        )
-    }
+    private fun saveHistoryIfNeeded() = historyManager.save(
+        uri = currentUri,
+        title = currentTitle,
+        lastPlayedPositionSec = _progressState.value.positionSec,
+        durationSec = _progressState.value.durationSec,
+        lastAudioTrackId = trackManager.trackState.value.currentAudioTrackId,
+        lastSubtitleTrackId = trackManager.trackState.value.currentSubtitleTrackId
+    )
 
     override fun onCleared() {
         isActive.set(false)
@@ -516,30 +430,18 @@ class PlayerViewModel(
     // ── Playlist navigation ───────────────────────────────────────────────────
 
     fun setPlaylist(playlist: List<String>, playlistTitles: List<String>, currentUri: String) {
-        val pairs = playlist.zip(playlistTitles)
-        playlistManager.setPlaylist(pairs, currentUri)
-    }
-
-    fun playPrevious() {
-        val item = playlistManager.movePrevious() ?: return
-        val (uri, title) = item
-        viewModelScope.launch(Dispatchers.IO) {
-            val history = historyManager.getByUri(uri)
-            val resumePos = if (history != null && history.lastPlayedPositionSec > 0)
-                (history.lastPlayedPositionSec * 1000).toLong() else 0L
-            withContext(Dispatchers.Main) { loadFile(uri, title, resumePos) }
-        }
+        val items = playlist.zip(playlistTitles)
+        val startIndex = playlist.indexOf(currentUri).coerceAtLeast(0)
+        playlistManager.setPlaylist(items, startIndex)
+        _uiState.update { it.copy(currentPlaylistIndex = playlistManager.currentIndex.value) }
     }
 
     fun playNext() {
-        val item = playlistManager.moveNext() ?: return
-        val (uri, title) = item
-        viewModelScope.launch(Dispatchers.IO) {
-            val history = historyManager.getByUri(uri)
-            val resumePos = if (history != null && history.lastPlayedPositionSec > 0)
-                (history.lastPlayedPositionSec * 1000).toLong() else 0L
-            withContext(Dispatchers.Main) { loadFile(uri, title, resumePos) }
-        }
+        playlistManager.moveNext()?.let { (uri, title) -> loadFile(uri, title) }
+    }
+
+    fun playPrevious() {
+        playlistManager.movePrevious()?.let { (uri, title) -> loadFile(uri, title) }
     }
 
 

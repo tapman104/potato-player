@@ -47,8 +47,7 @@ fun PlayerModals(
         uiState = uiState,
         onSetSubtitleAppearance = { scale, pos -> viewModel.setSubtitleAppearance(scale, pos) },
         onPreviewSubtitleAppearance = { scale, pos -> 
-            viewModel.setSubScale(scale)
-            viewModel.setSubPos(pos)
+            viewModel.previewSubtitleAppearance(scale, pos)
         }
     )
 

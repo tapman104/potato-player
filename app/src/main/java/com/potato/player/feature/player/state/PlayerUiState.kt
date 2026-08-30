@@ -42,5 +42,6 @@ data class PlayerUiState(
     val isAutoRotation: Boolean = false,
     val isInPipMode: Boolean = false,
     val isLocked: Boolean = false,
-    val fitMode: VideoFitMode = VideoFitMode.FIT
+    val fitMode: VideoFitMode = VideoFitMode.FIT,
+    val currentPlaylistIndex: Int = -1
 )

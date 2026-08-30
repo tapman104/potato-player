@@ -4,6 +4,13 @@ import android.content.Context
 import com.potato.player.data.UserPreferencesRepository
 import com.potato.player.engine.TrackInfo
 import com.potato.player.engine.TrackType
+import com.potato.player.engine.MpvWrapper
+import com.potato.player.engine.MpvProp
+import com.potato.player.util.MediaMetadataRepository
+import android.net.Uri
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 import com.potato.player.feature.player.state.TrackUiModel
 import com.potato.player.feature.player.state.toUiModel
 import kotlinx.coroutines.CoroutineScope
@@ -23,7 +30,7 @@ data class TrackState(
 
 class TrackManager(
     prefsRepository: UserPreferencesRepository,
-    scope: CoroutineScope
+    private val scope: CoroutineScope
 ) {
     private val _trackState = MutableStateFlow(TrackState())
     val trackState: StateFlow<TrackState> = _trackState.asStateFlow()
@@ -33,16 +40,36 @@ class TrackManager(
     
     private var autoSubApplied = false
 
-    fun loadTracks(tracks: List<TrackInfo>, currentAudioId: Int, currentSubtitleId: Int, context: Context) {
-        val audioTracks = tracks.filter { it.type == TrackType.AUDIO }.map { it.toUiModel(context) }
-        val subtitleTracks = tracks.filter { it.type == TrackType.SUBTITLE }.map { it.toUiModel(context) }
-        _trackState.update { 
-            it.copy(
-                audioTracks = audioTracks, 
-                subtitleTracks = subtitleTracks, 
-                currentAudioTrackId = currentAudioId, 
-                currentSubtitleTrackId = currentSubtitleId
-            ) 
+    fun loadTracks(wrapper: MpvWrapper, context: Context) {
+        scope.launch(Dispatchers.IO) {
+            val count = wrapper.getPropertyInt(MpvProp.TRACK_LIST_COUNT) ?: 0
+            val list = mutableListOf<TrackInfo>()
+            for (i in 0 until count) {
+                val trackType = when (wrapper.getPropertyString("track-list/$i/${MpvProp.TRACK_KEY_TYPE}")) {
+                    "audio" -> TrackType.AUDIO
+                    "sub"   -> TrackType.SUBTITLE
+                    else    -> continue
+                }
+                val id = wrapper.getPropertyInt("track-list/$i/${MpvProp.TRACK_KEY_ID}") ?: continue
+                val title = wrapper.getPropertyString("track-list/$i/${MpvProp.TRACK_KEY_TITLE}")
+                val lang = wrapper.getPropertyString("track-list/$i/${MpvProp.TRACK_KEY_LANG}")
+                val extStr = wrapper.getPropertyString("track-list/$i/${MpvProp.TRACK_KEY_EXTERNAL}")
+                list.add(TrackInfo(id = id, type = trackType, title = title, lang = lang, isExternal = extStr == "yes" || extStr == "true"))
+            }
+            val aid = wrapper.getPropertyString(MpvProp.AID)?.toIntOrNull() ?: -1
+            val sid = wrapper.getPropertyString(MpvProp.SID)?.toIntOrNull() ?: -1
+            withContext(Dispatchers.Main) {
+                val audioTracks = list.filter { it.type == TrackType.AUDIO }.map { it.toUiModel(context) }
+                val subtitleTracks = list.filter { it.type == TrackType.SUBTITLE }.map { it.toUiModel(context) }
+                _trackState.update { 
+                    it.copy(
+                        audioTracks = audioTracks, 
+                        subtitleTracks = subtitleTracks, 
+                        currentAudioTrackId = aid, 
+                        currentSubtitleTrackId = sid
+                    ) 
+                }
+            }
         }
     }
 
@@ -73,12 +100,32 @@ class TrackManager(
         autoSubApplied = false
     }
 
-    fun setAudioTrack(id: Int) {
+    fun applyPreferred(setTrack: (Int) -> Unit) {
+        val matchId = getPreferredSubtitleTrackId()
+        if (matchId != null) {
+            val sid = _trackState.value.currentSubtitleTrackId
+            if (sid != matchId) {
+                setTrack(matchId)
+                selectSubtitle(matchId)
+            }
+            markAutoSubApplied()
+        }
+    }
+
+    fun selectAudio(id: Int) {
         _trackState.update { it.copy(currentAudioTrackId = id) }
     }
 
-    fun setSubtitleTrack(id: Int) {
+    fun selectSubtitle(id: Int) {
         _trackState.update { it.copy(currentSubtitleTrackId = id) }
+    }
+
+    fun loadExternal(uri: Uri, context: Context, wrapper: MpvWrapper) {
+        scope.launch(Dispatchers.IO) {
+            val path = MediaMetadataRepository.resolveSubtitlePath(context, uri) ?: uri.toString()
+            wrapper.addExternalSubtitle(path)
+            loadTracks(wrapper, context)
+        }
     }
 
     companion object {

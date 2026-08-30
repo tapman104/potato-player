@@ -21,6 +21,9 @@ class UserPreferencesRepository(private val context: Context) {
         val SUB_POS      = intPreferencesKey("sub_pos")
         val AUTO_ROTATION = booleanPreferencesKey("auto_rotation")
         val PREFERRED_SUB_LANG = stringPreferencesKey("preferred_sub_lang")
+
+        const val DEFAULT_SUB_SCALE = 1.0
+        const val DEFAULT_SUB_POS = 100
     }
 
     val subScaleFlow: Flow<Double> = context.dataStore.data.map { preferences ->
@@ -47,6 +50,13 @@ class UserPreferencesRepository(private val context: Context) {
 
     suspend fun setSubPos(pos: Int) {
         context.dataStore.edit { preferences ->
+            preferences[SUB_POS] = pos
+        }
+    }
+
+    suspend fun saveSubtitleAppearance(scale: Double, pos: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[SUB_SCALE] = scale
             preferences[SUB_POS] = pos
         }
     }

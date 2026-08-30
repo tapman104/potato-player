@@ -14,9 +14,9 @@ class PlaylistManager {
     val hasPrevious: Boolean get() = _currentIndex.value > 0
     val hasNext: Boolean get() = _currentIndex.value >= 0 && _currentIndex.value < _playlist.value.lastIndex
 
-    fun setPlaylist(items: List<Pair<String, String>>, currentUri: String) {
+    fun setPlaylist(items: List<Pair<String, String>>, startIndex: Int) {
         _playlist.value = items
-        _currentIndex.value = items.indexOfFirst { it.first == currentUri }
+        _currentIndex.value = startIndex
     }
 
     fun moveNext(): Pair<String, String>? {
