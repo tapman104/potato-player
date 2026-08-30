@@ -26,6 +26,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import android.view.SurfaceHolder
@@ -63,6 +65,7 @@ class PlayerViewModel(
     
     private var normalPlaybackSpeed = 1.0
     private var isSliderSeeking = false
+    private var exactSeekJob: Job? = null
 
     private val engineEventHandler by lazy { EngineEventHandler(wrapper, prefsRepository, viewModelScope) }
 
@@ -318,9 +321,11 @@ class PlayerViewModel(
 
     fun onSliderDragEnd(posSec: Double) {
         if (!isActive.get()) return
+        val ms = (posSec * 1000).toLong()
         isSliderSeeking = false
-        wrapper.seekAccurate((posSec * 1000).toLong())
         _progressState.update { it.copy(dragPositionSec = null) }
+        wrapper.seekFast(ms)
+        scheduleExactSeek(ms)
     }
 
     fun onSwipeSeek(positionSec: Double) {
@@ -333,7 +338,17 @@ class PlayerViewModel(
         val target = _gestureState.value.swipeSeekTargetSec
         _gestureState.update { it.copy(swipeSeekTargetSec = null) }
         if (target != null) {
-            wrapper.seekAccurate((target * 1000).toLong())
+            val ms = (target * 1000).toLong()
+            wrapper.seekFast(ms)
+            scheduleExactSeek(ms)
+        }
+    }
+
+    private fun scheduleExactSeek(ms: Long) {
+        exactSeekJob?.cancel()
+        exactSeekJob = viewModelScope.launch {
+            delay(300)
+            wrapper.seekAccurate(ms)
         }
     }
 
