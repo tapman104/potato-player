@@ -4,62 +4,88 @@ import android.content.Context
 import android.util.Log
 import `is`.xyz.mpv.MPVLib
 
-class MpvOptionsConfigurator {
+// ---------------------------------------------------------------------------
+// MpvFontInstaller — single responsibility: font asset deployment.
+// Extracted from MpvOptionsConfigurator (SRP violation fix).
+// ---------------------------------------------------------------------------
+internal object MpvFontInstaller {
 
-    fun copyFontAssets(context: Context) {
-        val fontsDir = java.io.File(context.filesDir, "fonts")
+    private const val TAG       = "MpvFontInstaller"
+    private const val FONT_NAME = "Roboto-Regular.ttf"
+
+    /**
+     * Copies the bundled font to [Context.filesDir]/fonts if absent or stale.
+     * Size comparison is used as a lightweight staleness check — a full hash
+     * would be more robust but is overkill for a single font file.
+     */
+    fun install(context: Context) {
+        val fontsDir  = java.io.File(context.filesDir, "fonts")
         if (!fontsDir.exists()) fontsDir.mkdirs()
-        val fontFile = java.io.File(fontsDir, "Roboto-Regular.ttf")
+
+        val fontFile = java.io.File(fontsDir, FONT_NAME)
         try {
-            val assetSize = context.assets.open("Roboto-Regular.ttf").use { it.available().toLong() }
-            // Copy if the file is missing or its size differs from the bundled asset.
-            // A size mismatch is a reliable signal that the APK was updated with a new font.
+            val assetSize = context.assets.open(FONT_NAME).use { it.available().toLong() }
             if (!fontFile.exists() || fontFile.length() != assetSize) {
-                context.assets.open("Roboto-Regular.ttf").use { input ->
-                    fontFile.outputStream().use { input.copyTo(it) }
+                context.assets.open(FONT_NAME).use { src ->
+                    fontFile.outputStream().use { src.copyTo(it) }
                 }
-                Log.d(TAG, "Font asset copied (size changed or missing)")
+                Log.d(TAG, "Font installed (size changed or missing)")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to copy font asset", e)
+            Log.e(TAG, "Failed to install font asset", e)
         }
     }
+}
 
+// ---------------------------------------------------------------------------
+// MpvOptionsConfigurator — configures MPV engine options and observers.
+// Only concerns: set MPV options/properties and register observers.
+// Does NOT touch the filesystem (delegated to MpvFontInstaller).
+// ---------------------------------------------------------------------------
+internal class MpvOptionsConfigurator {
+
+    /**
+     * Set all startup options. Must be called after MPVLib.create() and
+     * before MPVLib.init(). Uses setOptionString for true init-time options,
+     * setPropertyBoolean only for the two runtime-safe properties that have
+     * no option equivalent (keep-open, input-default-bindings).
+     */
     fun initOptions(context: Context) {
         val filesDir = context.filesDir.path
 
-        // Core engine config
-        MPVLib.setOptionString("config",       "yes")
-        MPVLib.setOptionString("config-dir",   filesDir)
-        MPVLib.setOptionString("idle",         "yes")
+        // ── Core ─────────────────────────────────────────────────────────────
+        MPVLib.setOptionString("config",     "yes")
+        MPVLib.setOptionString("config-dir", filesDir)
+        MPVLib.setOptionString("idle",       "yes")
 
-        // Video output
-        MPVLib.setOptionString("profile",      "fast")
-        MPVLib.setOptionString("vo",           "gpu")
-        MPVLib.setOptionString("gpu-context",  "android")
+        // ── Video output ─────────────────────────────────────────────────────
+        MPVLib.setOptionString("profile",     "fast")
+        MPVLib.setOptionString("vo",          "gpu")
+        MPVLib.setOptionString("gpu-context", "android")
 
-        // Hardware decoding: HW+ → HW → SW fallback chain
+        // ── Hardware decoding ─────────────────────────────────────────────────
+        // mediacodec-copy: HW decode → CPU copy → GPU texture.
+        // Keeps the rendering path simple; swap to "mediacodec" (zero-copy) only
+        // after benchmarking confirms zero-copy is stable on target devices.
         MPVLib.setOptionString("hwdec",        "mediacodec-copy")
         MPVLib.setOptionString("hwdec-codecs", "all")
 
-        // Cache — capped for mobile memory
+        // ── Cache ─────────────────────────────────────────────────────────────
         MPVLib.setOptionString("demuxer-max-bytes",      MpvCache.MAX_BYTES)
         MPVLib.setOptionString("demuxer-max-back-bytes", MpvCache.MAX_BACK_BYTES)
         MPVLib.setOptionString("cache-secs",             MpvCache.SECS)
 
-        // Logging — keep quiet in production
-        MPVLib.setOptionString("msg-level", "all=warn")
-
-        // Rendering optimizations
+        // ── Rendering ─────────────────────────────────────────────────────────
         MPVLib.setOptionString("opengl-early-flush",  "no")
         MPVLib.setOptionString("video-sync",          "display-resample")
         MPVLib.setOptionString("scale",               "bilinear")
         MPVLib.setOptionString("cscale",              "bilinear")
         MPVLib.setOptionString("dscale",              "bilinear")
-        MPVLib.setOptionString("vd-lavc-threads", "0")
-        MPVLib.setOptionString("vd-lavc-film-grain", "cpu")
+        MPVLib.setOptionString("deband",              "no")
+        MPVLib.setOptionString("vd-lavc-threads",     "0")
+        MPVLib.setOptionString("vd-lavc-film-grain",  "cpu")
 
-        // Subtitle defaults — minimal setup, no auto-selection
+        // ── Subtitles ─────────────────────────────────────────────────────────
         MPVLib.setOptionString("sub-font-provider", "none")
         MPVLib.setOptionString("sub-fonts-dir",     "$filesDir/fonts")
         MPVLib.setOptionString("sub-font",          "Roboto")
@@ -70,38 +96,42 @@ class MpvOptionsConfigurator {
         MPVLib.setOptionString("sub-border-size",   "3")
         MPVLib.setOptionString("sub-auto",          "no")
 
-        // Audio
+        // ── Audio ─────────────────────────────────────────────────────────────
         MPVLib.setOptionString("audio-pitch-correction", "yes")
 
-        // Behaviour
+        // ── Logging ───────────────────────────────────────────────────────────
+        MPVLib.setOptionString("msg-level", "all=warn")
+
+        // ── Runtime-only properties (no setOption equivalent) ─────────────────
         MPVLib.setPropertyBoolean("keep-open",              true)
         MPVLib.setPropertyBoolean("input-default-bindings", true)
     }
 
-    fun postInitOptions() {
-        // Debanding off by default — can be toggled later in Phase 8
-        MPVLib.setOptionString("deband", "no")
-    }
-
+    /**
+     * Registers the property observers that feed the event stream.
+     * Must be called after MPVLib.init().
+     */
     fun registerPropertyObservers() {
-        MPVLib.observeProperty(MpvProp.PAUSE,              MpvFmt.FLAG)
-        MPVLib.observeProperty(MpvProp.TIME_POS,           MpvFmt.DOUBLE)
-        MPVLib.observeProperty(MpvProp.DURATION,           MpvFmt.DOUBLE)
-        MPVLib.observeProperty(MpvProp.DEMUXER_CACHE_TIME, MpvFmt.DOUBLE)
+        MPVLib.observeProperty(MpvProp.PAUSE,                MpvFmt.FLAG)
+        MPVLib.observeProperty(MpvProp.TIME_POS,             MpvFmt.DOUBLE)
+        MPVLib.observeProperty(MpvProp.DURATION,             MpvFmt.DOUBLE)
+        MPVLib.observeProperty(MpvProp.DEMUXER_CACHE_TIME,   MpvFmt.DOUBLE)
         MPVLib.observeProperty(MpvProp.DEMUXER_CACHE_DURATION, MpvFmt.DOUBLE)
-        MPVLib.observeProperty(MpvProp.SPEED,              MpvFmt.DOUBLE)
-        MPVLib.observeProperty(MpvProp.HWDEC_CURRENT,      MpvFmt.STRING)
-        MPVLib.observeProperty(MpvProp.SUB_SCALE,          MpvFmt.DOUBLE)
-        MPVLib.observeProperty(MpvProp.SUB_POS,            MpvFmt.INT64)
-        MPVLib.observeProperty(MpvProp.VIDEO_PARAMS_W,     MpvFmt.INT64)
-        MPVLib.observeProperty(MpvProp.VIDEO_PARAMS_H,     MpvFmt.INT64)
-        MPVLib.observeProperty("track-list",               MpvFmt.STRING)
+        MPVLib.observeProperty(MpvProp.SPEED,                MpvFmt.DOUBLE)
+        MPVLib.observeProperty(MpvProp.HWDEC_CURRENT,        MpvFmt.STRING)
+        MPVLib.observeProperty(MpvProp.SUB_SCALE,            MpvFmt.DOUBLE)
+        MPVLib.observeProperty(MpvProp.SUB_POS,              MpvFmt.INT64)
+        MPVLib.observeProperty(MpvProp.VIDEO_PARAMS_W,       MpvFmt.INT64)
+        MPVLib.observeProperty(MpvProp.VIDEO_PARAMS_H,       MpvFmt.INT64)
+        MPVLib.observeProperty(MpvProp.TRACK_LIST,           MpvFmt.STRING)
     }
-
-    companion object { private const val TAG = "MpvOptionsConfigurator" }
 }
 
-// ponytail: values correspond directly to mpv_format C enum in mpv/client.h
+// ---------------------------------------------------------------------------
+// Internal constants — not part of the public API surface.
+// ---------------------------------------------------------------------------
+
+/** mpv_format values from mpv/client.h */
 private object MpvFmt {
     const val FLAG   = 3
     const val STRING = 4
@@ -109,6 +139,7 @@ private object MpvFmt {
     const val INT64  = 6
 }
 
+/** Cache sizing. Adjust after profiling on target device classes. */
 private object MpvCache {
     const val MAX_BYTES      = "150MiB"
     const val MAX_BACK_BYTES = "50MiB"

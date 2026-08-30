@@ -1,46 +1,70 @@
 package com.potato.player.engine
 
+// ---------------------------------------------------------------------------
+// MpvProp — all MPV property name strings in one place.
+// Rule: every raw string that goes to MPVLib lives here, nowhere else.
+// ---------------------------------------------------------------------------
 internal object MpvProp {
-    const val PAUSE              = "pause"
-    const val TIME_POS           = "time-pos"
-    const val DURATION           = "duration"
-    const val DEMUXER_CACHE_TIME = "demuxer-cache-time"
+
+    // ── Playback ─────────────────────────────────────────────────────────────
+    const val PAUSE    = "pause"
+    const val TIME_POS = "time-pos"
+    const val DURATION = "duration"
+    const val SPEED    = "speed"
+
+    // ── Cache ─────────────────────────────────────────────────────────────────
+    const val DEMUXER_CACHE_TIME     = "demuxer-cache-time"
     const val DEMUXER_CACHE_DURATION = "demuxer-cache-duration"
-    const val SPEED              = "speed"
-    const val HWDEC              = "hwdec"
-    const val HWDEC_CURRENT      = "hwdec-current"
-    const val TRACK_LIST_COUNT   = "track-list/count"
-    const val AID                = "aid"
-    const val SID                = "sid"
-    const val SUB_SCALE          = "sub-scale"
-    const val SUB_POS            = "sub-pos"
-    const val VIDEO_PARAMS_W     = "video-params/w"
-    const val VIDEO_PARAMS_H     = "video-params/h"
 
-    // Track list properties
-    const val PROP_TRACK_LIST_TYPE = "type"
-    const val PROP_TRACK_LIST_ID = "id"
-    const val PROP_TRACK_LIST_TITLE = "title"
-    const val PROP_TRACK_LIST_LANG = "lang"
-    const val PROP_TRACK_LIST_EXTERNAL = "external"
-    const val PROP_TRACK_LIST = "track-list"
+    // ── Decoder ───────────────────────────────────────────────────────────────
+    const val HWDEC         = "hwdec"
+    const val HWDEC_CURRENT = "hwdec-current"
 
-    // Playback properties
-    const val PROP_ANDROID_SURFACE_SIZE = "android-surface-size"
-    const val PROP_VIDEO_ASPECT_OVERRIDE = "video-aspect-override"
-    const val PROP_PANSCAN = "panscan"
-    const val PROP_VOLUME = "volume"
-    const val PROP_VIDEO_ZOOM = "video-zoom"
-    const val PROP_VIDEO_PAN_X = "video-pan-x"
-    const val PROP_VIDEO_PAN_Y = "video-pan-y"
+    // ── Track selection ───────────────────────────────────────────────────────
+    const val AID = "aid"
+    const val SID = "sid"
+
+    // ── Track list (JSON property observed as a string) ───────────────────────
+    const val TRACK_LIST       = "track-list"
+    const val TRACK_LIST_COUNT = "track-list/count"
+
+    // Track-list JSON object keys — used by TrackListParser
+    const val TRACK_KEY_TYPE     = "type"
+    const val TRACK_KEY_ID       = "id"
+    const val TRACK_KEY_TITLE    = "title"
+    const val TRACK_KEY_LANG     = "lang"
+    const val TRACK_KEY_EXTERNAL = "external"
+
+    // ── Subtitles ─────────────────────────────────────────────────────────────
+    const val SUB_SCALE = "sub-scale"
+    const val SUB_POS   = "sub-pos"
+
+    // ── Video params ──────────────────────────────────────────────────────────
+    const val VIDEO_PARAMS_W = "video-params/w"
+    const val VIDEO_PARAMS_H = "video-params/h"
+
+    // ── Video transform ───────────────────────────────────────────────────────
+    const val VIDEO_ASPECT_OVERRIDE = "video-aspect-override"
+    const val VIDEO_ZOOM            = "video-zoom"
+    const val VIDEO_PAN_X           = "video-pan-x"
+    const val VIDEO_PAN_Y           = "video-pan-y"
+    const val PANSCAN               = "panscan"
+
+    // ── Audio ─────────────────────────────────────────────────────────────────
+    const val VOLUME = "volume"
+
+    // ── Rendering / surface ───────────────────────────────────────────────────
+    const val ANDROID_SURFACE_SIZE = "android-surface-size"
+    const val FORCE_WINDOW         = "force-window"
+    const val VO                   = "vo"
 }
 
-
-
+// ---------------------------------------------------------------------------
+// MpvEventId — verified against libmpv client.h mpv_event_id enum.
+// PLAYBACK_RESTART_21 removed — 21 is not a standard MPV event id.
+// ---------------------------------------------------------------------------
 internal object MpvEventId {
-    const val FILE_LOADED      = 8
     const val END_FILE         = 7
+    const val FILE_LOADED      = 8
     const val PLAYBACK_RESTART = 15
-    const val PLAYBACK_RESTART_21 = 21
 }
-
