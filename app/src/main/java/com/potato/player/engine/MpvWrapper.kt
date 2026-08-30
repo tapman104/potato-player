@@ -242,12 +242,20 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
         ifAlive("setDecoder") { MPVLib.setPropertyString(MpvProp.HWDEC, hwdec) }
     }
 
-    fun setSubScale(scale: Double) {
-        ifAlive("setSubScale") { MPVLib.setPropertyDouble(MpvProp.SUB_SCALE, scale) }
+    fun setVolume(percent: Int) {
+        ifAlive("setVolume") { MPVLib.setPropertyInt(MpvProp.VOLUME, percent) }
     }
 
-    fun setSubPos(pos: Int) {
-        ifAlive("setSubPos") { MPVLib.setPropertyInt(MpvProp.SUB_POS, pos) }
+    fun setSubtitleScale(scale: Double) {
+        ifAlive("setSubtitleScale") { MPVLib.setPropertyDouble(MpvProp.SUB_SCALE, scale) }
+    }
+
+    fun setSubtitlePosition(pos: Int) {
+        ifAlive("setSubtitlePosition") { MPVLib.setPropertyInt(MpvProp.SUB_POS, pos) }
+    }
+
+    fun setRotation(degrees: Int) {
+        ifAlive("setRotation") { MPVLib.setPropertyInt("video-rotate", degrees) }
     }
 
     // ── Internal property accessors (not for callers outside this package) ────

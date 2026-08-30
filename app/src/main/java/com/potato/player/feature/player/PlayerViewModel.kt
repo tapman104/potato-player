@@ -64,7 +64,6 @@ class PlayerViewModel(
     private var myPlaybackGeneration: Int = -1
     
     private var normalPlaybackSpeed = 1.0
-    private var isSliderSeeking = false
     private var exactSeekJob: Job? = null
 
     private val engineEventHandler by lazy { EngineEventHandler(wrapper, prefsRepository, viewModelScope) }
@@ -107,7 +106,7 @@ class PlayerViewModel(
     }
 
     private fun updateProgressState(state: PlayerEngineState) {
-        if (!isSliderSeeking) {
+        if (_progressState.value.dragPositionSec == null) {
             _progressState.update { it.copy(
                 positionSec = state.positionMs / 1000.0,
                 durationSec = state.durationMs / 1000.0,
@@ -125,8 +124,8 @@ class PlayerViewModel(
 
     private fun applyPrefs(prefs: Triple<Double, Int, Boolean>) {
         val (scale, pos, autoRot) = prefs
-        wrapper.setSubScale(scale)
-        wrapper.setSubPos(pos)
+        wrapper.setSubtitleScale(scale)
+        wrapper.setSubtitlePosition(pos)
         _uiState.update { it.copy(subScale = scale, subPos = pos, isAutoRotation = autoRot) }
     }
 
@@ -233,7 +232,7 @@ class PlayerViewModel(
         _uiState.update { it.copy(isLoading = false) }
     }
 
-    fun pause() {
+    private fun pause() {
         if (!isActive.get()) return
         wrapper.pause()
     }
@@ -310,7 +309,6 @@ class PlayerViewModel(
     }
 
     fun onSliderDragStart(posSec: Double) {
-        isSliderSeeking = true
         _progressState.update { it.copy(dragPositionSec = posSec) }
     }
 
@@ -322,7 +320,6 @@ class PlayerViewModel(
     fun onSliderDragEnd(posSec: Double) {
         if (!isActive.get()) return
         val ms = (posSec * 1000).toLong()
-        isSliderSeeking = false
         _progressState.update { it.copy(dragPositionSec = null) }
         wrapper.seekFast(ms)
         scheduleExactSeek(ms)
@@ -370,13 +367,13 @@ class PlayerViewModel(
     fun onLoadExternalSubtitle(uri: Uri, context: Context) = trackManager.loadExternal(uri, context, wrapper)
 
     fun previewSubtitleAppearance(scale: Double, pos: Int) {
-        wrapper.setSubScale(scale)
-        wrapper.setSubPos(pos)
+        wrapper.setSubtitleScale(scale)
+        wrapper.setSubtitlePosition(pos)
     }
 
     fun setSubtitleAppearance(scale: Double, pos: Int) {
-        wrapper.setSubScale(scale)
-        wrapper.setSubPos(pos)
+        wrapper.setSubtitleScale(scale)
+        wrapper.setSubtitlePosition(pos)
         viewModelScope.launch { prefsRepository.saveSubtitleAppearance(scale, pos) }
     }
 
@@ -407,7 +404,7 @@ class PlayerViewModel(
     fun setVolume(volume: Int) {
         if (!isActive.get()) return
         val clamped = volume.coerceIn(0, 150)
-        wrapper.setPropertyInt(MpvProp.VOLUME, clamped)
+        wrapper.setVolume(clamped)
     }
 
     fun setVideoZoom(zoom: Float, panX: Float, panY: Float) {
