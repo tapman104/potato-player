@@ -21,6 +21,8 @@ data class PlayerEngineState(
     val durationMs:    Long    = 0L,
     val cacheTimeMs:   Long    = 0L,
     val cacheDurMs:    Long    = 0L,
+    val pausedForCache: Boolean = false,
+    val cacheBufferingState: Int = 100,
     val paused:        Boolean = false,
     val speed:         Double  = 1.0,
     val subScale:      Double  = 1.0,
@@ -36,7 +38,7 @@ sealed class MpvEvent {
     // ── Lifecycle events (from MPV event IDs) ─────────────────────────────────
     sealed class Lifecycle : MpvEvent() {
         data object FileLoaded      : Lifecycle()
-        data object EndFile         : Lifecycle()
+        data class EndFile(val reason: Int) : Lifecycle()
         data object PlaybackRestart : Lifecycle()
         /** Any event id not explicitly handled above. */
         data class  Unknown(val id: Int) : Lifecycle()

@@ -70,6 +70,9 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
     /** Dispatcher coroutine — started in init, cancelled in destroy() */
     private val relayScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
+    @Volatile
+    private var lastPosSendMs = 0L
+
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     init {
@@ -283,13 +286,20 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
     override fun eventProperty(name: String, value: Boolean) {
         when (name) {
             MpvProp.PAUSE -> _engineState.update { it.copy(paused = value) }
+            "paused-for-cache" -> _engineState.update { it.copy(pausedForCache = value) }
         }
     }
 
     override fun eventProperty(name: String, value: Double) {
         val msLong = (value * 1000).toLong()
         when (name) {
-            MpvProp.TIME_POS             -> _engineState.update { it.copy(positionMs = msLong) }
+            MpvProp.TIME_POS             -> {
+                val now = android.os.SystemClock.elapsedRealtime()
+                if (now - lastPosSendMs >= 200L) {
+                    lastPosSendMs = now
+                    _engineState.update { it.copy(positionMs = msLong) }
+                }
+            }
             MpvProp.DURATION             -> _engineState.update { it.copy(durationMs = msLong) }
             MpvProp.DEMUXER_CACHE_TIME   -> _engineState.update { it.copy(cacheTimeMs = msLong) }
             MpvProp.DEMUXER_CACHE_DURATION -> _engineState.update { it.copy(cacheDurMs = msLong) }
@@ -303,6 +313,7 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
             MpvProp.SUB_POS       -> _engineState.update { it.copy(subPos = value) }
             MpvProp.VIDEO_PARAMS_W -> _engineState.update { it.copy(videoWidth = value) }
             MpvProp.VIDEO_PARAMS_H -> _engineState.update { it.copy(videoHeight = value) }
+            "cache-buffering-state" -> _engineState.update { it.copy(cacheBufferingState = value.toInt()) }
         }
     }
 
@@ -320,7 +331,10 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
     override fun event(eventId: Int, eventNode: MPVNode) {
         val lifecycle = when (eventId) {
             MpvEventId.FILE_LOADED      -> MpvEvent.Lifecycle.FileLoaded
-            MpvEventId.END_FILE         -> MpvEvent.Lifecycle.EndFile
+            MpvEventId.END_FILE         -> {
+                val reason = (eventNode as? MPVNode.MapNode)?.value?.get("reason")?.let { (it as? MPVNode.IntNode)?.value?.toInt() } ?: 0
+                MpvEvent.Lifecycle.EndFile(reason)
+            }
             MpvEventId.PLAYBACK_RESTART -> MpvEvent.Lifecycle.PlaybackRestart
             else                        -> MpvEvent.Lifecycle.Unknown(eventId)
         }

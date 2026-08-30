@@ -104,12 +104,18 @@ class PlayerViewModel(
             }
             _uiState.update { it.copy(hwdecCurrent = hwdec) }
         },
-        onEndFileReached = {
-            _uiState.update { it.copy(isPlaying = false) }
-            saveHistoryIfNeeded()
-            if (_uiState.value.isFastForwarding) {
-                _uiState.update { it.copy(isFastForwarding = false) }
-                wrapper.setSpeed(normalPlaybackSpeed)
+        onEndFileReached = { reason ->
+            if (reason == 2) {
+                _uiState.update { it.copy(isPlaying = false, error = "Playback error") }
+            } else if (reason == 0) {
+                _uiState.update { it.copy(isPlaying = false) }
+                saveHistoryIfNeeded()
+                if (_uiState.value.isFastForwarding) {
+                    _uiState.update { it.copy(isFastForwarding = false) }
+                    wrapper.setSpeed(normalPlaybackSpeed)
+                }
+            } else {
+                _uiState.update { it.copy(isPlaying = false) }
             }
         },
         onFileLoaded = {
@@ -146,8 +152,15 @@ class PlayerViewModel(
     init {
         myPlaybackGeneration = wrapper.play()
         viewModelScope.launch {
-            wrapper.events.collect { event ->
+            wrapper.lifecycleEvents.collect { event ->
                 eventProcessor.process(event)
+            }
+        }
+
+        viewModelScope.launch {
+            wrapper.engineState.collect { state ->
+                val isBuffering = state.pausedForCache || state.cacheBufferingState < 100
+                _uiState.update { it.copy(isLoading = it.fileLoaded && isBuffering) }
             }
         }
 

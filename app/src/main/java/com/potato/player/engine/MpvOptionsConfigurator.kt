@@ -124,6 +124,8 @@ internal class MpvOptionsConfigurator {
         MPVLib.observeProperty(MpvProp.VIDEO_PARAMS_W,       MpvFmt.INT64)
         MPVLib.observeProperty(MpvProp.VIDEO_PARAMS_H,       MpvFmt.INT64)
         MPVLib.observeProperty(MpvProp.TRACK_LIST,           MpvFmt.STRING)
+        MPVLib.observeProperty("paused-for-cache",           MpvFmt.FLAG)
+        MPVLib.observeProperty("cache-buffering-state",      MpvFmt.INT64)
     }
 }
 
