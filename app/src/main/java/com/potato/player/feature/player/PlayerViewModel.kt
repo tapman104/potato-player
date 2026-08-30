@@ -43,6 +43,7 @@ class PlayerViewModel(
     val dialogState = DialogStateHolder()
     val playlistManager = PlaylistManager()
     val trackManager by lazy { TrackManager(prefsRepository, viewModelScope) }
+    val geometryManager = VideoGeometryManager(wrapper)
 
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
@@ -266,29 +267,13 @@ class PlayerViewModel(
 
     fun cycleFitMode() {
         if (!isActive.get()) return
-        val next = when (_uiState.value.fitMode) {
-            VideoFitMode.FIT -> VideoFitMode.FILL
-            VideoFitMode.FILL -> VideoFitMode.STRETCH
-            VideoFitMode.STRETCH -> VideoFitMode.FIT
-        }
-        _uiState.update { it.copy(fitMode = next) }
-        when (next) {
-            VideoFitMode.FIT -> {
-                wrapper.setPropertyString(MpvProp.VIDEO_ASPECT_OVERRIDE, "-1")
-                wrapper.setPropertyString(MpvProp.PANSCAN, "0.0")
-            }
-            VideoFitMode.FILL -> {
-                wrapper.setPropertyString(MpvProp.PANSCAN, "1.0")
-                wrapper.setPropertyString(MpvProp.VIDEO_ASPECT_OVERRIDE, "-1")
-            }
-            VideoFitMode.STRETCH -> {
-                wrapper.setPropertyString(MpvProp.PANSCAN, "0.0")
-                val metrics = appContext.resources.displayMetrics
-                val screenWidth = metrics.widthPixels
-                val screenHeight = metrics.heightPixels
-                wrapper.setPropertyString(MpvProp.VIDEO_ASPECT_OVERRIDE, "${screenWidth}/${screenHeight}")
-            }
-        }
+        val metrics = appContext.resources.displayMetrics
+        val nextMode = geometryManager.cycleFitMode(
+            _uiState.value.fitMode,
+            metrics.widthPixels,
+            metrics.heightPixels
+        )
+        _uiState.update { it.copy(fitMode = nextMode) }
     }
 
     fun setDecoder(mode: String) {
@@ -411,20 +396,15 @@ class PlayerViewModel(
 
     fun setVideoZoom(zoom: Float, panX: Float, panY: Float) {
         if (!isActive.get()) return
-        val clampedZoom = zoom.coerceIn(1.0f, 4.0f)
-        val finalPanX = if (clampedZoom == 1.0f) 0f else panX
-        val finalPanY = if (clampedZoom == 1.0f) 0f else panY
-        
-        val mpvZoom = kotlin.math.ln(clampedZoom.toDouble()) / kotlin.math.ln(2.0)
-        wrapper.setPropertyDouble(MpvProp.VIDEO_ZOOM, mpvZoom)
-        wrapper.setPropertyDouble(MpvProp.VIDEO_PAN_X, finalPanX.toDouble())
-        wrapper.setPropertyDouble(MpvProp.VIDEO_PAN_Y, finalPanY.toDouble())
-        
-        _gestureState.update { it.copy(videoZoom = clampedZoom, videoPanX = finalPanX, videoPanY = finalPanY) }
+        geometryManager.setVideoZoom(zoom, panX, panY) { pX, pY, z ->
+            _gestureState.update { it.copy(videoZoom = z, videoPanX = pX, videoPanY = pY) }
+        }
     }
 
     fun resetZoom() {
-        setVideoZoom(1.0f, 0f, 0f)
+        geometryManager.resetZoom { pX, pY, z ->
+            _gestureState.update { it.copy(videoZoom = z, videoPanX = pX, videoPanY = pY) }
+        }
     }
 
     // ── Playlist navigation ───────────────────────────────────────────────────
