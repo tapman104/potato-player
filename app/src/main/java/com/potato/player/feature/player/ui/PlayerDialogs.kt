@@ -19,7 +19,8 @@ fun PlayerModals(
     onLaunchFilePicker: () -> Unit
 ) {
     val context = LocalContext.current
-    val activeDialog = uiState.activeDialog
+    val activeDialog by viewModel.dialogState.activeDialog.collectAsStateWithLifecycle()
+    val trackState by viewModel.trackManager.trackState.collectAsStateWithLifecycle()
 
     PlayerDecoderDialog(
         visible = activeDialog == ActiveDialog.Decoder,
@@ -30,16 +31,16 @@ fun PlayerModals(
 
     AudioTrackDialog(
         visible = activeDialog == ActiveDialog.Audio,
-        tracks = uiState.audioTracks,
-        currentTrackId = uiState.currentAudioTrackId,
+        tracks = trackState.audioTracks,
+        currentTrackId = trackState.currentAudioTrackId,
         onSelectTrack = { viewModel.onSelectAudioTrack(it) },
         onDismiss = { viewModel.dismissDialog() }
     )
 
     SubtitleTrackDialog(
         visible = activeDialog == ActiveDialog.Subtitle,
-        tracks = uiState.subtitleTracks,
-        currentTrackId = uiState.currentSubtitleTrackId,
+        tracks = trackState.subtitleTracks,
+        currentTrackId = trackState.currentSubtitleTrackId,
         onSelectTrack = { viewModel.onSelectSubtitleTrack(it) },
         onLaunchFilePicker = onLaunchFilePicker,
         onDismiss = { viewModel.dismissDialog() },

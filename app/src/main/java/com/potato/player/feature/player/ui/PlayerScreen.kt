@@ -57,6 +57,9 @@ fun PlayerScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val progressState by viewModel.progressState.collectAsStateWithLifecycle()
     val gestureState by viewModel.gestureState.collectAsStateWithLifecycle()
+    val activeDialog by viewModel.dialogState.activeDialog.collectAsStateWithLifecycle()
+    val currentPlaylistIndex by viewModel.playlistManager.currentIndex.collectAsStateWithLifecycle()
+    val currentPlaylist by viewModel.playlistManager.playlist.collectAsStateWithLifecycle()
 
     BackHandler {
         if (!uiState.isLocked) {
@@ -206,7 +209,7 @@ fun PlayerScreen(
                 onSelectSubtitleTrack = { viewModel.showDialog(ActiveDialog.Subtitle) },
                 onSelectDecoder = { viewModel.showDialog(ActiveDialog.Decoder) },
                 onMoreOptions = { 
-                    if (uiState.activeDialog == ActiveDialog.MoreMenu) viewModel.dismissDialog()
+                    if (activeDialog == ActiveDialog.MoreMenu) viewModel.dismissDialog()
                     else viewModel.showDialog(ActiveDialog.MoreMenu)
                 },
                 modifier = Modifier.align(Alignment.TopCenter)
@@ -230,9 +233,9 @@ fun PlayerScreen(
                 progressState = progressState,
                 isAutoRotation = uiState.isAutoRotation,
                 currentFitMode = uiState.fitMode,
-                hasPrevious = uiState.currentPlaylistIndex > 0,
-                hasNext = uiState.currentPlaylistIndex >= 0 &&
-                                    uiState.currentPlaylistIndex < uiState.playlist.size - 1,
+                hasPrevious = currentPlaylistIndex > 0,
+                hasNext = currentPlaylistIndex >= 0 &&
+                                    currentPlaylistIndex < currentPlaylist.size - 1,
                 onSeekGesture = { ms -> viewModel.onSliderDragChange(ms / 1000.0) },
                 onSeekCommit = { ms -> viewModel.onSliderDragEnd(ms / 1000.0) },
                 onDragStart = { viewModel.onSliderDragStart(progressState.positionSec) },

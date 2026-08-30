@@ -6,7 +6,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.potato.player.data.UserPreferencesRepository
 import com.potato.player.data.VideoHistory
-import com.potato.player.data.VideoHistoryRepository
 import com.potato.player.engine.MpvWrapper
 import com.potato.player.engine.MpvEvent
 import com.potato.player.engine.MpvEventId
@@ -35,11 +34,15 @@ enum class VideoFitMode { FIT, FILL, STRETCH }
 class PlayerViewModel(
     private val appContext: Context,
     private val wrapper: MpvWrapper,
-    private val historyRepository: VideoHistoryRepository
+    private val historyManager: PlaybackHistoryManager
 ) : ViewModel() {
 
     private val prefsRepository by lazy { UserPreferencesRepository(appContext) }
     
+    val dialogState = DialogStateHolder()
+    val playlistManager = PlaylistManager()
+    val trackManager by lazy { TrackManager(prefsRepository, viewModelScope) }
+
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
 
@@ -63,10 +66,6 @@ class PlayerViewModel(
     
     private var normalPlaybackSpeed = 1.0
     private var isSliderSeeking = false
-    private var autoSubApplied = false
-
-    private val preferredSubLangState = prefsRepository.preferredSubLangFlow
-        .stateIn(viewModelScope, SharingStarted.Eagerly, "eng")
 
     init {
         myPlaybackGeneration = wrapper.nextGeneration()
@@ -149,39 +148,21 @@ class PlayerViewModel(
             }
             val aid = wrapper.getPropertyString(MpvProp.AID)?.toIntOrNull() ?: -1
             val sid = wrapper.getPropertyString(MpvProp.SID)?.toIntOrNull() ?: -1
-            val audioTracks = list.filter { it.type == TrackType.AUDIO }.map { it.toUiModel(appContext) }
-            val subtitleTracks = list.filter { it.type == TrackType.SUBTITLE }.map { it.toUiModel(appContext) }
             withContext(Dispatchers.Main) {
-                _uiState.update { it.copy(audioTracks = audioTracks, subtitleTracks = subtitleTracks, currentAudioTrackId = aid, currentSubtitleTrackId = sid) }
+                trackManager.loadTracks(list, aid, sid, appContext)
             }
         }
     }
 
     private fun applyPreferredSubtitleTrack() {
-        if (autoSubApplied || preferredSubLangState.value == "off") return
-        val currentTracks = _uiState.value.subtitleTracks
-        if (currentTracks.isEmpty()) return
-
-        val prefLang = preferredSubLangState.value
-
-        val acceptedLangs = LANG_ALIASES[prefLang.lowercase()] ?: setOf(prefLang.lowercase())
-
-        var match = currentTracks.find { track ->
-            track.language.lowercase() in acceptedLangs
-        }
-
-        // Fallback: title contains language name (English only)
-        if (match == null && ("en" in acceptedLangs || "eng" in acceptedLangs)) {
-            match = currentTracks.find { it.title.contains("english", ignoreCase = true) }
-        }
-
-        if (match != null) {
-            val sid = _uiState.value.currentSubtitleTrackId
-            if (sid != match.id) {
-                wrapper.setSubTrack(match.id)
-                _uiState.update { it.copy(currentSubtitleTrackId = match.id) }
+        val matchId = trackManager.getPreferredSubtitleTrackId()
+        if (matchId != null) {
+            val sid = trackManager.trackState.value.currentSubtitleTrackId
+            if (sid != matchId) {
+                wrapper.setSubTrack(matchId)
+                trackManager.setSubtitleTrack(matchId)
             }
-            autoSubApplied = true
+            trackManager.markAutoSubApplied()
         }
     }
 
@@ -211,7 +192,7 @@ class PlayerViewModel(
         lastLoadedUri = defaultUri
 
         viewModelScope.launch(Dispatchers.IO) {
-            val history = historyRepository.getByUri(defaultUri)
+            val history = historyManager.getByUri(defaultUri)
             val resumePos = if (history != null && history.lastPlayedPositionSec > 0)
                 (history.lastPlayedPositionSec * 1000).toLong() else 0L
             withContext(Dispatchers.Main) {
@@ -229,7 +210,7 @@ class PlayerViewModel(
         lastLoadedUri = uri
         currentUri = uri
         currentTitle = title
-        autoSubApplied = false
+        trackManager.resetAutoSubApplied()
         val initialName = if (title.isNotBlank()) title else "Video"
         _uiState.update { it.copy(fileName = initialName, isLoading = true, isPlaying = false, fileLoaded = false, error = null) }
         if (title.isBlank()) {
@@ -259,7 +240,6 @@ class PlayerViewModel(
         }
         loadTracks()
         viewModelScope.launch {
-            preferredSubLangState.first { true }
             applyPreferredSubtitleTrack()
         }
     }
@@ -422,14 +402,14 @@ class PlayerViewModel(
     fun onSelectAudioTrack(id: Int) {
         if (!isActive.get()) return
         wrapper.setAudioTrack(id)
-        _uiState.update { it.copy(currentAudioTrackId = id) }
+        trackManager.setAudioTrack(id)
         dismissDialog()
     }
 
     fun onSelectSubtitleTrack(id: Int) {
         if (!isActive.get()) return
         wrapper.setSubTrack(id)
-        _uiState.update { it.copy(currentSubtitleTrackId = id) }
+        trackManager.setSubtitleTrack(id)
         dismissDialog()
     }
 
@@ -475,11 +455,11 @@ class PlayerViewModel(
     }
 
     fun showDialog(dialog: ActiveDialog) {
-        _uiState.update { it.copy(activeDialog = dialog) }
+        dialogState.show(dialog)
     }
 
     fun dismissDialog() {
-        _uiState.update { it.copy(activeDialog = ActiveDialog.None) }
+        dialogState.dismiss()
     }
 
     private fun saveHistoryIfNeeded() {
@@ -492,16 +472,14 @@ class PlayerViewModel(
         // We fallback to duration if it's near zero and not playing.
         val posToSave = if (currentPos < 1.0 && duration > 0.0 && !_uiState.value.isPlaying) duration else currentPos
 
-        val entry = VideoHistory(
+        historyManager.save(
             uri = currentUri,
             title = currentTitle.ifEmpty { currentUri.substringAfterLast('/') },
             lastPlayedPositionSec = posToSave,
             durationSec = duration,
-            lastAudioTrackId = _uiState.value.currentAudioTrackId,
-            lastSubtitleTrackId = _uiState.value.currentSubtitleTrackId,
-            lastPlayedTimestamp = System.currentTimeMillis()
+            lastAudioTrackId = trackManager.trackState.value.currentAudioTrackId,
+            lastSubtitleTrackId = trackManager.trackState.value.currentSubtitleTrackId
         )
-        viewModelScope.launch(Dispatchers.IO) { historyRepository.upsert(entry) }
     }
 
     override fun onCleared() {
@@ -539,37 +517,28 @@ class PlayerViewModel(
 
     fun setPlaylist(playlist: List<String>, playlistTitles: List<String>, currentUri: String) {
         val pairs = playlist.zip(playlistTitles)
-        val index = pairs.indexOfFirst { it.first == currentUri }
-        _uiState.update { it.copy(playlist = pairs, currentPlaylistIndex = index) }
+        playlistManager.setPlaylist(pairs, currentUri)
     }
 
     fun playPrevious() {
-        val state = _uiState.value
-        val idx = state.currentPlaylistIndex
-        if (idx > 0) {
-            val (uri, title) = state.playlist[idx - 1]
-            _uiState.update { it.copy(currentPlaylistIndex = idx - 1) }
-            viewModelScope.launch(Dispatchers.IO) {
-                val history = historyRepository.getByUri(uri)
-                val resumePos = if (history != null && history.lastPlayedPositionSec > 0)
-                    (history.lastPlayedPositionSec * 1000).toLong() else 0L
-                withContext(Dispatchers.Main) { loadFile(uri, title, resumePos) }
-            }
+        val item = playlistManager.movePrevious() ?: return
+        val (uri, title) = item
+        viewModelScope.launch(Dispatchers.IO) {
+            val history = historyManager.getByUri(uri)
+            val resumePos = if (history != null && history.lastPlayedPositionSec > 0)
+                (history.lastPlayedPositionSec * 1000).toLong() else 0L
+            withContext(Dispatchers.Main) { loadFile(uri, title, resumePos) }
         }
     }
 
     fun playNext() {
-        val state = _uiState.value
-        val idx = state.currentPlaylistIndex
-        if (idx >= 0 && idx < state.playlist.size - 1) {
-            val (uri, title) = state.playlist[idx + 1]
-            _uiState.update { it.copy(currentPlaylistIndex = idx + 1) }
-            viewModelScope.launch(Dispatchers.IO) {
-                val history = historyRepository.getByUri(uri)
-                val resumePos = if (history != null && history.lastPlayedPositionSec > 0)
-                    (history.lastPlayedPositionSec * 1000).toLong() else 0L
-                withContext(Dispatchers.Main) { loadFile(uri, title, resumePos) }
-            }
+        val item = playlistManager.moveNext() ?: return
+        val (uri, title) = item
+        viewModelScope.launch(Dispatchers.IO) {
+            val history = historyManager.getByUri(uri)
+            val resumePos = if (history != null && history.lastPlayedPositionSec > 0)
+                (history.lastPlayedPositionSec * 1000).toLong() else 0L
+            withContext(Dispatchers.Main) { loadFile(uri, title, resumePos) }
         }
     }
 

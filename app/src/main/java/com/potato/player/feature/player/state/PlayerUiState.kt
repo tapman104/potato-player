@@ -34,20 +34,13 @@ data class PlayerUiState(
     val isLoading:       Boolean = false,
     val error:           String? = null,
     val hwdecCurrent:    String  = "HW+",
-    val audioTracks:     List<TrackUiModel> = emptyList(),
-    val subtitleTracks:  List<TrackUiModel> = emptyList(),
-    val currentAudioTrackId: Int = -1,
-    val currentSubtitleTrackId: Int = -1,
     val subScale: Double = 1.0,
     val subPos: Int = 100,
-    val activeDialog: ActiveDialog = ActiveDialog.None,
     val videoWidth: Int = 0,
     val videoHeight: Int = 0,
     val orientationMode: OrientationMode = OrientationMode.AUTO,
     val isAutoRotation: Boolean = false,
     val isInPipMode: Boolean = false,
     val isLocked: Boolean = false,
-    val fitMode: VideoFitMode = VideoFitMode.FIT,
-    val playlist: List<Pair<String, String>> = emptyList(), // (uri, title) pairs
-    val currentPlaylistIndex: Int = -1
+    val fitMode: VideoFitMode = VideoFitMode.FIT
 )
