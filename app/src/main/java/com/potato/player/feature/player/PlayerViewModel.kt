@@ -68,99 +68,47 @@ class PlayerViewModel(
     private val preferredSubLangState = prefsRepository.preferredSubLangFlow
         .stateIn(viewModelScope, SharingStarted.Eagerly, "eng")
 
-    private val eventProcessor = MpvEventProcessor(
-        onPlaybackStarted = { _uiState.update { it.copy(isLoading = false, isPlaying = true) } },
-        onPlaybackPaused = { _uiState.update { it.copy(isPlaying = false) } },
-        onPlaybackRestart = {
-            // Read the real MPV pause state instead of assuming playback is active.
-            // PLAYBACK_RESTART fires on every seek (including seeks while paused), so
-            // blindly setting isPlaying=true here would show the wrong icon.
-            val isPaused = wrapper.getPropertyBoolean(MpvProp.PAUSE) ?: false
-            _uiState.update { it.copy(isLoading = false, isPlaying = !isPaused) }
-        },
-        onDurationChanged = { ms -> _progressState.update { it.copy(durationSec = ms / 1000.0) } },
-        onPositionChanged = { ms -> 
-            if (!isSliderSeeking) _progressState.update { it.copy(positionSec = ms / 1000.0) } 
-        },
-        onTracksChanged = { json ->
-            val tracks = TrackListParser.parse(json)
-            if (tracks.isNotEmpty()) {
-                val audioTracks = tracks.filter { it.type == TrackType.AUDIO }.map { it.toUiModel(appContext) }
-                val subtitleTracks = tracks.filter { it.type == TrackType.SUBTITLE }.map { it.toUiModel(appContext) }
-                _uiState.update { it.copy(audioTracks = audioTracks, subtitleTracks = subtitleTracks) }
-                viewModelScope.launch {
-                    preferredSubLangState.first { true }
-                    applyPreferredSubtitleTrack()
-                }
-            } else {
-                loadTracks()
-            }
-        },
-        onHwdecChanged = { value ->
-            val hwdec = when {
-                value == "no" || value.isEmpty() -> "SW"
-                value.contains("copy") -> "HW+"
-                else -> "HW"
-            }
-            _uiState.update { it.copy(hwdecCurrent = hwdec) }
-        },
-        onEndFileReached = { reason ->
-            if (reason == 2) {
-                _uiState.update { it.copy(isPlaying = false, error = "Playback error") }
-            } else if (reason == 0) {
-                _uiState.update { it.copy(isPlaying = false) }
-                saveHistoryIfNeeded()
-                if (_uiState.value.isFastForwarding) {
-                    _uiState.update { it.copy(isFastForwarding = false) }
-                    wrapper.setSpeed(normalPlaybackSpeed)
-                }
-            } else {
-                _uiState.update { it.copy(isPlaying = false) }
-            }
-        },
-        onFileLoaded = {
-            val isPaused = wrapper.getPropertyBoolean(MpvProp.PAUSE) ?: false
-            _uiState.update { it.copy(fileLoaded = true, isLoading = false, isPlaying = !isPaused, fitMode = VideoFitMode.FIT) }
-            if (pendingSeekPosition > 0L) {
-                wrapper.seekTo(pendingSeekPosition)
-                pendingSeekPosition = 0L
-            }
-            loadTracks()
-            viewModelScope.launch {
-                // Wait until DataStore has emitted at least once before applying subtitle preference.
-                // preferredSubLangState is Eagerly shared so first{true} returns immediately if the
-                // upstream has already emitted, or suspends briefly until it does.
-                preferredSubLangState.first { true }
-                applyPreferredSubtitleTrack()
-            }
-        },
-        onCacheTimeChanged = { sec -> _progressState.update { it.copy(cachedSec = sec) } },
-        onCacheDurationChanged = { sec -> _progressState.update { it.copy(cacheDurationSec = sec) } },
-        onSpeedChanged = { speed ->
-            if (!_uiState.value.isFastForwarding) {
-                _uiState.update { it.copy(playbackSpeed = speed) }
-                normalPlaybackSpeed = speed
-            }
-        },
-        onSubScaleChanged = { scale -> _uiState.update { it.copy(subScale = scale) } },
-        onSubPosChanged = { pos -> _uiState.update { it.copy(subPos = pos) } },
-        onVideoWidthChanged = { w -> _uiState.update { it.copy(videoWidth = w) } },
-        onVideoHeightChanged = { h -> _uiState.update { it.copy(videoHeight = h) } },
-        onVolumeChanged = { v -> _gestureState.update { it.copy(volume = v) } }
-    )
-
     init {
-        myPlaybackGeneration = wrapper.play()
+        myPlaybackGeneration = wrapper.nextGeneration()
         viewModelScope.launch {
             wrapper.lifecycleEvents.collect { event ->
-                eventProcessor.process(event)
+                when (event) {
+                    is MpvEvent.Lifecycle.FileLoaded -> handleFileLoaded()
+                    is MpvEvent.Lifecycle.EndFile -> handleEndFile(event.reason)
+                    is MpvEvent.Lifecycle.PlaybackRestart -> handlePlaybackRestart()
+                    is MpvEvent.Lifecycle.Unknown -> Unit
+                }
             }
         }
 
         viewModelScope.launch {
             wrapper.engineState.collect { state ->
                 val isBuffering = state.pausedForCache || state.cacheBufferingState < 100
-                _uiState.update { it.copy(isLoading = it.fileLoaded && isBuffering) }
+                _uiState.update { it.copy(
+                    isPlaying = !state.paused,
+                    isLoading = it.fileLoaded && isBuffering,
+                    hwdecCurrent = state.hwdecActive,
+                    videoWidth = state.videoWidth.toInt(),
+                    videoHeight = state.videoHeight.toInt(),
+                    playbackSpeed = state.speed,
+                    subScale = state.subScale,
+                    subPos = state.subPos.toInt()
+                ) }
+                
+                if (!isSliderSeeking) {
+                    _progressState.update { it.copy(
+                        positionSec = state.positionMs / 1000.0,
+                        durationSec = state.durationMs / 1000.0,
+                        cachedSec = state.cacheTimeMs / 1000.0,
+                        cacheDurationSec = state.cacheDurMs / 1000.0
+                    ) }
+                } else {
+                    _progressState.update { it.copy(
+                        durationSec = state.durationMs / 1000.0,
+                        cachedSec = state.cacheTimeMs / 1000.0,
+                        cacheDurationSec = state.cacheDurMs / 1000.0
+                    ) }
+                }
             }
         }
 
@@ -188,15 +136,15 @@ class PlayerViewModel(
             val count = wrapper.getPropertyInt(MpvProp.TRACK_LIST_COUNT) ?: 0
             val list = mutableListOf<TrackInfo>()
             for (i in 0 until count) {
-                val trackType = when (wrapper.getPropertyString("track-list/$i/${MpvProp.PROP_TRACK_LIST_TYPE}")) {
+                val trackType = when (wrapper.getPropertyString("track-list/$i/${MpvProp.TRACK_KEY_TYPE}")) {
                     "audio" -> TrackType.AUDIO
                     "sub"   -> TrackType.SUBTITLE
                     else    -> continue
                 }
-                val id = wrapper.getPropertyInt("track-list/$i/${MpvProp.PROP_TRACK_LIST_ID}") ?: continue
-                val title = wrapper.getPropertyString("track-list/$i/${MpvProp.PROP_TRACK_LIST_TITLE}")
-                val lang = wrapper.getPropertyString("track-list/$i/${MpvProp.PROP_TRACK_LIST_LANG}")
-                val extStr = wrapper.getPropertyString("track-list/$i/${MpvProp.PROP_TRACK_LIST_EXTERNAL}")
+                val id = wrapper.getPropertyInt("track-list/$i/${MpvProp.TRACK_KEY_ID}") ?: continue
+                val title = wrapper.getPropertyString("track-list/$i/${MpvProp.TRACK_KEY_TITLE}")
+                val lang = wrapper.getPropertyString("track-list/$i/${MpvProp.TRACK_KEY_LANG}")
+                val extStr = wrapper.getPropertyString("track-list/$i/${MpvProp.TRACK_KEY_EXTERNAL}")
                 list.add(TrackInfo(id = id, type = trackType, title = title, lang = lang, isExternal = extStr == "yes" || extStr == "true"))
             }
             val aid = wrapper.getPropertyString(MpvProp.AID)?.toIntOrNull() ?: -1
@@ -238,7 +186,7 @@ class PlayerViewModel(
     }
 
     fun setSurfaceSize(width: Int, height: Int) {
-        wrapper.setPropertyString(MpvProp.PROP_ANDROID_SURFACE_SIZE, "${width}x${height}")
+        wrapper.setPropertyString(MpvProp.ANDROID_SURFACE_SIZE, "${width}x${height}")
     }
 
     fun handleSurfaceReady(surface: android.view.Surface) {
@@ -303,6 +251,38 @@ class PlayerViewModel(
         wrapper.togglePlay()
     }
     
+    private fun handleFileLoaded() {
+        _uiState.update { it.copy(fileLoaded = true, isLoading = false, fitMode = VideoFitMode.FIT) }
+        if (pendingSeekPosition > 0L) {
+            wrapper.seekAccurate(pendingSeekPosition)
+            pendingSeekPosition = 0L
+        }
+        loadTracks()
+        viewModelScope.launch {
+            preferredSubLangState.first { true }
+            applyPreferredSubtitleTrack()
+        }
+    }
+
+    private fun handleEndFile(reason: Int) {
+        if (reason == 3) {
+            _uiState.update { it.copy(isPlaying = false, error = "Playback error") }
+        } else if (reason == 0) {
+            _uiState.update { it.copy(isPlaying = false) }
+            saveHistoryIfNeeded()
+            if (_uiState.value.isFastForwarding) {
+                _uiState.update { it.copy(isFastForwarding = false) }
+                wrapper.setSpeed(normalPlaybackSpeed)
+            }
+        } else {
+            _uiState.update { it.copy(isPlaying = false) }
+        }
+    }
+
+    private fun handlePlaybackRestart() {
+        _uiState.update { it.copy(isLoading = false) }
+    }
+
     fun pause() {
         if (!isActive.get()) return
         wrapper.pause()
@@ -349,19 +329,19 @@ class PlayerViewModel(
         _uiState.update { it.copy(fitMode = next) }
         when (next) {
             VideoFitMode.FIT -> {
-                wrapper.setPropertyString(MpvProp.PROP_VIDEO_ASPECT_OVERRIDE, "-1")
-                wrapper.setPropertyString(MpvProp.PROP_PANSCAN, "0.0")
+                wrapper.setPropertyString(MpvProp.VIDEO_ASPECT_OVERRIDE, "-1")
+                wrapper.setPropertyString(MpvProp.PANSCAN, "0.0")
             }
             VideoFitMode.FILL -> {
-                wrapper.setPropertyString(MpvProp.PROP_PANSCAN, "1.0")
-                wrapper.setPropertyString(MpvProp.PROP_VIDEO_ASPECT_OVERRIDE, "-1")
+                wrapper.setPropertyString(MpvProp.PANSCAN, "1.0")
+                wrapper.setPropertyString(MpvProp.VIDEO_ASPECT_OVERRIDE, "-1")
             }
             VideoFitMode.STRETCH -> {
-                wrapper.setPropertyString(MpvProp.PROP_PANSCAN, "0.0")
+                wrapper.setPropertyString(MpvProp.PANSCAN, "0.0")
                 val metrics = appContext.resources.displayMetrics
                 val screenWidth = metrics.widthPixels
                 val screenHeight = metrics.heightPixels
-                wrapper.setPropertyString(MpvProp.PROP_VIDEO_ASPECT_OVERRIDE, "${screenWidth}/${screenHeight}")
+                wrapper.setPropertyString(MpvProp.VIDEO_ASPECT_OVERRIDE, "${screenWidth}/${screenHeight}")
             }
         }
     }
@@ -408,7 +388,7 @@ class PlayerViewModel(
     fun onSliderDragEnd(posSec: Double) {
         if (!isActive.get()) return
         isSliderSeeking = false
-        wrapper.seekTo((posSec * 1000).toLong(), exact = true)
+        wrapper.seekAccurate((posSec * 1000).toLong())
         _progressState.update { it.copy(dragPositionSec = null) }
     }
 
@@ -422,7 +402,7 @@ class PlayerViewModel(
         val target = _gestureState.value.swipeSeekTargetSec
         _gestureState.update { it.copy(swipeSeekTargetSec = null) }
         if (target != null) {
-            wrapper.seekTo((target * 1000).toLong(), exact = true)
+            wrapper.seekAccurate((target * 1000).toLong())
         }
     }
 
@@ -534,7 +514,7 @@ class PlayerViewModel(
     fun setVolume(volume: Int) {
         if (!isActive.get()) return
         val clamped = volume.coerceIn(0, 150)
-        wrapper.setPropertyInt(MpvProp.PROP_VOLUME, clamped)
+        wrapper.setPropertyInt(MpvProp.VOLUME, clamped)
     }
 
     fun setVideoZoom(zoom: Float, panX: Float, panY: Float) {
@@ -544,9 +524,9 @@ class PlayerViewModel(
         val finalPanY = if (clampedZoom == 1.0f) 0f else panY
         
         val mpvZoom = kotlin.math.ln(clampedZoom.toDouble()) / kotlin.math.ln(2.0)
-        wrapper.setPropertyDouble(MpvProp.PROP_VIDEO_ZOOM, mpvZoom)
-        wrapper.setPropertyDouble(MpvProp.PROP_VIDEO_PAN_X, finalPanX.toDouble())
-        wrapper.setPropertyDouble(MpvProp.PROP_VIDEO_PAN_Y, finalPanY.toDouble())
+        wrapper.setPropertyDouble(MpvProp.VIDEO_ZOOM, mpvZoom)
+        wrapper.setPropertyDouble(MpvProp.VIDEO_PAN_X, finalPanX.toDouble())
+        wrapper.setPropertyDouble(MpvProp.VIDEO_PAN_Y, finalPanY.toDouble())
         
         _gestureState.update { it.copy(videoZoom = clampedZoom, videoPanX = finalPanX, videoPanY = finalPanY) }
     }
