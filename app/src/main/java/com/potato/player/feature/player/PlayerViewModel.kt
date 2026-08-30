@@ -28,8 +28,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import android.view.SurfaceHolder
@@ -80,7 +78,6 @@ class PlayerViewModel(
     private var myPlaybackGeneration: Int = -1
     
     private var normalPlaybackSpeed = 1.0
-    private var exactSeekJob: Job? = null
 
     // Fix 2 — Drag round-trip suppression.
     // During active slider drag, local dragFraction in PlayerBottomControls drives the UI.
@@ -370,11 +367,8 @@ class PlayerViewModel(
         isDragging = false
         lastDragPositionSec = posSec
         val ms = (posSec * 1000).toLong()
-        // Fix 2: single StateFlow emission on drag end — clears dragPositionSec so
-        // isSeekingFlow returns to false and updateProgressState echo-back resumes.
         _progressState.update { it.copy(dragPositionSec = null) }
         wrapper.seekFast(ms)
-        scheduleExactSeek(ms)
     }
 
     fun onSwipeSeek(positionSec: Double) {
@@ -389,17 +383,9 @@ class PlayerViewModel(
         if (target != null) {
             val ms = (target * 1000).toLong()
             wrapper.seekFast(ms)
-            scheduleExactSeek(ms)
         }
     }
 
-    private fun scheduleExactSeek(ms: Long) {
-        exactSeekJob?.cancel()
-        exactSeekJob = viewModelScope.launch {
-            delay(300)
-            wrapper.seekAccurate(ms)
-        }
-    }
 
     fun setSwipingVolumeOrBrightness(isSwiping: Boolean) {
         _gestureState.update { it.copy(isSwipingVolumeOrBrightness = isSwiping) }

@@ -85,22 +85,20 @@ fun PlayerBottomControls(
 
     val durationString = remember(durationMs) { TimeFormatter.formatMs(durationMs) }
 
-    val onValueChange = remember(durationMs) {
+    val durationMsRef = rememberUpdatedState(durationMs)
+
+    val onValueChange = remember {
         { fraction: Float ->
-            if (dragFraction < 0f) {
-                // First movement of this gesture — notify repository to suppress MPV echo-backs
-                viewModel.onSliderDragStart(progressState.positionSec)
-            }
             dragFraction = fraction
-            val targetMs = (fraction * durationMs).toLong()
+            val targetMs = (fraction * durationMsRef.value).toLong()
             onSeekGesture(targetMs)
         }
     }
 
-    val onValueChangeFinished = remember(durationMs, onSeekCommit) {
+    val onValueChangeFinished = remember(onSeekCommit) {
         {
             val finalFraction = if (dragFraction >= 0f) dragFraction else sliderValue
-            val targetMs = (finalFraction.coerceIn(0f, 1f) * durationMs).toLong()
+            val targetMs = (finalFraction.coerceIn(0f, 1f) * durationMsRef.value).toLong()
             onSeekCommit(targetMs)
             onDragEnd()
             dragFraction = -1f
