@@ -85,6 +85,11 @@ class PlayerViewModel(
     }
 
     private fun handleEngineState(state: PlayerEngineState) {
+        updatePlaybackState(state)
+        updateProgressState(state)
+    }
+
+    private fun updatePlaybackState(state: PlayerEngineState) {
         val isBuffering = state.pausedForCache || state.cacheBufferingState < 100
         _uiState.update { it.copy(
             isPlaying = !state.paused,
@@ -96,7 +101,9 @@ class PlayerViewModel(
             subScale = state.subScale,
             subPos = state.subPos.toInt()
         ) }
-        
+    }
+
+    private fun updateProgressState(state: PlayerEngineState) {
         if (!isSliderSeeking) {
             _progressState.update { it.copy(
                 positionSec = state.positionMs / 1000.0,
