@@ -44,6 +44,7 @@ fun PlayerQuickActions(
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
+                    .defaultMinSize(minWidth = 36.dp)
                     .background(
                         color = Color.White.copy(alpha = 0.15f),
                         shape = RoundedCornerShape(4.dp)

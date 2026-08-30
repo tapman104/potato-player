@@ -33,9 +33,12 @@ import kotlinx.coroutines.withContext
 import android.view.SurfaceHolder
 
 private fun hwdecLabel(mode: String): String = when {
-    mode == "no"                  -> "SW"
-    mode.startsWith("mediacodec") -> if (mode.contains("copy")) "HW+" else "HW"
-    else                          -> "HW+"
+    mode == "no"                    -> "SW"
+    mode == "mediacodec"            -> "HW"
+    mode == "mediacodec-copy"       -> "HW+"
+    mode.startsWith("mediacodec")   -> "HW+"
+    mode.isEmpty()                  -> "HW+"
+    else                            -> "HW"
 }
 
 enum class VideoFitMode { FIT, FILL, STRETCH }
