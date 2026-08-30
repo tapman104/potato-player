@@ -1,33 +1,41 @@
 package com.potato.player.feature.home
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.potato.player.R
+
+// COLORS — hardcoded to match AMOLED theme, no theme dependency needed
+private val PillBackground = Color(0xE81C1C1E)   // ~91% opaque dark grey
+private val PillBorder     = Color(0x1AFFFFFF)   // 10% white border
+private val IconActive     = Color(0xFFFFFFFF)   // full white
+private val IconInactive   = Color(0x66FFFFFF)   // 40% white
+private val ItemActive     = Color(0x1AFFFFFF)   // subtle white wash on active item
+private val DotColor       = Color(0xFFFFFFFF)   // white dot
 
 enum class PillBarTab { FOLDERS, SETTINGS }
 
@@ -40,32 +48,31 @@ fun PotatoPillBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 24.dp, top = 8.dp, end = 24.dp, bottom = 20.dp),
+            .padding(start = 24.dp, top = 8.dp, end = 24.dp, bottom = 32.dp),
         contentAlignment = Alignment.Center
     ) {
         Surface(
-            shape = RoundedCornerShape(40.dp),
-            color = MaterialTheme.colorScheme.surfaceContainer,
-            tonalElevation = 8.dp,
-            shadowElevation = 12.dp,
-            modifier = Modifier.fillMaxWidth()
+            shape = RoundedCornerShape(50.dp),
+            color = PillBackground,
+            tonalElevation = 0.dp,
+            shadowElevation = 0.dp,
+            border = androidx.compose.foundation.BorderStroke(0.5.dp, PillBorder),
+            modifier = Modifier  // wrap content width, not full width
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 10.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 PillBarItem(
                     icon = Icons.Rounded.Folder,
-                    label = "Folders",
+                    contentDescription = "Folders",
                     isSelected = selectedTab == PillBarTab.FOLDERS,
                     onClick = onFoldersClick
                 )
                 PillBarItem(
                     icon = Icons.Rounded.Settings,
-                    label = stringResource(R.string.settings),
+                    contentDescription = "Settings",
                     isSelected = selectedTab == PillBarTab.SETTINGS,
                     onClick = onSettingsClick
                 )
@@ -77,32 +84,55 @@ fun PotatoPillBar(
 @Composable
 private fun PillBarItem(
     icon: ImageVector,
-    label: String,
+    contentDescription: String,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val containerColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent
-    val contentColor = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
+    val iconTint by animateColorAsState(
+        targetValue = if (isSelected) IconActive else IconInactive,
+        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        label = "iconTint"
+    )
+    val itemBg by animateColorAsState(
+        targetValue = if (isSelected) ItemActive else Color.Transparent,
+        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        label = "itemBg"
+    )
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
+    Box(
+        contentAlignment = Alignment.Center,
         modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(containerColor)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 32.dp, vertical = 6.dp)
+            .size(width = 58.dp, height = 51.dp)
+            .clip(RoundedCornerShape(50.dp))
+            .background(itemBg)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            )
     ) {
+        // Icon
         Icon(
             imageVector = icon,
-            contentDescription = label,
-            modifier = Modifier.size(26.dp),
-            tint = contentColor
+            contentDescription = contentDescription,
+            tint = iconTint,
+            modifier = Modifier
+                .size(24.dp)
+                .align(Alignment.Center)
+                // nudge icon up slightly to leave room for dot
+                .padding(bottom = 6.dp)
         )
-        Spacer(Modifier.height(4.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = contentColor
-        )
+
+        // Active dot indicator
+        if (isSelected) {
+            Box(
+                modifier = Modifier
+                    .size(4.dp)
+                    .clip(CircleShape)
+                    .background(DotColor)
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 4.dp) // shift the dot up slightly so it fits inside the Box
+            )
+        }
     }
 }
