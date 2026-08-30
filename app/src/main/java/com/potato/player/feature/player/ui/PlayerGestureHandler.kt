@@ -47,6 +47,8 @@ import kotlin.math.roundToInt
 @Composable
 fun PlayerGestureBox(
     gestureState: PlayerGestureState,
+    currentPositionSec: Double,
+    durationSec: Double,
     viewModel: PlayerViewModel,
     onToggleControls: () -> Unit,
     onBrightnessChange: (Float) -> Unit,
@@ -234,7 +236,7 @@ fun PlayerGestureBox(
     
                             if (!gestureConsumed && totalDx > 12f && totalDx > totalDy * 1.5f) {
                                 gestureConsumed = true
-                                swipeStartSec = viewModel.progressState.value.positionSec
+                                swipeStartSec = currentPositionSec
                                 accumulatedDrag = 0f
                                 onSwipeSeekStart(swipeStartSec)
                             }
@@ -244,7 +246,7 @@ fun PlayerGestureBox(
                                 accumulatedDrag += dx
                                 val seekDelta = (accumulatedDrag / size.width) * 120.0
                                 val target = (swipeStartSec + seekDelta)
-                                    .coerceIn(0.0, viewModel.progressState.value.durationSec)
+                                    .coerceIn(0.0, durationSec)
                                 viewModel.onSwipeSeek(target)
                             }
                         } while (event.changes.any { it.pressed })

@@ -151,6 +151,8 @@ fun PlayerScreen(
             Box(modifier = Modifier.clearAndSetSemantics {}) {
                 PlayerGestureBox(
                     gestureState = gestureState,
+                    currentPositionSec = progressState.positionSec,
+                    durationSec = progressState.durationSec,
                     viewModel = viewModel,
                     onToggleControls = { onUserInteraction() },
                     onBrightnessChange = onBrightnessChange,
