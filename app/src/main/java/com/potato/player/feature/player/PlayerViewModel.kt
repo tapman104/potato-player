@@ -32,6 +32,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import android.view.SurfaceHolder
 
+private fun hwdecLabel(mode: String): String = when {
+    mode == "no"                  -> "SW"
+    mode.startsWith("mediacodec") -> if (mode.contains("copy")) "HW+" else "HW"
+    else                          -> "HW+"
+}
+
 enum class VideoFitMode { FIT, FILL, STRETCH }
 
 class PlayerViewModel(
@@ -96,7 +102,7 @@ class PlayerViewModel(
         _uiState.update { it.copy(
             isPlaying = !state.paused,
             isLoading = it.fileLoaded && isBuffering,
-            hwdecCurrent = state.hwdecActive,
+            hwdecCurrent = if (state.hwdecActive.isNotEmpty()) hwdecLabel(state.hwdecActive) else it.hwdecCurrent,
             videoWidth = state.videoWidth.toInt(),
             videoHeight = state.videoHeight.toInt(),
             playbackSpeed = state.speed,
@@ -281,7 +287,7 @@ class PlayerViewModel(
 
     fun setDecoder(mode: String) {
         if (!isActive.get()) return
-        val hwdec = when (mode) { "no" -> "SW"; "mediacodec" -> "HW"; else -> "HW+" }
+        val hwdec = hwdecLabel(mode)
         _uiState.update { it.copy(hwdecCurrent = hwdec) }
         wrapper.setDecoder(mode)
     }
