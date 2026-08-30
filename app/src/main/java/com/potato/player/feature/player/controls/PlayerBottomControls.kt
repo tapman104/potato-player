@@ -25,19 +25,19 @@ import androidx.compose.ui.unit.sp
 import android.os.Build
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.potato.player.util.TimeFormatter
 
-import com.potato.player.feature.player.state.PlaybackProgressState
+import com.potato.player.feature.player.PlayerViewModel
 import com.potato.player.feature.player.VideoFitMode
 
 @Composable
 fun PlayerBottomControls(
-    progressState: PlaybackProgressState,
+    viewModel: PlayerViewModel,
     isAutoRotation: Boolean = false,
     currentFitMode: VideoFitMode = VideoFitMode.FIT,
     onSeekGesture: (Long) -> Unit,    // called continuously during drag
     onSeekCommit: (Long) -> Unit,     // called once on finger lift
-    onDragStart: () -> Unit,          // tells repository to suppress echo-backs
     onDragEnd: () -> Unit,            // tells repository to re-enable echo-backs
     onToggleAutoRotation: () -> Unit = {},
     onToggleFitMode: () -> Unit = {},
@@ -52,6 +52,8 @@ fun PlayerBottomControls(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
+    val progressState by viewModel.progressState.collectAsStateWithLifecycle()
+
     val currentPositionMs = (progressState.positionSec * 1000.0).toLong()
     val durationMs = (progressState.durationSec * 1000.0).toLong()
     val cachedPositionMs = (progressState.cachedSec * 1000.0).toLong()
@@ -70,7 +72,7 @@ fun PlayerBottomControls(
 
     LaunchedEffect(isDragged) {
         if (isDragged && dragFraction < 0f) {
-            onDragStart()
+            viewModel.onSliderDragStart(progressState.positionSec)
         }
     }
 
@@ -83,11 +85,11 @@ fun PlayerBottomControls(
 
     val durationString = remember(durationMs) { TimeFormatter.formatMs(durationMs) }
 
-    val onValueChange = remember {
+    val onValueChange = remember(durationMs) {
         { fraction: Float ->
             if (dragFraction < 0f) {
                 // First movement of this gesture — notify repository to suppress MPV echo-backs
-                onDragStart()
+                viewModel.onSliderDragStart(progressState.positionSec)
             }
             dragFraction = fraction
             val targetMs = (fraction * durationMs).toLong()
@@ -95,7 +97,7 @@ fun PlayerBottomControls(
         }
     }
 
-    val onValueChangeFinished = remember {
+    val onValueChangeFinished = remember(durationMs, onSeekCommit) {
         {
             val finalFraction = if (dragFraction >= 0f) dragFraction else sliderValue
             val targetMs = (finalFraction.coerceIn(0f, 1f) * durationMs).toLong()

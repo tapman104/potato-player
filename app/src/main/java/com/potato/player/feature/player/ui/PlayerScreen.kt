@@ -55,7 +55,7 @@ fun PlayerScreen(
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val progressState by viewModel.progressState.collectAsStateWithLifecycle()
+    val isSeeking by viewModel.isSeekingFlow.collectAsStateWithLifecycle()
     val gestureState by viewModel.gestureState.collectAsStateWithLifecycle()
     val activeDialog by viewModel.dialogState.activeDialog.collectAsStateWithLifecycle()
     val currentPlaylistIndex by viewModel.playlistManager.currentIndex.collectAsStateWithLifecycle()
@@ -87,7 +87,6 @@ fun PlayerScreen(
     val swipeSeekTargetSec = gestureState.swipeSeekTargetSec
     var swipeDragStartSec by remember { mutableStateOf(0.0) }
     
-    val isSeeking = progressState.dragPositionSec != null
 
     val (controlsVisible, onUserInteraction) = rememberControlsVisibility(
         isPlaying = uiState.isPlaying,
@@ -152,8 +151,6 @@ fun PlayerScreen(
             Box(modifier = Modifier.clearAndSetSemantics {}) {
                 PlayerGestureBox(
                     gestureState = gestureState,
-                    currentPositionSec = progressState.positionSec,
-                    durationSec = progressState.durationSec,
                     viewModel = viewModel,
                     onToggleControls = { onUserInteraction() },
                     onBrightnessChange = onBrightnessChange,
@@ -235,7 +232,7 @@ fun PlayerScreen(
                 isLocked = uiState.isLocked,
                 showLockButton = uiState.lockButtonEnabled,
                 swipeSeekTargetSec = swipeSeekTargetSec,
-                progressState = progressState,
+                viewModel = viewModel,
                 isAutoRotation = uiState.isAutoRotation,
                 currentFitMode = uiState.fitMode,
                 hasPrevious = currentPlaylistIndex > 0,
@@ -243,7 +240,6 @@ fun PlayerScreen(
                                     currentPlaylistIndex < currentPlaylist.size - 1,
                 onSeekGesture = { ms -> viewModel.onSliderDragChange(ms / 1000.0) },
                 onSeekCommit = { ms -> viewModel.onSliderDragEnd(ms / 1000.0) },
-                onDragStart = { viewModel.onSliderDragStart(progressState.positionSec) },
                 onToggleAutoRotation = { viewModel.toggleAutoRotation() },
                 onToggleFitMode = { viewModel.cycleFitMode() },
                 onEnterPip = { enterPip(activity) },
@@ -335,14 +331,13 @@ private fun PlayerBottomContainer(
     isLocked: Boolean,
     showLockButton: Boolean,
     swipeSeekTargetSec: Double?,
-    progressState: PlaybackProgressState,
+    viewModel: PlayerViewModel,
     isAutoRotation: Boolean,
     currentFitMode: VideoFitMode,
     hasPrevious: Boolean,
     hasNext: Boolean,
     onSeekGesture: (Long) -> Unit,
     onSeekCommit: (Long) -> Unit,
-    onDragStart: () -> Unit,
     onToggleAutoRotation: () -> Unit,
     onToggleFitMode: () -> Unit,
     onEnterPip: () -> Unit,
@@ -359,13 +354,12 @@ private fun PlayerBottomContainer(
             .systemBarsPadding()
     ) {
         PlayerBottomControls(
-            progressState        = progressState,
+            viewModel            = viewModel,
             isAutoRotation       = isAutoRotation,
             currentFitMode       = currentFitMode,
             contentPadding       = WindowInsets.displayCutout.asPaddingValues(),
             onSeekGesture        = onSeekGesture,
             onSeekCommit         = onSeekCommit,
-            onDragStart          = onDragStart,
             onDragEnd            = { /* already handled inside onSeekCommit path */ },
             onToggleAutoRotation = onToggleAutoRotation,
             onToggleFitMode      = onToggleFitMode,

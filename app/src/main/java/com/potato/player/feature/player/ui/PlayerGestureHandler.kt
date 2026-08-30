@@ -37,6 +37,7 @@ import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.potato.player.feature.player.controls.DoubleTapSeekState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -47,8 +48,6 @@ import kotlin.math.roundToInt
 @Composable
 fun PlayerGestureBox(
     gestureState: PlayerGestureState,
-    currentPositionSec: Double,
-    durationSec: Double,
     viewModel: PlayerViewModel,
     onToggleControls: () -> Unit,
     onBrightnessChange: (Float) -> Unit,
@@ -60,6 +59,10 @@ fun PlayerGestureBox(
     activity: Activity?,
     gesturesEnabled: Boolean
 ) {
+    val progressState by viewModel.progressState.collectAsStateWithLifecycle()
+    val currentPositionSec = progressState.positionSec
+    val durationSec = progressState.durationSec
+
     var isLongPressActive by remember { mutableStateOf(false) }
 
     var brightnessLevel by remember {
