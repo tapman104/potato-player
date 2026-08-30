@@ -5,13 +5,18 @@ import android.util.Log
 import android.view.Surface
 import `is`.xyz.mpv.MPVLib
 import `is`.xyz.mpv.MPVNode
-import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 
 // ---------------------------------------------------------------------------
@@ -46,23 +51,24 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
     //     FILE_LOADED, END_FILE, PLAYBACK_RESTART must never be lost.
     //     Capacity = 16 is more than enough; these arrive infrequently.
     //
-    //   propertyEvents — SharedFlow with DROP_OLDEST.
+    //   engineState — StateFlow.
     //     time-pos, speed, cache arrive many times per second. It is safe and
     //     desirable to drop stale values; only the latest matters.
     //
     // The upper layer (MpvEventProcessor) merges both streams.
 
-    private val _lifecycleEvents = Channel<MpvEvent.Lifecycle>(
-        capacity       = 16,
-        onBufferOverflow = BufferOverflow.SUSPEND   // backpressure, never drop
-    )
+    // Relay: unbounded, trySend never fails
+    private val _lifecycleRelay = Channel<MpvEvent.Lifecycle>(Channel.UNLIMITED)
+
+    // What callers observe — rendezvous (or small buffer), send() is suspending
+    private val _lifecycleEvents = Channel<MpvEvent.Lifecycle>(16)
     val lifecycleEvents: Flow<MpvEvent.Lifecycle> = _lifecycleEvents.receiveAsFlow()
 
-    private val _propertyEvents = MutableSharedFlow<MpvEvent.Property>(
-        extraBufferCapacity = 64,
-        onBufferOverflow    = BufferOverflow.DROP_OLDEST
-    )
-    val propertyEvents: SharedFlow<MpvEvent.Property> = _propertyEvents.asSharedFlow()
+    private val _engineState = MutableStateFlow(PlayerEngineState())
+    val engineState: StateFlow<PlayerEngineState> = _engineState.asStateFlow()
+
+    /** Dispatcher coroutine — started in init, cancelled in destroy() */
+    private val relayScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -73,6 +79,12 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
         configurator.initOptions(appContext)
         MPVLib.init()
         configurator.registerPropertyObservers()
+
+        relayScope.launch {
+            for (event in _lifecycleRelay) {
+                _lifecycleEvents.send(event)   // suspending — never drops
+            }
+        }
     }
 
     private val destroyed = AtomicBoolean(false)
@@ -90,6 +102,9 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
         MPVLib.detachSurface()
         MPVLib.removeObserver(this)
         MPVLib.destroy()
+
+        relayScope.cancel()
+        _lifecycleRelay.close()
         _lifecycleEvents.close()
     }
 
@@ -266,44 +281,36 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
     }
 
     override fun eventProperty(name: String, value: Boolean) {
-        val event = when (name) {
-            MpvProp.PAUSE -> MpvEvent.Property.Paused(value)
-            else          -> MpvEvent.Property.Unknown(name)
+        when (name) {
+            MpvProp.PAUSE -> _engineState.update { it.copy(paused = value) }
         }
-        _propertyEvents.tryEmit(event)
     }
 
     override fun eventProperty(name: String, value: Double) {
         val msLong = (value * 1000).toLong()
-        val event = when (name) {
-            MpvProp.TIME_POS             -> MpvEvent.Property.Position(msLong)
-            MpvProp.DURATION             -> MpvEvent.Property.Duration(msLong)
-            MpvProp.DEMUXER_CACHE_TIME   -> MpvEvent.Property.CacheTime(msLong)
-            MpvProp.DEMUXER_CACHE_DURATION -> MpvEvent.Property.CacheTime(msLong)
-            MpvProp.SPEED                -> MpvEvent.Property.Speed(value)
-            MpvProp.SUB_SCALE            -> MpvEvent.Property.SubScale(value)
-            else                         -> MpvEvent.Property.Unknown(name)
+        when (name) {
+            MpvProp.TIME_POS             -> _engineState.update { it.copy(positionMs = msLong) }
+            MpvProp.DURATION             -> _engineState.update { it.copy(durationMs = msLong) }
+            MpvProp.DEMUXER_CACHE_TIME   -> _engineState.update { it.copy(cacheTimeMs = msLong) }
+            MpvProp.DEMUXER_CACHE_DURATION -> _engineState.update { it.copy(cacheDurMs = msLong) }
+            MpvProp.SPEED                -> _engineState.update { it.copy(speed = value) }
+            MpvProp.SUB_SCALE            -> _engineState.update { it.copy(subScale = value) }
         }
-        _propertyEvents.tryEmit(event)
     }
 
     override fun eventProperty(name: String, value: Long) {
-        val event = when (name) {
-            MpvProp.SUB_POS       -> MpvEvent.Property.SubPos(value)
-            MpvProp.VIDEO_PARAMS_W -> MpvEvent.Property.VideoWidth(value)
-            MpvProp.VIDEO_PARAMS_H -> MpvEvent.Property.VideoHeight(value)
-            else                   -> MpvEvent.Property.Unknown(name)
+        when (name) {
+            MpvProp.SUB_POS       -> _engineState.update { it.copy(subPos = value) }
+            MpvProp.VIDEO_PARAMS_W -> _engineState.update { it.copy(videoWidth = value) }
+            MpvProp.VIDEO_PARAMS_H -> _engineState.update { it.copy(videoHeight = value) }
         }
-        _propertyEvents.tryEmit(event)
     }
 
     override fun eventProperty(name: String, value: String) {
-        val event = when (name) {
-            MpvProp.TRACK_LIST    -> MpvEvent.Property.TrackList(value)
-            MpvProp.HWDEC_CURRENT -> MpvEvent.Property.HwdecActive(value)
-            else                   -> MpvEvent.Property.Unknown(name)
+        when (name) {
+            MpvProp.TRACK_LIST    -> _engineState.update { it.copy(trackListJson = value) }
+            MpvProp.HWDEC_CURRENT -> _engineState.update { it.copy(hwdecActive = value) }
         }
-        _propertyEvents.tryEmit(event)
     }
 
     override fun eventProperty(name: String, value: MPVNode) {
@@ -317,9 +324,7 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver {
             MpvEventId.PLAYBACK_RESTART -> MpvEvent.Lifecycle.PlaybackRestart
             else                        -> MpvEvent.Lifecycle.Unknown(eventId)
         }
-        // trySend on a Channel with SUSPEND overflow; will succeed unless the
-        // consumer is catastrophically backed up (16-slot buffer).
-        _lifecycleEvents.trySend(lifecycle)
+        _lifecycleRelay.trySend(lifecycle)
     }
 
     companion object { private const val TAG = "MpvWrapper" }
