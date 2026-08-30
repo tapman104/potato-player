@@ -44,6 +44,7 @@ class PlayerViewModel(
     val playlistManager = PlaylistManager()
     val trackManager by lazy { TrackManager(prefsRepository, viewModelScope) }
     val geometryManager = VideoGeometryManager(wrapper)
+    val sessionManager by lazy { PlaybackSessionManager(historyManager, trackManager, viewModelScope) }
 
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
@@ -55,15 +56,9 @@ class PlayerViewModel(
     val gestureState: StateFlow<PlayerGestureState> = _gestureState.asStateFlow()
 
     private val isActive = java.util.concurrent.atomic.AtomicBoolean(true)
-    private var pendingUri: String? = null
     private var mySurface: android.view.Surface? = null
 
-    private var pendingSeekPosition: Long = 0L
-
     private var wasPlayingBeforePause: Boolean = false
-
-    private var currentUri = ""
-    private var currentTitle = ""
     private var myPlaybackGeneration: Int = -1
     
     private var normalPlaybackSpeed = 1.0
@@ -139,8 +134,8 @@ class PlayerViewModel(
     fun handleSurfaceReady(surface: android.view.Surface) {
         mySurface = surface
         wrapper.attachSurface(surface)
-        val uri = pendingUri ?: return
-        pendingUri = null
+        val uri = sessionManager.pendingUri ?: return
+        sessionManager.pendingUri = null
         wrapper.loadFile(uri)
     }
 
@@ -151,19 +146,9 @@ class PlayerViewModel(
         }
     }
 
-    private var lastLoadedUri: String? = null
-
     fun prepareUri(defaultUri: String, defaultTitle: String = "") {
-        if (lastLoadedUri == defaultUri) return
-        lastLoadedUri = defaultUri
-
-        viewModelScope.launch(Dispatchers.IO) {
-            val history = historyManager.getByUri(defaultUri)
-            val resumePos = if (history != null && history.lastPlayedPositionSec > 0)
-                (history.lastPlayedPositionSec * 1000).toLong() else 0L
-            withContext(Dispatchers.Main) {
-                executeLoadFile(defaultUri, defaultTitle, resumePos)
-            }
+        sessionManager.prepareUri(defaultUri, defaultTitle) { u, t, pos ->
+            executeLoadFile(u, t, pos)
         }
     }
 
@@ -173,24 +158,23 @@ class PlayerViewModel(
     }
 
     private fun executeLoadFile(uri: String, title: String, resumePosition: Long) {
-        lastLoadedUri = uri
-        currentUri = uri
-        currentTitle = title
-        trackManager.resetAutoSubApplied()
-        val initialName = if (title.isNotBlank()) title else "Video"
-        _uiState.update { it.copy(fileName = initialName, isLoading = true, isPlaying = false, fileLoaded = false, error = null) }
-        if (title.isBlank()) {
-            viewModelScope.launch {
-                val resolvedName = MediaMetadataRepository.resolveFileName(appContext, uri)
-                _uiState.update { it.copy(fileName = resolvedName) }
-            }
-        }
-        pendingSeekPosition = resumePosition
-        if (mySurface != null) {
-            wrapper.loadFile(uri)
-        } else {
-            pendingUri = uri
-        }
+        sessionManager.executeLoadFile(
+            uri = uri,
+            title = title,
+            resumePosition = resumePosition,
+            hasSurface = mySurface != null,
+            onStateUpdate = { _, _ -> },
+            onUiInitial = { initialName ->
+                _uiState.update { it.copy(fileName = initialName, isLoading = true, isPlaying = false, fileLoaded = false, error = null) }
+            },
+            onResolveFileName = { u ->
+                viewModelScope.launch {
+                    val resolvedName = MediaMetadataRepository.resolveFileName(appContext, u)
+                    _uiState.update { it.copy(fileName = resolvedName) }
+                }
+            },
+            onLoadFile = { u -> wrapper.loadFile(u) }
+        )
     }
 
     fun togglePlay() {
@@ -199,30 +183,40 @@ class PlayerViewModel(
     }
     
     private fun handleFileLoaded() {
-        _uiState.update { it.copy(fileLoaded = true, isLoading = false, fitMode = VideoFitMode.FIT) }
-        if (pendingSeekPosition > 0L) {
-            wrapper.seekAccurate(pendingSeekPosition)
-            pendingSeekPosition = 0L
-        }
-        loadTracks()
-        viewModelScope.launch {
-            applyPreferredSubtitleTrack()
-        }
+        sessionManager.handleFileLoaded(
+            onUiUpdate = {
+                _uiState.update { it.copy(fileLoaded = true, isLoading = false, fitMode = VideoFitMode.FIT) }
+            },
+            onSeekIfNeeded = { pos -> wrapper.seekAccurate(pos) },
+            onTracksLoaded = {
+                loadTracks()
+                viewModelScope.launch {
+                    applyPreferredSubtitleTrack()
+                }
+            }
+        )
     }
 
     private fun handleEndFile(reason: Int) {
-        if (reason == 3) {
-            _uiState.update { it.copy(isPlaying = false, error = "Playback error") }
-        } else if (reason == 0) {
-            _uiState.update { it.copy(isPlaying = false) }
-            saveHistoryIfNeeded()
-            if (_uiState.value.isFastForwarding) {
-                _uiState.update { it.copy(isFastForwarding = false) }
-                wrapper.setSpeed(normalPlaybackSpeed)
+        sessionManager.handleEndFile(
+            reason = reason,
+            onUiError = {
+                _uiState.update { it.copy(isPlaying = false, error = "Playback error") }
+            },
+            onUiNormalEnd = {
+                _uiState.update { it.copy(isPlaying = false) }
+            },
+            onSaveHistory = { saveHistoryIfNeeded() },
+            onUiOther = {
+                _uiState.update { it.copy(isPlaying = false) }
+            },
+            onResetFastForward = {
+                if (_uiState.value.isFastForwarding) {
+                    _uiState.update { it.copy(isFastForwarding = false) }
+                    wrapper.setSpeed(normalPlaybackSpeed)
+                }
             }
-        } else {
-            _uiState.update { it.copy(isPlaying = false) }
-        }
+        )
     }
 
     private fun handlePlaybackRestart() {
@@ -373,8 +367,8 @@ class PlayerViewModel(
     fun dismissDialog() = dialogState.dismiss()
 
     private fun saveHistoryIfNeeded() = historyManager.save(
-        uri = currentUri,
-        title = currentTitle,
+        uri = sessionManager.currentUri,
+        title = sessionManager.currentTitle,
         lastPlayedPositionSec = _progressState.value.positionSec,
         durationSec = _progressState.value.durationSec,
         lastAudioTrackId = trackManager.trackState.value.currentAudioTrackId,
