@@ -1,6 +1,8 @@
 package com.potato.player.feature.player.controls
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AudioFile
 import androidx.compose.material.icons.filled.MoreVert
@@ -39,12 +41,22 @@ fun PlayerQuickActions(
             Icon(Icons.Default.Subtitles,  contentDescription = "Subtitles",   tint = Color.White)
         }
         IconButton(onClick = onSelectDecoder,  modifier = buttonModifier) {
-            Text(
-                text = currentDecoder,
-                color = Color.White,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .background(
+                        color = Color.White.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    text = currentDecoder,
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
         IconButton(onClick = onMoreOptions, modifier = buttonModifier) {
             Icon(Icons.Default.MoreVert, contentDescription = "More options", tint = Color.White)
