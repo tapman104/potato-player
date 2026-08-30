@@ -29,7 +29,7 @@ class VideoGeometryManager(private val wrapper: MpvWrapper) {
     }
 
     fun setVideoZoom(zoom: Float, panX: Float, panY: Float, onGestureStateUpdate: (panX: Float, panY: Float, zoom: Float) -> Unit) {
-        val clampedZoom = zoom.coerceIn(1.0f, 4.0f)
+        val clampedZoom = zoom.coerceIn(0.5f, 5.0f)
         val finalPanX = if (clampedZoom == 1.0f) 0f else panX
         val finalPanY = if (clampedZoom == 1.0f) 0f else panY
         

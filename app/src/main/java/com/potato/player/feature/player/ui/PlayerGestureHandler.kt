@@ -123,9 +123,9 @@ fun PlayerGestureBox(
                                 val pan = e2.calculatePan()
                                 e2.changes.forEach { it.consume() }
 
-                                currentZoom = (currentZoom * zoom).coerceIn(1.0f, 5.0f)
-                                val maxPanX = (currentZoom - 1f) * 0.5f
-                                val maxPanY = (currentZoom - 1f) * 0.5f
+                                currentZoom = (currentZoom * zoom).coerceIn(0.5f, 5.0f)
+                                val maxPanX = ((currentZoom - 1f) * 0.5f).coerceAtLeast(0f)
+                                val maxPanY = ((currentZoom - 1f) * 0.5f).coerceAtLeast(0f)
                                 currentPanX = (currentPanX + pan.x / size.width).coerceIn(-maxPanX, maxPanX)
                                 currentPanY = (currentPanY + pan.y / size.height).coerceIn(-maxPanY, maxPanY)
                                 viewModel.setVideoZoom(currentZoom, currentPanX, currentPanY)
@@ -177,8 +177,8 @@ fun PlayerGestureBox(
                                 val dx = change.positionChange().x
                                 change.consume()
                                 if (isPanGesture) {
-                                    val maxPanX = (currentZoom - 1f) * 0.5f
-                                    val maxPanY = (currentZoom - 1f) * 0.5f
+                                    val maxPanX = ((currentZoom - 1f) * 0.5f).coerceAtLeast(0f)
+                                    val maxPanY = ((currentZoom - 1f) * 0.5f).coerceAtLeast(0f)
                                     currentPanX = (currentPanX + dx / size.width).coerceIn(-maxPanX, maxPanX)
                                     currentPanY = (currentPanY + dy / size.height).coerceIn(-maxPanY, maxPanY)
                                     viewModel.setVideoZoom(currentZoom, currentPanX, currentPanY)

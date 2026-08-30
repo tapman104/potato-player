@@ -115,14 +115,14 @@ fun ZoomIndicator(
     visible: Boolean,
     modifier: Modifier = Modifier
 ) {
-    if (visible && zoom > 1.0f) {
+    if (visible && zoom != 1.0f) {
         Box(
             modifier = modifier
                 .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
                 .padding(horizontal = 12.dp, vertical = 4.dp)
         ) {
             Text(
-                text = String.format(Locale.US, "%.1fx", zoom),
+                text = String.format(Locale.US, "%d%%", (zoom * 100).toInt()),
                 color = Color.White,
                 fontSize = 14.sp
             )
