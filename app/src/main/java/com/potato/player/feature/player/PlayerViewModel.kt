@@ -82,6 +82,13 @@ class PlayerViewModel(
     private var normalPlaybackSpeed = 1.0
     private var exactSeekJob: Job? = null
 
+    // Fix 2 — Drag round-trip suppression.
+    // During active slider drag, local dragFraction in PlayerBottomControls drives the UI.
+    // We must NOT emit to _progressState on every frame — that causes a redundant recomposition.
+    // We only commit once, on drag end.
+    private var isDragging = false
+    private var lastDragPositionSec = 0.0
+
     private val engineEventHandler by lazy { EngineEventHandler(wrapper, prefsRepository, viewModelScope) }
 
     init {
@@ -345,17 +352,26 @@ class PlayerViewModel(
     }
 
     fun onSliderDragStart(posSec: Double) {
+        isDragging = true
+        lastDragPositionSec = posSec
         _progressState.update { it.copy(dragPositionSec = posSec) }
     }
 
     fun onSliderDragChange(posSec: Double) {
         if (!isActive.get()) return
-        _progressState.update { it.copy(dragPositionSec = posSec) }
+        lastDragPositionSec = posSec
+        // Fix 2: do NOT emit to _progressState during active drag.
+        // Local dragFraction state in PlayerBottomControls already drives the slider display.
+        // Emitting here would cause a redundant recomposition on every drag frame.
     }
 
     fun onSliderDragEnd(posSec: Double) {
         if (!isActive.get()) return
+        isDragging = false
+        lastDragPositionSec = posSec
         val ms = (posSec * 1000).toLong()
+        // Fix 2: single StateFlow emission on drag end — clears dragPositionSec so
+        // isSeekingFlow returns to false and updateProgressState echo-back resumes.
         _progressState.update { it.copy(dragPositionSec = null) }
         wrapper.seekFast(ms)
         scheduleExactSeek(ms)

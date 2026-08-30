@@ -86,7 +86,6 @@ fun PlayerScreen(
     var doubleTapSeekState by remember { mutableStateOf<DoubleTapSeekState?>(null) }
     val swipeSeekTargetSec = gestureState.swipeSeekTargetSec
     var swipeDragStartSec by remember { mutableStateOf(0.0) }
-    
 
     val (controlsVisible, onUserInteraction) = rememberControlsVisibility(
         isPlaying = uiState.isPlaying,
@@ -98,6 +97,34 @@ fun PlayerScreen(
         isPipMode = activity?.isInPictureInPictureMode == true,
         swipeSeekTargetSec = swipeSeekTargetSec
     )
+
+    // Fix 4 — Stable lambdas: wrap each single-ViewModel-call lambda in remember(viewModel)
+    // so recomposition doesn't allocate new instances on every frame.
+    val onSelectAudioTrack    = remember(viewModel) { { viewModel.showDialog(ActiveDialog.Audio) } }
+    val onSelectSubtitleTrack = remember(viewModel) { { viewModel.showDialog(ActiveDialog.Subtitle) } }
+    val onSelectDecoder       = remember(viewModel) { { viewModel.showDialog(ActiveDialog.Decoder) } }
+    val onTogglePlay          = remember(viewModel) { { viewModel.togglePlay() } }
+    val onToggleLock          = remember(viewModel) { { viewModel.toggleLock() } }
+    val onToggleAutoRotation  = remember(viewModel) { { viewModel.toggleAutoRotation() } }
+    val onToggleFitMode       = remember(viewModel) { { viewModel.cycleFitMode() } }
+    val onEnterPip            = remember(viewModel, activity) { { enterPip(activity) } }
+    val onPrevious            = remember(viewModel) { { viewModel.playPrevious() } }
+    val onNext                = remember(viewModel) { { viewModel.playNext() } }
+    val onSeekGesture         = remember(viewModel) { { ms: Long -> viewModel.onSliderDragChange(ms / 1000.0) } }
+    val onSeekCommit          = remember(viewModel) { { ms: Long -> viewModel.onSliderDragEnd(ms / 1000.0) } }
+    val onVolumeChange        = remember(viewModel) { { v: Int -> viewModel.setVolume(v) } }
+    // onBack: captures isExternalIntent (stable param) + activity (stable remembered) + onBack param
+    val onBackStable          = remember(viewModel, activity, isExternalIntent, onBack) {
+        {
+            if (isExternalIntent) {
+                activity?.finish()
+            } else {
+                onBack()
+            }
+            Unit
+        }
+    }
+    // onMoreOptions: reads activeDialog (changes) — cannot be wrapped in remember(viewModel); left inline below
 
 
     // Clear double-tap seek overlay after animation
@@ -154,7 +181,7 @@ fun PlayerScreen(
                     viewModel = viewModel,
                     onToggleControls = { onUserInteraction() },
                     onBrightnessChange = onBrightnessChange,
-                    onVolumeChange = { viewModel.setVolume(it) },
+                    onVolumeChange = onVolumeChange,
                     fileLoaded = uiState.fileLoaded,
                     doubleTapSeekState = doubleTapSeekState,
                     onDoubleTapSeekState = { doubleTapSeekState = it },
@@ -177,12 +204,13 @@ fun PlayerScreen(
         )
 
         // ── Top Hold for 2x Fast-Forward Banner ──────────────────────────────
+        // Fix 5: controlsVisible-dependent padding moved inside PlayerHoldToFastForwardContainer
+        // so PlayerScreen body has zero reads of controlsVisible outside param pass-throughs.
         if (!(activity?.isInPictureInPictureMode == true)) {
-            HoldToFastForward(
+            PlayerHoldToFastForwardContainer(
                 visible = uiState.isFastForwarding,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = if (controlsVisible) 72.dp else 36.dp)
+                controlsVisible = controlsVisible,
+                modifier = Modifier.align(Alignment.TopCenter)
             )
         }
 
@@ -199,17 +227,12 @@ fun PlayerScreen(
                 swipeSeekTargetSec = swipeSeekTargetSec,
                 fileName = uiState.fileName,
                 hwdecCurrent = uiState.hwdecCurrent,
-                onBack = {
-                    if (isExternalIntent) {
-                        activity?.finish()
-                    } else {
-                        onBack()
-                    }
-                },
-                onSelectAudioTrack = { viewModel.showDialog(ActiveDialog.Audio) },
-                onSelectSubtitleTrack = { viewModel.showDialog(ActiveDialog.Subtitle) },
-                onSelectDecoder = { viewModel.showDialog(ActiveDialog.Decoder) },
-                onMoreOptions = { 
+                onBack = onBackStable,
+                onSelectAudioTrack = onSelectAudioTrack,
+                onSelectSubtitleTrack = onSelectSubtitleTrack,
+                onSelectDecoder = onSelectDecoder,
+                onMoreOptions = {
+                    // reads activeDialog (changing state) — cannot be stable-wrapped
                     if (activeDialog == ActiveDialog.MoreMenu) viewModel.dismissDialog()
                     else viewModel.showDialog(ActiveDialog.MoreMenu)
                 },
@@ -222,7 +245,7 @@ fun PlayerScreen(
                 isLocked = uiState.isLocked,
                 swipeSeekTargetSec = swipeSeekTargetSec,
                 isPlaying = uiState.isPlaying,
-                onTogglePlay = viewModel::togglePlay,
+                onTogglePlay = onTogglePlay,
                 modifier = Modifier.align(Alignment.Center)
             )
 
@@ -238,14 +261,14 @@ fun PlayerScreen(
                 hasPrevious = currentPlaylistIndex > 0,
                 hasNext = currentPlaylistIndex >= 0 &&
                                     currentPlaylistIndex < currentPlaylist.size - 1,
-                onSeekGesture = { ms -> viewModel.onSliderDragChange(ms / 1000.0) },
-                onSeekCommit = { ms -> viewModel.onSliderDragEnd(ms / 1000.0) },
-                onToggleAutoRotation = { viewModel.toggleAutoRotation() },
-                onToggleFitMode = { viewModel.cycleFitMode() },
-                onEnterPip = { enterPip(activity) },
-                onToggleLock = { viewModel.toggleLock() },
-                onPrevious = { viewModel.playPrevious() },
-                onNext = { viewModel.playNext() },
+                onSeekGesture = onSeekGesture,
+                onSeekCommit = onSeekCommit,
+                onToggleAutoRotation = onToggleAutoRotation,
+                onToggleFitMode = onToggleFitMode,
+                onEnterPip = onEnterPip,
+                onToggleLock = onToggleLock,
+                onPrevious = onPrevious,
+                onNext = onNext,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
@@ -267,6 +290,20 @@ fun PlayerScreen(
             )
         }
     }
+}
+
+// Fix 5 — HoldToFastForward wrapper that owns the controlsVisible-dependent padding.
+// PlayerScreen body passes controlsVisible as a parameter; the Dp calculation stays here.
+@Composable
+private fun PlayerHoldToFastForwardContainer(
+    visible: Boolean,
+    controlsVisible: Boolean,
+    modifier: Modifier = Modifier
+) {
+    HoldToFastForward(
+        visible = visible,
+        modifier = modifier.padding(top = if (controlsVisible) 72.dp else 36.dp)
+    )
 }
 
 @Composable
