@@ -19,7 +19,7 @@ fun PlayerModals(
     onLaunchFilePicker: () -> Unit
 ) {
     val context = LocalContext.current
-    val activeDialog by viewModel.dialogState.activeDialog.collectAsStateWithLifecycle()
+    val activeDialog by viewModel.activeDialog.collectAsStateWithLifecycle()
     val trackState by viewModel.trackManager.trackState.collectAsStateWithLifecycle()
 
     PlayerDecoderDialog(

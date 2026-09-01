@@ -13,7 +13,6 @@ import com.potato.player.feature.home.FolderScreen
 import com.potato.player.feature.home.HomeScreen
 import com.potato.player.feature.player.ui.PlayerScreen
 import com.potato.player.feature.player.PlayerViewModel
-import com.potato.player.feature.player.PlayerViewModelFactory
 import com.potato.player.feature.settings.SettingsScreen
 import android.content.pm.ActivityInfo
 import com.potato.player.util.findActivity
@@ -149,7 +148,12 @@ fun AppNavigation(
             }
 
             val playerViewModel: PlayerViewModel = viewModel(
-                factory = PlayerViewModelFactory(context.applicationContext, wrapper, historyRepository)
+                factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return PlayerViewModel(context.applicationContext, wrapper, historyRepository) as T
+                    }
+                }
             )
 
             PlayerScreen(

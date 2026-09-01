@@ -57,7 +57,7 @@ fun PlayerScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isSeeking by viewModel.isSeekingFlow.collectAsStateWithLifecycle()
     val gestureState by viewModel.gestureState.collectAsStateWithLifecycle()
-    val activeDialog by viewModel.dialogState.activeDialog.collectAsStateWithLifecycle()
+    val activeDialog by viewModel.activeDialog.collectAsStateWithLifecycle()
     val currentPlaylistIndex by viewModel.playlistManager.currentIndex.collectAsStateWithLifecycle()
     val currentPlaylist by viewModel.playlistManager.playlist.collectAsStateWithLifecycle()
 

@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.potato.player.data.UserPreferencesRepository
+import com.potato.player.data.VideoHistoryRepository
 import com.potato.player.engine.MpvWrapper
 import com.potato.player.engine.MpvEvent
 import com.potato.player.engine.MpvProp
@@ -37,12 +38,15 @@ enum class VideoFitMode { FIT, FILL, STRETCH }
 class PlayerViewModel(
     private val appContext: Context,
     private val wrapper: MpvWrapper,
-    private val historyManager: PlaybackHistoryManager
+    private val historyRepository: VideoHistoryRepository
 ) : ViewModel() {
 
     private val prefsRepository by lazy { UserPreferencesRepository(appContext) }
+    private val historyManager by lazy { PlaybackHistoryManager(historyRepository, viewModelScope) }
     
-    val dialogState = DialogStateHolder()
+    private val _activeDialog = MutableStateFlow<ActiveDialog>(ActiveDialog.None)
+    val activeDialog: StateFlow<ActiveDialog> = _activeDialog.asStateFlow()
+
     val playlistManager = PlaylistManager()
     val trackManager by lazy { TrackManager(prefsRepository, viewModelScope) }
     val geometryManager = VideoGeometryManager(wrapper)
@@ -416,8 +420,8 @@ class PlayerViewModel(
         pos = UserPreferencesRepository.DEFAULT_SUB_POS
     )
 
-    fun showDialog(dialog: ActiveDialog) = dialogState.show(dialog)
-    fun dismissDialog() = dialogState.dismiss()
+    fun showDialog(dialog: ActiveDialog) { _activeDialog.value = dialog }
+    fun dismissDialog() { _activeDialog.value = ActiveDialog.None }
 
     private fun saveHistoryIfNeeded() = historyManager.save(
         uri = sessionManager.currentUri,
@@ -472,14 +476,5 @@ class PlayerViewModel(
     }
 
 
-    companion object {
-        private val LANG_ALIASES = mapOf(
-            "eng" to setOf("eng", "en"),
-            "en"  to setOf("eng", "en"),
-            "jpn" to setOf("jpn", "ja"),
-            "ja"  to setOf("jpn", "ja"),
-            "kor" to setOf("kor", "ko"),
-            "ko"  to setOf("kor", "ko")
-        )
-    }
+
 }
