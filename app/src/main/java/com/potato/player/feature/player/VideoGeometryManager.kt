@@ -28,7 +28,7 @@ class VideoGeometryManager(private val wrapper: MpvWrapper) {
         return next
     }
 
-    fun setVideoZoom(zoom: Float, panX: Float, panY: Float, onGestureStateUpdate: (panX: Float, panY: Float, zoom: Float) -> Unit) {
+    fun setVideoZoom(zoom: Float, panX: Float, panY: Float): Triple<Float, Float, Float> {
         val clampedZoom = zoom.coerceIn(0.5f, 5.0f)
         val finalPanX = if (clampedZoom == 1.0f) 0f else panX
         val finalPanY = if (clampedZoom == 1.0f) 0f else panY
@@ -38,10 +38,10 @@ class VideoGeometryManager(private val wrapper: MpvWrapper) {
         wrapper.setPropertyDouble(MpvProp.VIDEO_PAN_X, finalPanX.toDouble())
         wrapper.setPropertyDouble(MpvProp.VIDEO_PAN_Y, finalPanY.toDouble())
         
-        onGestureStateUpdate(finalPanX, finalPanY, clampedZoom)
+        return Triple(finalPanX, finalPanY, clampedZoom)
     }
 
-    fun resetZoom(onGestureStateUpdate: (panX: Float, panY: Float, zoom: Float) -> Unit) {
-        setVideoZoom(1.0f, 0f, 0f, onGestureStateUpdate)
+    fun resetZoom(): Triple<Float, Float, Float> {
+        return setVideoZoom(1.0f, 0f, 0f)
     }
 }

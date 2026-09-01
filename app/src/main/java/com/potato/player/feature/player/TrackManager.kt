@@ -30,8 +30,9 @@ data class TrackState(
 )
 
 class TrackManager(
-    prefsRepository: UserPreferencesRepository,
-    private val scope: CoroutineScope
+    private val prefsRepository: UserPreferencesRepository,
+    private val scope: CoroutineScope,
+    private val wrapper: MpvWrapper
 ) {
     private val _trackState = MutableStateFlow(TrackState())
     val trackState: StateFlow<TrackState> = _trackState.asStateFlow()
@@ -41,7 +42,7 @@ class TrackManager(
     
     private var autoSubApplied = false
 
-    fun loadTracks(wrapper: MpvWrapper, context: Context) {
+    fun loadTracks(context: Context) {
         scope.launch(Dispatchers.IO) {
             val count = wrapper.getPropertyInt(MpvProp.TRACK_LIST_COUNT) ?: 0
             val list = mutableListOf<TrackInfo>()
@@ -82,7 +83,7 @@ class TrackManager(
      * On [TrackListParser.Result.Failure] the existing track state is preserved.
      * Aid/sid are still queried individually because they are not in the JSON.
      */
-    fun loadTracksFromJson(json: String, wrapper: MpvWrapper, context: Context) {
+    fun loadTracksFromJson(json: String, context: Context) {
         scope.launch(Dispatchers.IO) {
             val result = TrackListParser.parse(json)
             if (result is TrackListParser.Result.Failure) return@launch
@@ -131,12 +132,11 @@ class TrackManager(
         autoSubApplied = false
     }
 
-    fun applyPreferred(setTrack: (Int) -> Unit) {
+    fun applyPreferred() {
         val matchId = getPreferredSubtitleTrackId()
         if (matchId != null) {
             val sid = _trackState.value.currentSubtitleTrackId
             if (sid != matchId) {
-                setTrack(matchId)
                 selectSubtitle(matchId)
             }
             markAutoSubApplied()
@@ -145,19 +145,37 @@ class TrackManager(
 
     fun selectAudio(id: Int) {
         _trackState.update { it.copy(currentAudioTrackId = id) }
+        wrapper.setAudioTrack(id)
     }
 
     fun selectSubtitle(id: Int) {
         _trackState.update { it.copy(currentSubtitleTrackId = id) }
+        wrapper.setSubTrack(id)
     }
 
-    fun loadExternal(uri: Uri, context: Context, wrapper: MpvWrapper) {
+    fun loadExternal(uri: Uri, context: Context) {
         scope.launch(Dispatchers.IO) {
             val path = MediaMetadataRepository.resolveSubtitlePath(context, uri) ?: uri.toString()
             wrapper.addExternalSubtitle(path)
-            loadTracks(wrapper, context)
+            loadTracks(context)
         }
     }
+
+    fun previewSubtitleAppearance(scale: Double, pos: Int) {
+        wrapper.setSubtitleScale(scale)
+        wrapper.setSubtitlePosition(pos)
+    }
+
+    fun setSubtitleAppearance(scale: Double, pos: Int) {
+        wrapper.setSubtitleScale(scale)
+        wrapper.setSubtitlePosition(pos)
+        scope.launch { prefsRepository.saveSubtitleAppearance(scale, pos) }
+    }
+
+    fun resetSubtitleAppearance() = setSubtitleAppearance(
+        scale = UserPreferencesRepository.DEFAULT_SUB_SCALE,
+        pos = UserPreferencesRepository.DEFAULT_SUB_POS
+    )
 
     companion object {
         private val LANG_ALIASES = mapOf(

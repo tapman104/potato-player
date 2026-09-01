@@ -50,7 +50,7 @@ class PlayerViewModel(
     val activeDialog: StateFlow<ActiveDialog> = _activeDialog.asStateFlow()
 
     val playlistManager = PlaylistManager()
-    val trackManager by lazy { TrackManager(prefsRepository, viewModelScope) }
+    val trackManager by lazy { TrackManager(prefsRepository, viewModelScope, wrapper) }
     val geometryManager = VideoGeometryManager(wrapper)
 
     // ── Fields merged from PlaybackSessionManager ─────────────────────────────
@@ -82,12 +82,12 @@ class PlayerViewModel(
 
     private var normalPlaybackSpeed = 1.0
 
-    // Fix 2 — Drag round-trip suppression.
-    // During active slider drag, local dragFraction in PlayerBottomControls drives the UI.
-    // We must NOT emit to _progressState on every frame — that causes a redundant recomposition.
-    // We only commit once, on drag end.
-    private var isDragging = false
-    private var lastDragPositionSec = 0.0
+    private val seekController = SeekController(
+        wrapper = wrapper,
+        isActive = isActive,
+        onDragPositionChanged = { pos -> _progressState.update { it.copy(dragPositionSec = pos) } },
+        onSwipeTargetChanged = { target -> _gestureState.update { it.copy(swipeSeekTargetSec = target) } }
+    )
 
     private val engineEventHandler by lazy { EngineEventHandler(wrapper, prefsRepository, viewModelScope) }
 
@@ -116,7 +116,7 @@ class PlayerViewModel(
         updateProgressState(state)
         if (state.trackListJson.isNotBlank() && state.trackListJson != lastTrackListJson) {
             lastTrackListJson = state.trackListJson
-            trackManager.loadTracksFromJson(state.trackListJson, wrapper, appContext)
+            trackManager.loadTracksFromJson(state.trackListJson, appContext)
         }
     }
 
@@ -165,7 +165,7 @@ class PlayerViewModel(
         // default decoder and speed applied on file load, not here
     }
 
-    private fun applyPreferredSubtitleTrack() = trackManager.applyPreferred { id -> wrapper.setSubTrack(id) }
+    private fun applyPreferredSubtitleTrack() = trackManager.applyPreferred()
 
     fun setSurfaceSize(width: Int, height: Int) {
         wrapper.setPropertyString(MpvProp.ANDROID_SURFACE_SIZE, "${width}x${height}")
@@ -329,10 +329,7 @@ class PlayerViewModel(
         wrapper.setDecoder(mode)
     }
 
-    fun seekExactRelative(offsetSec: Int) {
-        if (!isActive.get()) return
-        wrapper.seekRelative(offsetSec.toDouble())
-    }
+    fun seekExactRelative(offsetSec: Int) = seekController.seekExactRelative(offsetSec)
 
     fun startFastForward() {
         if (!isActive.get()) return
@@ -351,43 +348,11 @@ class PlayerViewModel(
         }
     }
 
-    fun onSliderDragStart(posSec: Double) {
-        isDragging = true
-        lastDragPositionSec = posSec
-        _progressState.update { it.copy(dragPositionSec = posSec) }
-    }
-
-    fun onSliderDragChange(posSec: Double) {
-        if (!isActive.get()) return
-        lastDragPositionSec = posSec
-        // Fix 2: do NOT emit to _progressState during active drag.
-        // Local dragFraction state in PlayerBottomControls already drives the slider display.
-        // Emitting here would cause a redundant recomposition on every drag frame.
-    }
-
-    fun onSliderDragEnd(posSec: Double) {
-        if (!isActive.get()) return
-        isDragging = false
-        lastDragPositionSec = posSec
-        val ms = (posSec * 1000).toLong()
-        _progressState.update { it.copy(dragPositionSec = null) }
-        wrapper.seekFast(ms)
-    }
-
-    fun onSwipeSeek(positionSec: Double) {
-        if (!isActive.get()) return
-        _gestureState.update { it.copy(swipeSeekTargetSec = positionSec) }
-    }
-
-    fun onSwipeSeekFinished() {
-        if (!isActive.get()) return
-        val target = _gestureState.value.swipeSeekTargetSec
-        _gestureState.update { it.copy(swipeSeekTargetSec = null) }
-        if (target != null) {
-            val ms = (target * 1000).toLong()
-            wrapper.seekFast(ms)
-        }
-    }
+    fun onSliderDragStart(posSec: Double) = seekController.onSliderDragStart(posSec)
+    fun onSliderDragChange(posSec: Double) = seekController.onSliderDragChange(posSec)
+    fun onSliderDragEnd(posSec: Double) = seekController.onSliderDragEnd(posSec)
+    fun onSwipeSeek(positionSec: Double) = seekController.onSwipeSeek(positionSec)
+    fun onSwipeSeekFinished() = seekController.onSwipeSeekFinished()
 
     fun setSwipingVolumeOrBrightness(isSwiping: Boolean) {
         _gestureState.update { it.copy(isSwipingVolumeOrBrightness = isSwiping) }
@@ -402,25 +367,13 @@ class PlayerViewModel(
         }
     }
 
-    fun onSelectAudioTrack(id: Int) { trackManager.selectAudio(id); wrapper.setAudioTrack(id) }
-    fun onSelectSubtitleTrack(id: Int) { trackManager.selectSubtitle(id); wrapper.setSubTrack(id) }
-    fun onLoadExternalSubtitle(uri: Uri, context: Context) = trackManager.loadExternal(uri, context, wrapper)
+    fun onSelectAudioTrack(id: Int) = trackManager.selectAudio(id)
+    fun onSelectSubtitleTrack(id: Int) = trackManager.selectSubtitle(id)
+    fun onLoadExternalSubtitle(uri: Uri, context: Context) = trackManager.loadExternal(uri, context)
 
-    fun previewSubtitleAppearance(scale: Double, pos: Int) {
-        wrapper.setSubtitleScale(scale)
-        wrapper.setSubtitlePosition(pos)
-    }
-
-    fun setSubtitleAppearance(scale: Double, pos: Int) {
-        wrapper.setSubtitleScale(scale)
-        wrapper.setSubtitlePosition(pos)
-        viewModelScope.launch { prefsRepository.saveSubtitleAppearance(scale, pos) }
-    }
-
-    fun resetSubtitleAppearance() = setSubtitleAppearance(
-        scale = UserPreferencesRepository.DEFAULT_SUB_SCALE,
-        pos = UserPreferencesRepository.DEFAULT_SUB_POS
-    )
+    fun previewSubtitleAppearance(scale: Double, pos: Int) = trackManager.previewSubtitleAppearance(scale, pos)
+    fun setSubtitleAppearance(scale: Double, pos: Int) = trackManager.setSubtitleAppearance(scale, pos)
+    fun resetSubtitleAppearance() = trackManager.resetSubtitleAppearance()
 
     fun showDialog(dialog: ActiveDialog) { _activeDialog.value = dialog }
     fun dismissDialog() { _activeDialog.value = ActiveDialog.None }
@@ -449,15 +402,13 @@ class PlayerViewModel(
 
     fun setVideoZoom(zoom: Float, panX: Float, panY: Float) {
         if (!isActive.get()) return
-        geometryManager.setVideoZoom(zoom, panX, panY) { pX, pY, z ->
-            _gestureState.update { it.copy(videoZoom = z, videoPanX = pX, videoPanY = pY) }
-        }
+        val (px, py, z) = geometryManager.setVideoZoom(zoom, panX, panY)
+        _gestureState.update { it.copy(videoZoom = z, videoPanX = px, videoPanY = py) }
     }
 
     fun resetZoom() {
-        geometryManager.resetZoom { pX, pY, z ->
-            _gestureState.update { it.copy(videoZoom = z, videoPanX = pX, videoPanY = pY) }
-        }
+        val (px, py, z) = geometryManager.resetZoom()
+        _gestureState.update { it.copy(videoZoom = z, videoPanX = px, videoPanY = py) }
     }
 
     // ── Playlist navigation ───────────────────────────────────────────────────
