@@ -97,10 +97,13 @@ class PlayerViewModel(
         }
     }
 
+    private var lastTrackListJson: String = ""
+
     private fun handleEngineState(state: PlayerEngineState) {
         updatePlaybackState(state)
         updateProgressState(state)
-        if (state.trackListJson.isNotBlank()) {
+        if (state.trackListJson.isNotBlank() && state.trackListJson != lastTrackListJson) {
+            lastTrackListJson = state.trackListJson
             trackManager.loadTracksFromJson(state.trackListJson, wrapper, appContext)
         }
     }
