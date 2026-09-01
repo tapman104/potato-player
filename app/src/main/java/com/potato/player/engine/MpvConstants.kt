@@ -15,6 +15,8 @@ internal object MpvProp {
     // ── Cache ─────────────────────────────────────────────────────────────────
     const val DEMUXER_CACHE_TIME     = "demuxer-cache-time"
     const val DEMUXER_CACHE_DURATION = "demuxer-cache-duration"
+    const val PAUSED_FOR_CACHE       = "paused-for-cache"
+    const val CACHE_BUFFERING_STATE  = "cache-buffering-state"
 
     // ── Decoder ───────────────────────────────────────────────────────────────
     const val HWDEC         = "hwdec"
@@ -49,6 +51,7 @@ internal object MpvProp {
     const val VIDEO_PAN_X           = "video-pan-x"
     const val VIDEO_PAN_Y           = "video-pan-y"
     const val PANSCAN               = "panscan"
+    const val VIDEO_ROTATE          = "video-rotate"
 
     // ── Audio ─────────────────────────────────────────────────────────────────
     const val VOLUME = "volume"
@@ -67,4 +70,16 @@ internal object MpvEventId {
     const val END_FILE         = 7
     const val FILE_LOADED      = 8
     const val PLAYBACK_RESTART = 15
+}
+
+// ---------------------------------------------------------------------------
+// MpvFmt — mpv_format enum values from mpv/client.h.
+// Moved here from MpvOptionsConfigurator so all engine files can use them
+// without duplicating the magic integers.
+// ---------------------------------------------------------------------------
+internal object MpvFmt {
+    const val FLAG   = 3
+    const val STRING = 4
+    const val DOUBLE = 5
+    const val INT64  = 6
 }

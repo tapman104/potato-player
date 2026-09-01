@@ -17,6 +17,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.potato.player.engine.MpvWrapper
 import kotlinx.coroutines.flow.first
+import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 
 private val AmoledDarkColorScheme = darkColorScheme(
@@ -46,6 +47,10 @@ class MainActivity : ComponentActivity() {
 
         // MpvWrapper initializes in its init block, so just by accessing it, it initializes.
         val wrapper = mpvWrapper
+
+        // Install font assets on a background thread before the first subtitle renders.
+        // Safe to call concurrently with MPV init; MPV reads sub-fonts-dir lazily.
+        MpvWrapper.installAssets(applicationContext, lifecycleScope)
 
         // ── Resolve start destination BEFORE setContent ──────────────────────
         // resolveStartDestination() is pure: no side effects, no ContentResolver.

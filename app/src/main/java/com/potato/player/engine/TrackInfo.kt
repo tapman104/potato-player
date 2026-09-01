@@ -1,6 +1,6 @@
 package com.potato.player.engine
 
-enum class TrackType { AUDIO, SUBTITLE }
+enum class TrackType { AUDIO, SUBTITLE, VIDEO }
 
 data class TrackInfo(
     val id: Int,            // MPV track id (used for aid/sid)

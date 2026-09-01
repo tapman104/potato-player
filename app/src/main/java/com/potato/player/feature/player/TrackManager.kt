@@ -6,6 +6,7 @@ import com.potato.player.engine.TrackInfo
 import com.potato.player.engine.TrackType
 import com.potato.player.engine.MpvWrapper
 import com.potato.player.engine.MpvProp
+import com.potato.player.engine.TrackListParser
 import com.potato.player.util.MediaMetadataRepository
 import android.net.Uri
 import kotlinx.coroutines.Dispatchers
@@ -68,6 +69,36 @@ class TrackManager(
                         currentAudioTrackId = aid, 
                         currentSubtitleTrackId = sid
                     ) 
+                }
+            }
+        }
+    }
+
+    /**
+     * Parse the track list from the JSON string already delivered by MPV's
+     * property observer (engineState.trackListJson). This avoids the N×5
+     * individual JNI calls that [loadTracks] makes.
+     *
+     * On [TrackListParser.Result.Failure] the existing track state is preserved.
+     * Aid/sid are still queried individually because they are not in the JSON.
+     */
+    fun loadTracksFromJson(json: String, wrapper: MpvWrapper, context: Context) {
+        scope.launch(Dispatchers.IO) {
+            val result = TrackListParser.parse(json)
+            if (result is TrackListParser.Result.Failure) return@launch
+            val list = (result as TrackListParser.Result.Success).tracks
+            val aid = wrapper.getPropertyString(MpvProp.AID)?.toIntOrNull() ?: -1
+            val sid = wrapper.getPropertyString(MpvProp.SID)?.toIntOrNull() ?: -1
+            withContext(Dispatchers.Main) {
+                val audioTracks    = list.filter { it.type == TrackType.AUDIO    }.map { it.toUiModel(context) }
+                val subtitleTracks = list.filter { it.type == TrackType.SUBTITLE }.map { it.toUiModel(context) }
+                _trackState.update {
+                    it.copy(
+                        audioTracks          = audioTracks,
+                        subtitleTracks       = subtitleTracks,
+                        currentAudioTrackId  = aid,
+                        currentSubtitleTrackId = sid
+                    )
                 }
             }
         }

@@ -5,32 +5,23 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.potato.player.data.UserPreferencesRepository
-import com.potato.player.data.VideoHistory
 import com.potato.player.engine.MpvWrapper
 import com.potato.player.engine.MpvEvent
-import com.potato.player.engine.MpvEventId
 import com.potato.player.engine.MpvProp
-import com.potato.player.engine.TrackInfo
-import com.potato.player.engine.TrackListParser
-import com.potato.player.engine.TrackType
 import com.potato.player.engine.PlayerEngineState
 
 import com.potato.player.feature.player.state.*
 import com.potato.player.util.MediaMetadataRepository
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import android.view.SurfaceHolder
 
 private fun hwdecLabel(mode: String): String = when {
     mode == "no"                    -> "SW"
@@ -109,6 +100,9 @@ class PlayerViewModel(
     private fun handleEngineState(state: PlayerEngineState) {
         updatePlaybackState(state)
         updateProgressState(state)
+        if (state.trackListJson.isNotBlank()) {
+            trackManager.loadTracksFromJson(state.trackListJson, wrapper, appContext)
+        }
     }
 
     private fun updatePlaybackState(state: PlayerEngineState) {
@@ -160,7 +154,6 @@ class PlayerViewModel(
 
 
 
-    private fun loadTracks() = trackManager.loadTracks(wrapper, appContext)
     private fun applyPreferredSubtitleTrack() = trackManager.applyPreferred { id -> wrapper.setSubTrack(id) }
 
     fun setSurfaceSize(width: Int, height: Int) {
@@ -225,10 +218,10 @@ class PlayerViewModel(
             },
             onSeekIfNeeded = { pos -> wrapper.seekAccurate(pos) },
             onTracksLoaded = {
-                loadTracks()
-                
-                // Apply default decoder and speed from prefs
+                // Track list is driven by engineState.trackListJson observer (handleEngineState).
+                // We only need to apply the preferred subtitle once the tracks arrive.
                 viewModelScope.launch {
+                    // Apply default decoder and speed from prefs
                     prefsRepository.defaultDecoderFlow.first().let { mode ->
                         wrapper.setDecoder(mode)
                         _uiState.update { it.copy(hwdecCurrent = hwdecLabel(mode)) }
@@ -238,7 +231,7 @@ class PlayerViewModel(
                         _uiState.update { it.copy(playbackSpeed = speed) }
                     }
                 }
-                
+
                 viewModelScope.launch {
                     applyPreferredSubtitleTrack()
                 }

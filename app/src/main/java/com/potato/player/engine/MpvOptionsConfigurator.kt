@@ -10,27 +10,44 @@ import `is`.xyz.mpv.MPVLib
 // ---------------------------------------------------------------------------
 internal object MpvFontInstaller {
 
-    private const val TAG       = "MpvFontInstaller"
-    private const val FONT_NAME = "Roboto-Regular.ttf"
+    private const val TAG          = "MpvFontInstaller"
+    private const val FONT_ASSET   = "Roboto-Regular.ttf"
+    // Bump FONT_VERSION whenever the bundled font changes.
+    // The installed file is named with the version embedded so the
+    // existence check alone is sufficient — no .available() call needed.
+    private const val FONT_VERSION = 1
+    private val FONT_FILE_NAME     get() = "mpv_font_v$FONT_VERSION.ttf"
 
     /**
-     * Copies the bundled font to [Context.filesDir]/fonts if absent or stale.
-     * Size comparison is used as a lightweight staleness check — a full hash
-     * would be more robust but is overkill for a single font file.
+     * Copies the bundled font to [Context.filesDir]/fonts if absent.
+     *
+     * Staleness is determined by version: if [FONT_FILE_NAME] already exists
+     * the copy is skipped entirely. Old versioned font files are deleted to
+     * prevent accumulation across app updates.
+     *
+     * MUST be called from a background thread (disk I/O).
      */
     fun install(context: Context) {
-        val fontsDir  = java.io.File(context.filesDir, "fonts")
+        val fontsDir = java.io.File(context.filesDir, "fonts")
         if (!fontsDir.exists()) fontsDir.mkdirs()
 
-        val fontFile = java.io.File(fontsDir, FONT_NAME)
+        val fontFile = java.io.File(fontsDir, FONT_FILE_NAME)
+
+        // Clean up stale versions (any mpv_font_v*.ttf that isn't current).
+        fontsDir.listFiles { f ->
+            f.name.startsWith("mpv_font_v") && f.name.endsWith(".ttf") && f.name != FONT_FILE_NAME
+        }?.forEach { stale ->
+            stale.delete()
+            Log.d(TAG, "Deleted stale font: ${stale.name}")
+        }
+
+        if (fontFile.exists()) return  // already installed and up-to-date
+
         try {
-            val assetSize = context.assets.open(FONT_NAME).use { it.available().toLong() }
-            if (!fontFile.exists() || fontFile.length() != assetSize) {
-                context.assets.open(FONT_NAME).use { src ->
-                    fontFile.outputStream().use { src.copyTo(it) }
-                }
-                Log.d(TAG, "Font installed (size changed or missing)")
+            context.assets.open(FONT_ASSET).use { src ->
+                fontFile.outputStream().use { src.copyTo(it) }
             }
+            Log.d(TAG, "Font installed: $FONT_FILE_NAME")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to install font asset", e)
         }
@@ -123,22 +140,10 @@ internal class MpvOptionsConfigurator {
         MPVLib.observeProperty(MpvProp.SUB_POS,              MpvFmt.INT64)
         MPVLib.observeProperty(MpvProp.VIDEO_PARAMS_W,       MpvFmt.INT64)
         MPVLib.observeProperty(MpvProp.VIDEO_PARAMS_H,       MpvFmt.INT64)
-        MPVLib.observeProperty(MpvProp.TRACK_LIST,           MpvFmt.STRING)
-        MPVLib.observeProperty("paused-for-cache",           MpvFmt.FLAG)
-        MPVLib.observeProperty("cache-buffering-state",      MpvFmt.INT64)
+        MPVLib.observeProperty(MpvProp.TRACK_LIST,              MpvFmt.STRING)
+        MPVLib.observeProperty(MpvProp.PAUSED_FOR_CACHE,        MpvFmt.FLAG)
+        MPVLib.observeProperty(MpvProp.CACHE_BUFFERING_STATE,   MpvFmt.INT64)
     }
-}
-
-// ---------------------------------------------------------------------------
-// Internal constants — not part of the public API surface.
-// ---------------------------------------------------------------------------
-
-/** mpv_format values from mpv/client.h */
-private object MpvFmt {
-    const val FLAG   = 3
-    const val STRING = 4
-    const val DOUBLE = 5
-    const val INT64  = 6
 }
 
 /** Cache sizing. Adjust after profiling on target device classes. */
