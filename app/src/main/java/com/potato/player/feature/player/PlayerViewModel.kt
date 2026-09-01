@@ -13,6 +13,7 @@ import com.potato.player.engine.PlayerEngineState
 
 import com.potato.player.feature.player.state.*
 import com.potato.player.util.MediaMetadataRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +24,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private fun hwdecLabel(mode: String): String = when {
     mode == "no"                    -> "SW"
@@ -43,14 +45,20 @@ class PlayerViewModel(
 
     private val prefsRepository by lazy { UserPreferencesRepository(appContext) }
     private val historyManager by lazy { PlaybackHistoryManager(historyRepository, viewModelScope) }
-    
+
     private val _activeDialog = MutableStateFlow<ActiveDialog>(ActiveDialog.None)
     val activeDialog: StateFlow<ActiveDialog> = _activeDialog.asStateFlow()
 
     val playlistManager = PlaylistManager()
     val trackManager by lazy { TrackManager(prefsRepository, viewModelScope) }
     val geometryManager = VideoGeometryManager(wrapper)
-    val sessionManager by lazy { PlaybackSessionManager(historyManager, trackManager, viewModelScope) }
+
+    // ── Fields merged from PlaybackSessionManager ─────────────────────────────
+    private var currentUri: String = ""
+    private var currentTitle: String = ""
+    private var pendingUri: String? = null
+    private var pendingSeekPosition: Long = 0L
+    private var lastLoadedUri: String? = null
 
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
@@ -71,7 +79,7 @@ class PlayerViewModel(
 
     private var wasPlayingBeforePause: Boolean = false
     private var myPlaybackGeneration: Int = -1
-    
+
     private var normalPlaybackSpeed = 1.0
 
     // Fix 2 — Drag round-trip suppression.
@@ -157,10 +165,6 @@ class PlayerViewModel(
         // default decoder and speed applied on file load, not here
     }
 
-
-
-
-
     private fun applyPreferredSubtitleTrack() = trackManager.applyPreferred { id -> wrapper.setSubTrack(id) }
 
     fun setSurfaceSize(width: Int, height: Int) {
@@ -170,8 +174,8 @@ class PlayerViewModel(
     fun handleSurfaceReady(surface: android.view.Surface) {
         mySurface = surface
         wrapper.attachSurface(surface)
-        val uri = sessionManager.pendingUri ?: return
-        sessionManager.pendingUri = null
+        val uri = pendingUri ?: return
+        pendingUri = null
         wrapper.loadFile(uri)
     }
 
@@ -183,8 +187,16 @@ class PlayerViewModel(
     }
 
     fun prepareUri(defaultUri: String, defaultTitle: String = "") {
-        sessionManager.prepareUri(defaultUri, defaultTitle) { u, t, pos ->
-            executeLoadFile(u, t, pos)
+        if (lastLoadedUri == defaultUri) return
+        lastLoadedUri = defaultUri
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val history = historyManager.getByUri(defaultUri)
+            val resumePos = if (history != null && history.lastPlayedPositionSec > 0)
+                (history.lastPlayedPositionSec * 1000).toLong() else 0L
+            withContext(Dispatchers.Main) {
+                executeLoadFile(defaultUri, defaultTitle, resumePos)
+            }
         }
     }
 
@@ -194,78 +206,69 @@ class PlayerViewModel(
     }
 
     private fun executeLoadFile(uri: String, title: String, resumePosition: Long) {
-        sessionManager.executeLoadFile(
-            uri = uri,
-            title = title,
-            resumePosition = resumePosition,
-            hasSurface = mySurface != null,
-            onStateUpdate = { _, _ -> },
-            onUiInitial = { initialName ->
-                _uiState.update { it.copy(fileName = initialName, isLoading = true, isPlaying = false, fileLoaded = false, error = null) }
-            },
-            onResolveFileName = { u ->
-                viewModelScope.launch {
-                    val resolvedName = MediaMetadataRepository.resolveFileName(appContext, u)
-                    _uiState.update { it.copy(fileName = resolvedName) }
-                }
-            },
-            onLoadFile = { u -> wrapper.loadFile(u) }
-        )
+        lastLoadedUri = uri
+        currentUri = uri
+        currentTitle = title
+        trackManager.resetAutoSubApplied()
+        val initialName = if (title.isNotBlank()) title else "Video"
+        _uiState.update { it.copy(fileName = initialName, isLoading = true, isPlaying = false, fileLoaded = false, error = null) }
+        if (title.isBlank()) {
+            viewModelScope.launch {
+                val resolvedName = MediaMetadataRepository.resolveFileName(appContext, uri)
+                _uiState.update { it.copy(fileName = resolvedName) }
+            }
+        }
+        pendingSeekPosition = resumePosition
+        if (mySurface != null) {
+            wrapper.loadFile(uri)
+        } else {
+            pendingUri = uri
+        }
     }
 
     fun togglePlay() {
         if (!isActive.get()) return
         wrapper.togglePlay()
     }
-    
-    private fun handleFileLoaded() {
-        sessionManager.handleFileLoaded(
-            onUiUpdate = {
-                _uiState.update { it.copy(fileLoaded = true, isLoading = false, fitMode = VideoFitMode.FIT) }
-            },
-            onSeekIfNeeded = { pos -> wrapper.seekAccurate(pos) },
-            onTracksLoaded = {
-                // Track list is driven by engineState.trackListJson observer (handleEngineState).
-                // We only need to apply the preferred subtitle once the tracks arrive.
-                viewModelScope.launch {
-                    // Apply default decoder and speed from prefs
-                    prefsRepository.defaultDecoderFlow.first().let { mode ->
-                        wrapper.setDecoder(mode)
-                        _uiState.update { it.copy(hwdecCurrent = hwdecLabel(mode)) }
-                    }
-                    prefsRepository.defaultSpeedFlow.first().let { speed ->
-                        wrapper.setSpeed(speed)
-                        _uiState.update { it.copy(playbackSpeed = speed) }
-                    }
-                }
 
-                viewModelScope.launch {
-                    applyPreferredSubtitleTrack()
-                }
+    private fun handleFileLoaded() {
+        _uiState.update { it.copy(fileLoaded = true, isLoading = false, fitMode = VideoFitMode.FIT) }
+        if (pendingSeekPosition > 0L) {
+            wrapper.seekAccurate(pendingSeekPosition)
+            pendingSeekPosition = 0L
+        }
+        // Track list is driven by engineState.trackListJson observer (handleEngineState).
+        // We only need to apply the preferred subtitle once the tracks arrive.
+        viewModelScope.launch {
+            // Apply default decoder and speed from prefs
+            prefsRepository.defaultDecoderFlow.first().let { mode ->
+                wrapper.setDecoder(mode)
+                _uiState.update { it.copy(hwdecCurrent = hwdecLabel(mode)) }
             }
-        )
+            prefsRepository.defaultSpeedFlow.first().let { speed ->
+                wrapper.setSpeed(speed)
+                _uiState.update { it.copy(playbackSpeed = speed) }
+            }
+        }
+
+        viewModelScope.launch {
+            applyPreferredSubtitleTrack()
+        }
     }
 
     private fun handleEndFile(reason: Int) {
-        sessionManager.handleEndFile(
-            reason = reason,
-            onUiError = {
-                _uiState.update { it.copy(isPlaying = false, error = "Playback error") }
-            },
-            onUiNormalEnd = {
-                _uiState.update { it.copy(isPlaying = false) }
-            },
-            onSaveHistory = { saveHistoryIfNeeded() },
-            onUiOther = {
-                _uiState.update { it.copy(isPlaying = false) }
-            },
-            onResetFastForward = {
-                if (_uiState.value.isFastForwarding) {
-                    _uiState.update { it.copy(isFastForwarding = false) }
-                    wrapper.setSpeed(normalPlaybackSpeed)
-                }
+        if (reason == 3) {
+            _uiState.update { it.copy(isPlaying = false, error = "Playback error") }
+        } else if (reason == 0) {
+            _uiState.update { it.copy(isPlaying = false) }
+            saveHistoryIfNeeded()
+            if (_uiState.value.isFastForwarding) {
+                _uiState.update { it.copy(isFastForwarding = false) }
+                wrapper.setSpeed(normalPlaybackSpeed)
             }
-        )
+        } else {
+            _uiState.update { it.copy(isPlaying = false) }
+        }
     }
 
     private fun handlePlaybackRestart() {
@@ -386,7 +389,6 @@ class PlayerViewModel(
         }
     }
 
-
     fun setSwipingVolumeOrBrightness(isSwiping: Boolean) {
         _gestureState.update { it.copy(isSwipingVolumeOrBrightness = isSwiping) }
     }
@@ -424,8 +426,8 @@ class PlayerViewModel(
     fun dismissDialog() { _activeDialog.value = ActiveDialog.None }
 
     private fun saveHistoryIfNeeded() = historyManager.save(
-        uri = sessionManager.currentUri,
-        title = sessionManager.currentTitle,
+        uri = currentUri,
+        title = currentTitle,
         lastPlayedPositionSec = _progressState.value.positionSec,
         durationSec = _progressState.value.durationSec,
         lastAudioTrackId = trackManager.trackState.value.currentAudioTrackId,
@@ -474,7 +476,4 @@ class PlayerViewModel(
     fun playPrevious() {
         playlistManager.movePrevious()?.let { (uri, title) -> loadFile(uri, title) }
     }
-
-
-
 }
