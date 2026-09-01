@@ -26,15 +26,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private fun hwdecLabel(mode: String): String = when {
-    mode == "no"                    -> "SW"
-    mode == "mediacodec"            -> "HW"
-    mode == "mediacodec-copy"       -> "HW+"
-    mode.startsWith("mediacodec")   -> "HW+"
-    mode.isEmpty()                  -> "HW+"
-    else                            -> "HW"
-}
-
 enum class VideoFitMode { FIT, FILL, STRETCH }
 
 class PlayerViewModel(
@@ -96,7 +87,10 @@ class PlayerViewModel(
         engineEventHandler.start(
             onLifecycleEvent = { handleLifecycleEvent(it) },
             onEngineState = { handleEngineState(it) },
-            onPrefsChanged = { applyPrefs(it) }
+            onPrefsChanged = { applyPrefs(it) },
+            onTrackListChanged = { json ->
+                trackManager.loadTracksFromJson(json, appContext)
+            }
         )
     }
 
@@ -109,15 +103,9 @@ class PlayerViewModel(
         }
     }
 
-    private var lastTrackListJson: String = ""
-
     private fun handleEngineState(state: PlayerEngineState) {
         updatePlaybackState(state)
         updateProgressState(state)
-        if (state.trackListJson.isNotBlank() && state.trackListJson != lastTrackListJson) {
-            lastTrackListJson = state.trackListJson
-            trackManager.loadTracksFromJson(state.trackListJson, appContext)
-        }
     }
 
     private fun updatePlaybackState(state: PlayerEngineState) {
@@ -164,8 +152,6 @@ class PlayerViewModel(
         )}
         // default decoder and speed applied on file load, not here
     }
-
-    private fun applyPreferredSubtitleTrack() = trackManager.applyPreferred()
 
     fun setSurfaceSize(width: Int, height: Int) {
         wrapper.setPropertyString(MpvProp.ANDROID_SURFACE_SIZE, "${width}x${height}")
@@ -252,7 +238,7 @@ class PlayerViewModel(
         }
 
         viewModelScope.launch {
-            applyPreferredSubtitleTrack()
+            trackManager.applyPreferred()
         }
     }
 
@@ -273,11 +259,6 @@ class PlayerViewModel(
 
     private fun handlePlaybackRestart() {
         _uiState.update { it.copy(isLoading = false) }
-    }
-
-    private fun pause() {
-        if (!isActive.get()) return
-        wrapper.pause()
     }
 
     fun onPlayerPause() {

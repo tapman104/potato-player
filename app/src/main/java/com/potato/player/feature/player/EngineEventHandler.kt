@@ -24,13 +24,24 @@ class EngineEventHandler(
     private val prefsRepository: UserPreferencesRepository,
     private val scope: CoroutineScope
 ) {
+    private var lastTrackListJson: String = ""
+
     fun start(
         onLifecycleEvent: (MpvEvent.Lifecycle) -> Unit,
         onEngineState: (PlayerEngineState) -> Unit,
-        onPrefsChanged: (PlayerPrefs) -> Unit
+        onPrefsChanged: (PlayerPrefs) -> Unit,
+        onTrackListChanged: (String) -> Unit
     ) {
         scope.launch { wrapper.lifecycleEvents.collect { onLifecycleEvent(it) } }
-        scope.launch { wrapper.engineState.collect { onEngineState(it) } }
+        scope.launch { 
+            wrapper.engineState.collect { state ->
+                onEngineState(state)
+                if (state.trackListJson.isNotBlank() && state.trackListJson != lastTrackListJson) {
+                    lastTrackListJson = state.trackListJson
+                    onTrackListChanged(state.trackListJson)
+                }
+            }
+        }
         scope.launch {
             combine(
                 prefsRepository.subScaleFlow,
