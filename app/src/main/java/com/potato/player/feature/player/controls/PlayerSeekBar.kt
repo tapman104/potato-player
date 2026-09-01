@@ -96,11 +96,16 @@ fun PlayerSeekBar(
         },
         thumb = {
             Box(
-                modifier = Modifier
-                    .size(16.dp)
-                    .clip(CircleShape)
-                    .background(Color.White)
-            )
+                contentAlignment = androidx.compose.ui.Alignment.Center,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(16.dp)
+                        .clip(CircleShape)
+                        .background(Color.White)
+                )
+            }
         },
         modifier = modifier.fillMaxWidth()
     )
