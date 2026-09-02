@@ -71,13 +71,15 @@ class PlayerViewModel(
     private var wasPlayingBeforePause: Boolean = false
     private var myPlaybackGeneration: Int = -1
 
-    private var normalPlaybackSpeed = 1.0
+
 
     private val seekController = SeekController(
         wrapper = wrapper,
         isActive = isActive,
         onDragPositionChanged = { pos -> _progressState.update { it.copy(dragPositionSec = pos) } },
-        onSwipeTargetChanged = { target -> _gestureState.update { it.copy(swipeSeekTargetSec = target) } }
+        onSwipeTargetChanged = { target -> _gestureState.update { it.copy(swipeSeekTargetSec = target) } },
+        onFastForwardChanged = { ff -> _uiState.update { it.copy(isFastForwarding = ff) } },
+        onSpeedChanged = { spd -> _uiState.update { it.copy(playbackSpeed = spd) } }
     )
 
     private val engineEventHandler by lazy { EngineEventHandler(wrapper, prefsRepository, viewModelScope) }
@@ -86,7 +88,26 @@ class PlayerViewModel(
         myPlaybackGeneration = wrapper.nextGeneration()
         engineEventHandler.start(
             onLifecycleEvent = { handleLifecycleEvent(it) },
-            onEngineState = { handleEngineState(it) },
+            onEngineState = { uiUpdate, progressUpdate ->
+                _uiState.update { it.copy(
+                    isPlaying = uiUpdate.isPlaying,
+                    isLoading = it.fileLoaded && uiUpdate.isBuffering,
+                    hwdecCurrent = if (uiUpdate.hwdecActive.isNotEmpty())
+                        hwdecLabel(uiUpdate.hwdecActive) else it.hwdecCurrent,
+                    videoWidth = uiUpdate.videoWidth,
+                    videoHeight = uiUpdate.videoHeight,
+                    playbackSpeed = uiUpdate.playbackSpeed,
+                    subScale = uiUpdate.subScale,
+                    subPos = uiUpdate.subPos
+                ) }
+                _progressState.update { it.copy(
+                    positionSec = progressUpdate.positionSec ?: it.positionSec,
+                    durationSec = progressUpdate.durationSec,
+                    cachedSec = progressUpdate.cachedSec,
+                    cacheDurationSec = progressUpdate.cacheDurationSec
+                ) }
+            },
+            isDragging = { _progressState.value.dragPositionSec != null },
             onPrefsChanged = { applyPrefs(it) },
             onTrackListChanged = { json ->
                 trackManager.loadTracksFromJson(json, appContext)
@@ -103,41 +124,6 @@ class PlayerViewModel(
         }
     }
 
-    private fun handleEngineState(state: PlayerEngineState) {
-        updatePlaybackState(state)
-        updateProgressState(state)
-    }
-
-    private fun updatePlaybackState(state: PlayerEngineState) {
-        val isBuffering = state.pausedForCache || state.cacheBufferingState < 100
-        _uiState.update { it.copy(
-            isPlaying = !state.paused,
-            isLoading = it.fileLoaded && isBuffering,
-            hwdecCurrent = if (state.hwdecActive.isNotEmpty()) hwdecLabel(state.hwdecActive) else it.hwdecCurrent,
-            videoWidth = state.videoWidth.toInt(),
-            videoHeight = state.videoHeight.toInt(),
-            playbackSpeed = state.speed,
-            subScale = state.subScale,
-            subPos = state.subPos.toInt()
-        ) }
-    }
-
-    private fun updateProgressState(state: PlayerEngineState) {
-        if (_progressState.value.dragPositionSec == null) {
-            _progressState.update { it.copy(
-                positionSec = state.positionMs / 1000.0,
-                durationSec = state.durationMs / 1000.0,
-                cachedSec = state.cacheTimeMs / 1000.0,
-                cacheDurationSec = state.cacheDurMs / 1000.0
-            ) }
-        } else {
-            _progressState.update { it.copy(
-                durationSec = state.durationMs / 1000.0,
-                cachedSec = state.cacheTimeMs / 1000.0,
-                cacheDurationSec = state.cacheDurMs / 1000.0
-            ) }
-        }
-    }
 
     private fun applyPrefs(prefs: PlayerPrefs) {
         wrapper.setSubtitleScale(prefs.subScale)
@@ -248,10 +234,7 @@ class PlayerViewModel(
         } else if (reason == 0) {
             _uiState.update { it.copy(isPlaying = false) }
             saveHistoryIfNeeded()
-            if (_uiState.value.isFastForwarding) {
-                _uiState.update { it.copy(isFastForwarding = false) }
-                wrapper.setSpeed(normalPlaybackSpeed)
-            }
+            seekController.resetFastForward()
         } else {
             _uiState.update { it.copy(isPlaying = false) }
         }
@@ -312,22 +295,8 @@ class PlayerViewModel(
 
     fun seekExactRelative(offsetSec: Int) = seekController.seekExactRelative(offsetSec)
 
-    fun startFastForward() {
-        if (!isActive.get()) return
-        if (!_uiState.value.isFastForwarding) {
-            normalPlaybackSpeed = _uiState.value.playbackSpeed
-            _uiState.update { it.copy(isFastForwarding = true) }
-            wrapper.setSpeed(2.0)
-        }
-    }
-
-    fun stopFastForward() {
-        if (!isActive.get()) return
-        if (_uiState.value.isFastForwarding) {
-            wrapper.setSpeed(normalPlaybackSpeed)
-            _uiState.update { it.copy(isFastForwarding = false, playbackSpeed = normalPlaybackSpeed) }
-        }
-    }
+    fun startFastForward() = seekController.startFastForward(_uiState.value.playbackSpeed)
+    fun stopFastForward()  = seekController.stopFastForward()
 
     fun onSliderDragStart(posSec: Double) = seekController.onSliderDragStart(posSec)
     fun onSliderDragChange(posSec: Double) = seekController.onSliderDragChange(posSec)
@@ -339,14 +308,7 @@ class PlayerViewModel(
         _gestureState.update { it.copy(isSwipingVolumeOrBrightness = isSwiping) }
     }
 
-    fun setPlaybackSpeed(speed: Double) {
-        if (!isActive.get()) return
-        val clamped = speed.coerceIn(0.25, 4.0)
-        normalPlaybackSpeed = clamped
-        if (!_uiState.value.isFastForwarding) {
-            wrapper.setSpeed(clamped)
-        }
-    }
+    fun setPlaybackSpeed(speed: Double) = seekController.setPlaybackSpeed(speed)
 
     fun onSelectAudioTrack(id: Int) = trackManager.selectAudio(id)
     fun onSelectSubtitleTrack(id: Int) = trackManager.selectSubtitle(id)
