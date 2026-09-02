@@ -37,6 +37,7 @@ import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.potato.player.feature.player.controls.DoubleTapSeekState
+import com.potato.player.feature.player.controls.DoubleTapSeekOverlay
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -50,18 +51,16 @@ fun PlayerGestureBox(
     gestureState: PlayerGestureState,
     viewModel: PlayerViewModel,
     onToggleControls: () -> Unit,
-    onBrightnessChange: (Float) -> Unit,
-    onVolumeChange: (Int) -> Unit,
     fileLoaded: Boolean,
-    doubleTapSeekState: DoubleTapSeekState?,
-    onDoubleTapSeekState: (DoubleTapSeekState?) -> Unit,
-    onSwipeSeekStart: (Double) -> Unit,
     activity: Activity?,
     gesturesEnabled: Boolean
 ) {
     val progressState by viewModel.progressState.collectAsStateWithLifecycle()
     val currentPositionSec = progressState.positionSec
     val durationSec = progressState.durationSec
+
+    var doubleTapSeekState by remember { mutableStateOf<DoubleTapSeekState?>(null) }
+    var swipeDragStartSec by remember { mutableStateOf(0.0) }
 
     var isLongPressActive by remember { mutableStateOf(false) }
 
@@ -100,6 +99,13 @@ fun PlayerGestureBox(
             currentZoom = 1.0f
             currentPanX = 0f
             currentPanY = 0f
+        }
+    }
+
+    LaunchedEffect(doubleTapSeekState?.triggerId) {
+        if (doubleTapSeekState != null) {
+            delay(1200L)
+            doubleTapSeekState = null
         }
     }
 
@@ -194,7 +200,12 @@ fun PlayerGestureBox(
                                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         }
                                         brightnessLevel = newBrightness
-                                        onBrightnessChange(brightnessLevel)
+                                        val window = activity?.window
+                                        if (window != null) {
+                                            val lp = window.attributes
+                                            lp.screenBrightness = brightnessLevel
+                                            window.attributes = lp
+                                        }
                                     } else {
                                         // RIGHT = volume
                                         val newVolume = (tempVolume - (dy / size.height) * maxVolume).coerceIn(0f, maxVolume)
@@ -202,7 +213,7 @@ fun PlayerGestureBox(
                                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         }
                                         tempVolume = newVolume
-                                        onVolumeChange(tempVolume.toInt())
+                                        viewModel.setVolume(tempVolume.toInt())
                                     }
                                 }
                             }
@@ -242,7 +253,7 @@ fun PlayerGestureBox(
                                 gestureConsumed = true
                                 swipeStartSec = currentPositionSec
                                 accumulatedDrag = 0f
-                                onSwipeSeekStart(swipeStartSec)
+                                swipeDragStartSec = swipeStartSec
                             }
     
                             if (gestureConsumed) {
@@ -287,13 +298,13 @@ fun PlayerGestureBox(
                                 val accum = if (current != null && !current.isForward)
                                     current.totalSeconds + 10
                                 else 10
-                                onDoubleTapSeekState(DoubleTapSeekState(isForward = false, totalSeconds = accum))
+                                doubleTapSeekState = DoubleTapSeekState(isForward = false, totalSeconds = accum)
                             } else if (offset.x > 2 * thirdWidth) {
                                 viewModel.seekExactRelative(10)
                                 val accum = if (current != null && current.isForward)
                                     current.totalSeconds + 10
                                 else 10
-                                onDoubleTapSeekState(DoubleTapSeekState(isForward = true, totalSeconds = accum))
+                                doubleTapSeekState = DoubleTapSeekState(isForward = true, totalSeconds = accum)
                             } else {
                                 viewModel.togglePlay()
                             }
@@ -305,6 +316,16 @@ fun PlayerGestureBox(
                 )
             }
     ) {
+        if (activity?.isInPictureInPictureMode != true) {
+            DoubleTapSeekOverlay(seekState = doubleTapSeekState)
+        }
+
+        SwipeSeekOverlay(
+            targetSec = gestureState.swipeSeekTargetSec,
+            dragStartSec = swipeDragStartSec,
+            isPipMode = activity?.isInPictureInPictureMode == true
+        )
+
         if (activity?.isInPictureInPictureMode != true) {
             VolumeIndicator(
                 volume = ((tempVolume / maxVolume) * 100).toInt(),

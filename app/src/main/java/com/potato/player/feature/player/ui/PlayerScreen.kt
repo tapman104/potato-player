@@ -83,9 +83,7 @@ fun PlayerScreen(
     // ponytail: orientation + insets boilerplate extracted for readability
     PlayerLifecycleEffect(activity = activity, uiState = uiState, viewModel = viewModel)
 
-    var doubleTapSeekState by remember { mutableStateOf<DoubleTapSeekState?>(null) }
     val swipeSeekTargetSec = gestureState.swipeSeekTargetSec
-    var swipeDragStartSec by remember { mutableStateOf(0.0) }
 
     val (controlsVisible, onUserInteraction) = rememberControlsVisibility(
         isPlaying = uiState.isPlaying,
@@ -112,7 +110,6 @@ fun PlayerScreen(
     val onNext                = remember(viewModel) { { viewModel.playNext() } }
     val onSeekGesture         = remember(viewModel) { { ms: Long -> viewModel.onSliderDragChange(ms / 1000.0) } }
     val onSeekCommit          = remember(viewModel) { { ms: Long -> viewModel.onSliderDragEnd(ms / 1000.0) } }
-    val onVolumeChange        = remember(viewModel) { { v: Int -> viewModel.setVolume(v) } }
     // onBack: captures isExternalIntent (stable param) + activity (stable remembered) + onBack param
     val onBackStable          = remember(viewModel, activity, isExternalIntent, onBack) {
         {
@@ -126,14 +123,6 @@ fun PlayerScreen(
     }
     // onMoreOptions: reads activeDialog (changes) — cannot be wrapped in remember(viewModel); left inline below
 
-
-    // Clear double-tap seek overlay after animation
-    LaunchedEffect(doubleTapSeekState?.triggerId) {
-        if (doubleTapSeekState != null) {
-            delay(1200L)
-            doubleTapSeekState = null
-        }
-    }
 
     // Load the video once the surface is ready; also handles config-change re-attach.
     LaunchedEffect(viewModel, videoUri) {
@@ -180,28 +169,12 @@ fun PlayerScreen(
                     gestureState = gestureState,
                     viewModel = viewModel,
                     onToggleControls = { onUserInteraction() },
-                    onBrightnessChange = onBrightnessChange,
-                    onVolumeChange = onVolumeChange,
                     fileLoaded = uiState.fileLoaded,
-                    doubleTapSeekState = doubleTapSeekState,
-                    onDoubleTapSeekState = { doubleTapSeekState = it },
-                    onSwipeSeekStart = { startSec -> swipeDragStartSec = startSec },
                     activity = activity,
                     gesturesEnabled = uiState.gesturesEnabled
                 )
             }
         }
-
-        // ── Double-Tap Seek Overlay ──────────────────────────────────────────
-        if (!(activity?.isInPictureInPictureMode == true)) {
-            DoubleTapSeekOverlay(seekState = doubleTapSeekState)
-        }
-
-        SwipeSeekOverlay(
-            targetSec = swipeSeekTargetSec,
-            dragStartSec = swipeDragStartSec,
-            isPipMode = activity?.isInPictureInPictureMode == true
-        )
 
         // ── Top Hold for 2x Fast-Forward Banner ──────────────────────────────
         // Fix 5: controlsVisible-dependent padding moved inside PlayerHoldToFastForwardContainer
