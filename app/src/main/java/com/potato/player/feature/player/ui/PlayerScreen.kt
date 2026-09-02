@@ -8,12 +8,6 @@ import android.app.PictureInPictureParams
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,8 +18,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.potato.player.feature.player.controls.DoubleTapSeekOverlay
-import com.potato.player.feature.player.controls.DoubleTapSeekState
 import com.potato.player.feature.player.controls.HoldToFastForward
 import com.potato.player.feature.player.controls.PlayerBottomControls
 import com.potato.player.feature.player.controls.PlayerCenterPlayPause
@@ -166,12 +158,8 @@ fun PlayerScreen(
         if (!uiState.isLocked) {
             Box(modifier = Modifier.clearAndSetSemantics {}) {
                 PlayerGestureBox(
-                    gestureState = gestureState,
                     viewModel = viewModel,
-                    onToggleControls = { onUserInteraction() },
-                    fileLoaded = uiState.fileLoaded,
-                    activity = activity,
-                    gesturesEnabled = uiState.gesturesEnabled
+                    onToggleControls = { onUserInteraction() }
                 )
             }
         }

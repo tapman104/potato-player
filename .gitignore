@@ -29,3 +29,4 @@ keystore.properties
 log-*.txt
 log_*.txt
 .kotlin/sessions/kotlin-compiler-7984673327778797080.salive
+change log.md

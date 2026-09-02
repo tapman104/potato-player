@@ -5,37 +5,26 @@ import com.potato.player.feature.player.state.*
 import com.potato.player.feature.player.PlayerViewModel
 import android.app.Activity
 import android.content.Context
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Brightness6
-import androidx.compose.material.icons.filled.VolumeUp
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.potato.player.util.findActivity
 import com.potato.player.feature.player.controls.DoubleTapSeekState
 import com.potato.player.feature.player.controls.DoubleTapSeekOverlay
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -48,16 +37,19 @@ import kotlin.math.roundToInt
 
 @Composable
 fun PlayerGestureBox(
-    gestureState: PlayerGestureState,
     viewModel: PlayerViewModel,
-    onToggleControls: () -> Unit,
-    fileLoaded: Boolean,
-    activity: Activity?,
-    gesturesEnabled: Boolean
+    onToggleControls: () -> Unit
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val gestureState by viewModel.gestureState.collectAsStateWithLifecycle()
     val progressState by viewModel.progressState.collectAsStateWithLifecycle()
     val currentPositionSec = progressState.positionSec
     val durationSec = progressState.durationSec
+
+    val context = LocalContext.current
+    val activity = remember(context) { context.findActivity() }
+    val fileLoaded = uiState.fileLoaded
+    val gesturesEnabled = uiState.gesturesEnabled
 
     var doubleTapSeekState by remember { mutableStateOf<DoubleTapSeekState?>(null) }
     var swipeDragStartSec by remember { mutableStateOf(0.0) }
@@ -84,9 +76,9 @@ fun PlayerGestureBox(
     val maxVolume = 100f
     var tempVolume by remember { mutableStateOf(100f) }
 
-    var currentZoom by remember { mutableStateOf(1.0f) }
-    var currentPanX by remember { mutableStateOf(0f) }
-    var currentPanY by remember { mutableStateOf(0f) }
+    var currentZoom by remember { mutableStateOf(gestureState.videoZoom) }
+    var currentPanX by remember { mutableStateOf(gestureState.videoPanX) }
+    var currentPanY by remember { mutableStateOf(gestureState.videoPanY) }
     var showZoomIndicator by remember { mutableStateOf(false) }
     var isPinchActive by remember { mutableStateOf(false) }
 
@@ -99,6 +91,7 @@ fun PlayerGestureBox(
             currentZoom = 1.0f
             currentPanX = 0f
             currentPanY = 0f
+            viewModel.setVideoZoom(1.0f, 0f, 0f)
         }
     }
 
