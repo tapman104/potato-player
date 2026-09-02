@@ -3,25 +3,6 @@ package com.potato.player.feature.player.state
 import com.potato.player.feature.player.VideoFitMode
 import com.potato.player.data.UserPreferencesRepository
 
-data class UiStateUpdate(
-    val isPlaying: Boolean,
-    val isBuffering: Boolean,
-    val hwdecActive: String,
-    val videoWidth: Int,
-    val videoHeight: Int,
-    val playbackSpeed: Double,
-    val subScale: Double,
-    val subPos: Int
-)
-
-data class ProgressStateUpdate(
-    val positionSec: Double?,
-    val durationSec: Double,
-    val cachedSec: Double,
-    val cacheDurationSec: Double
-)
-
-
 
 enum class ActiveDialog { None, Audio, Subtitle, Speed, MoreMenu, Decoder }
 
