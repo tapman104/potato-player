@@ -162,7 +162,7 @@ class GestureController(
 
     private suspend fun handleDrag(inputScope: PointerInputScope) {
         inputScope.awaitEachGesture {
-            val down = awaitFirstDown(requireUnconsumed = false)
+            val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
             val startX = down.position.x
             val isLeftSide = startX < inputScope.size.width / 2f
             
@@ -174,7 +174,7 @@ class GestureController(
 
             try {
                 do {
-                    val event = awaitPointerEvent(PointerEventPass.Main)
+                    val event = awaitPointerEvent(PointerEventPass.Initial)
                     if (event.changes.count { it.pressed } >= 2) break // Let pinch take over
                     if (gestureTypeRef.get() == GestureType.PINCH) break // Abort if pinch won
                     

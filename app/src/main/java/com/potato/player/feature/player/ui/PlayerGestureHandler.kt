@@ -50,7 +50,7 @@ fun PlayerGestureBox(
         GestureController(
             positionProvider = positionProvider,
             durationProvider = durationProvider,
-            gesturesEnabled = { gesturesEnabled },
+            gesturesEnabled = { uiState.gesturesEnabled },
             scope = scope,
             setVideoZoom = viewModel::setVideoZoom,
             setVolume = viewModel::setVolume,
