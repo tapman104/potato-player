@@ -76,6 +76,7 @@ fun PlayerScreen(
     PlayerLifecycleEffect(activity = activity, uiState = uiState, viewModel = viewModel)
 
     val swipeSeekTargetSec: Double? = null
+    var isGestureActive by remember { mutableStateOf(false) }
 
     val (controlsVisible, onUserInteraction) = rememberControlsVisibility(
         isPlaying = uiState.isPlaying,
@@ -83,7 +84,7 @@ fun PlayerScreen(
         isSeeking = isSeeking,
         isFastForwarding = uiState.isFastForwarding,
         isLocked = uiState.isLocked,
-        isSwipingVolumeOrBrightness = false,
+        isSwipingVolumeOrBrightness = isGestureActive,
         isPipMode = activity?.isInPictureInPictureMode == true,
         swipeSeekTargetSec = swipeSeekTargetSec
     )
@@ -161,7 +162,8 @@ fun PlayerScreen(
                     viewModel = viewModel,
                     positionProvider = { progressState.positionSec },
                     durationProvider = { progressState.durationSec },
-                    onToggleControls = { onUserInteraction() }
+                    onToggleControls = { onUserInteraction() },
+                    onGestureActive = { isGestureActive = it }
                 )
             }
         }

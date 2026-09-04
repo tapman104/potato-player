@@ -22,7 +22,8 @@ fun PlayerGestureBox(
     viewModel: PlayerViewModel,
     positionProvider: () -> Double,
     durationProvider: () -> Double,
-    onToggleControls: () -> Unit
+    onToggleControls: () -> Unit,
+    onGestureActive: (Boolean) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -69,6 +70,7 @@ fun PlayerGestureBox(
             },
             onToggleControls = onToggleControls,
             performHapticFeedback = { haptic.performHapticFeedback(HapticFeedbackType.LongPress) },
+            onGestureActive = onGestureActive,
             initialBrightness = initialBrightness
         )
     }

@@ -16,9 +16,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.abs
 
 enum class GestureType { NONE, SEEK, VOLUME_BRIGHTNESS, PAN, PINCH }
@@ -51,13 +51,13 @@ class GestureController(
     private val applyBrightness: (Float) -> Unit,
     private val onToggleControls: () -> Unit,
     private val performHapticFeedback: () -> Unit,
+    private val onGestureActive: (Boolean) -> Unit,
     initialBrightness: Float
 ) {
     private val _uiState = MutableStateFlow(GestureUiState(brightnessLevel = initialBrightness))
     val uiState: StateFlow<GestureUiState> = _uiState.asStateFlow()
 
-    private var gestureType = GestureType.NONE
-    private val gestureMutex = Mutex()
+    private val gestureTypeRef = AtomicReference(GestureType.NONE)
 
     private var zoom = 1.0f
     private var panX = 0f
@@ -85,20 +85,17 @@ class GestureController(
         }
     }
 
-    private suspend fun tryAcquireGesture(type: GestureType): Boolean {
-        return gestureMutex.withLock {
-            if (gestureType == GestureType.NONE) {
-                gestureType = type
-                true
-            } else false
+    private fun tryAcquireGesture(type: GestureType): Boolean {
+        if (gestureTypeRef.compareAndSet(GestureType.NONE, type)) {
+            onGestureActive(true)
+            return true
         }
+        return false
     }
 
-    private suspend fun releaseGesture(type: GestureType) {
-        gestureMutex.withLock {
-            if (gestureType == type) {
-                gestureType = GestureType.NONE
-            }
+    private fun releaseGesture(type: GestureType) {
+        if (gestureTypeRef.compareAndSet(type, GestureType.NONE)) {
+            onGestureActive(false)
         }
     }
 
@@ -109,8 +106,15 @@ class GestureController(
                 val event = awaitPointerEvent(PointerEventPass.Main)
                 val pointers = event.changes.filter { it.pressed }
                 if (pointers.size >= 2) {
-                    if (gestureMutex.withLock { gestureType == GestureType.NONE || gestureType == GestureType.PINCH }) {
-                        gestureMutex.withLock { gestureType = GestureType.PINCH }
+                    val current = gestureTypeRef.get()
+                    if (current == GestureType.NONE || current == GestureType.PINCH) {
+                        if (current == GestureType.NONE) {
+                            if (gestureTypeRef.compareAndSet(GestureType.NONE, GestureType.PINCH)) {
+                                onGestureActive(true)
+                            } else {
+                                continue
+                            }
+                        }
                         
                         _uiState.update { it.copy(showZoomIndicator = true) }
                         hideZoomJob?.cancel()
@@ -160,7 +164,7 @@ class GestureController(
                 do {
                     val event = awaitPointerEvent(PointerEventPass.Main)
                     if (event.changes.count { it.pressed } >= 2) break // Let pinch take over
-                    if (gestureMutex.withLock { gestureType == GestureType.PINCH }) break // Abort if pinch won
+                    if (gestureTypeRef.get() == GestureType.PINCH) break // Abort if pinch won
                     
                     val change = event.changes.firstOrNull() ?: break
                     if (lockedInType == GestureType.NONE) {
@@ -265,21 +269,24 @@ class GestureController(
                 }
             },
             onLongPress = {
-                if (gesturesEnabled() && gestureMutex.tryLock()) {
-                    try {
-                        if (gestureType == GestureType.NONE) {
-                            isLongPressActive = true
-                            startFastForward()
-                        }
-                    } finally {
-                        gestureMutex.unlock()
+                if (gesturesEnabled()) {
+                    if (gestureTypeRef.compareAndSet(GestureType.NONE, GestureType.SEEK)) {
+                        isLongPressActive = true
+                        startFastForward()
+                        // Not firing onGestureActive(true) here because it's just fast-forwarding 
+                        // and we don't necessarily want to hide all UI, or we can restore it later.
+                        // Actually, wait, long press doesn't acquire SEEK? Previously it did not set gestureType!
+                        // The original code did: `if (gestureType == GestureType.NONE)` and used `tryLock`.
+                        gestureTypeRef.set(GestureType.NONE) // revert, we just used it as a barrier
+                        isLongPressActive = true
+                        startFastForward()
                     }
                 }
             },
             onDoubleTap = { offset ->
                 if (gesturesEnabled()) {
                     scope.launch {
-                        if (gestureMutex.withLock { gestureType == GestureType.NONE }) {
+                        if (gestureTypeRef.get() == GestureType.NONE) {
                             doubleTapJob?.cancel()
                             val current = _uiState.value.doubleTapSeekState
                             val thirdWidth = inputScope.size.width / 3f
@@ -307,7 +314,7 @@ class GestureController(
             },
             onTap = { 
                 scope.launch {
-                    if (gestureMutex.withLock { gestureType == GestureType.NONE }) {
+                    if (gestureTypeRef.get() == GestureType.NONE) {
                         onToggleControls() 
                     }
                 }
