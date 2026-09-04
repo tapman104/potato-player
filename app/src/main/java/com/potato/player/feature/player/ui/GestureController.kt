@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.abs
 
-enum class GestureType { NONE, SEEK, VOLUME_BRIGHTNESS, PAN, PINCH }
+enum class GestureType { NONE, SEEK, VOLUME_BRIGHTNESS, PAN, PINCH, LONG_PRESS }
 
 data class GestureUiState(
     val doubleTapSeekState: DoubleTapSeekState? = null,
@@ -265,19 +265,13 @@ class GestureController(
                     if (isLongPressActive) {
                         isLongPressActive = false
                         stopFastForward()
+                        releaseGesture(GestureType.LONG_PRESS)
                     }
                 }
             },
             onLongPress = {
                 if (gesturesEnabled()) {
-                    if (gestureTypeRef.compareAndSet(GestureType.NONE, GestureType.SEEK)) {
-                        isLongPressActive = true
-                        startFastForward()
-                        // Not firing onGestureActive(true) here because it's just fast-forwarding 
-                        // and we don't necessarily want to hide all UI, or we can restore it later.
-                        // Actually, wait, long press doesn't acquire SEEK? Previously it did not set gestureType!
-                        // The original code did: `if (gestureType == GestureType.NONE)` and used `tryLock`.
-                        gestureTypeRef.set(GestureType.NONE) // revert, we just used it as a barrier
+                    if (tryAcquireGesture(GestureType.LONG_PRESS)) {
                         isLongPressActive = true
                         startFastForward()
                     }
