@@ -45,8 +45,8 @@ class GestureController(
     private val scope: CoroutineScope,
     private val setVideoZoom: (zoom: Float, panX: Float, panY: Float) -> Unit,
     private val setVolume: (volume: Int) -> Unit,
-    private val onSwipeSeek: (positionSec: Double) -> Unit,
-    private val onSwipeSeekFinished: (targetSec: Double) -> Unit,
+    private val onSeek: (positionSec: Double) -> Unit,
+    private val onSeekFinished: (targetSec: Double) -> Unit,
     private val stopFastForward: () -> Unit,
     private val startFastForward: () -> Unit,
     private val seekExactRelative: (offsetSec: Int) -> Unit,
@@ -257,7 +257,7 @@ class GestureController(
                                 val seekDelta = (accumulatedDragX / inputScope.size.width) * 120.0
                                 val target = (seekAnchorSec + seekDelta).coerceIn(0.0, gestureDurationSec)
                                 _uiState.update { it.copy(swipeSeekTargetSec = target) }
-                                onSwipeSeek(target)
+                                onSeek(target)
                             }
                             GestureType.VOLUME_BRIGHTNESS -> {
                                 if (isLeftSide) {
@@ -294,7 +294,7 @@ class GestureController(
                 if (lockedInType == GestureType.SEEK) {
                     val finalTarget = _uiState.value.swipeSeekTargetSec
                     if (finalTarget != null) {
-                        onSwipeSeekFinished(finalTarget)
+                        onSeekFinished(finalTarget)
                     }
                     _uiState.update { it.copy(swipeSeekTargetSec = null) }
                 }

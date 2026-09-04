@@ -75,11 +75,7 @@ class SeekController(
         wrapper.seekFast(ms)
     }
 
-    fun onSwipeSeek(positionSec: Double) {
-        if (!isActive.get()) return
-    }
-
-    fun onSwipeSeekFinished(targetSec: Double) {
+    fun seekTo(targetSec: Double) {
         if (!isActive.get()) return
         val ms = (targetSec * 1000).toLong()
         wrapper.seekFast(ms)

@@ -46,14 +46,13 @@ fun PlayerScreen(
 ) {
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isSeeking by viewModel.isSeekingFlow.collectAsStateWithLifecycle()
     val activeDialog by viewModel.activeDialog.collectAsStateWithLifecycle()
     val currentPlaylistIndex by viewModel.playlistManager.currentIndex.collectAsStateWithLifecycle()
     val currentPlaylist by viewModel.playlistManager.playlist.collectAsStateWithLifecycle()
 
     BackHandler {
-        if (!uiState.isLocked) {
+        if (!viewModel.uiState.value.isLocked) {
             if (isExternalIntent) {
                 activity?.finish()
             } else {
@@ -72,17 +71,17 @@ fun PlayerScreen(
     }
 
     // ponytail: orientation + insets boilerplate extracted for readability
-    PlayerLifecycleEffect(activity = activity, uiState = uiState, viewModel = viewModel)
+    PlayerLifecycleEffectContainer(activity = activity, viewModel = viewModel)
 
     val swipeSeekTargetSec: Double? = null
     var isGestureActive by remember { mutableStateOf(false) }
 
     val (controlsVisible, onUserInteraction) = rememberControlsVisibility(
-        isPlaying = uiState.isPlaying,
-        hideDelayMs = uiState.controlsHideDelay.toLong(),
+        isPlaying = viewModel.uiState.value.isPlaying,
+        hideDelayMs = viewModel.uiState.value.controlsHideDelay.toLong(),
         isSeeking = isSeeking,
-        isFastForwarding = uiState.isFastForwarding,
-        isLocked = uiState.isLocked,
+        isFastForwarding = viewModel.uiState.value.isFastForwarding,
+        isLocked = viewModel.uiState.value.isLocked,
         isSwipingVolumeOrBrightness = isGestureActive,
         isPipMode = activity?.isInPictureInPictureMode == true,
         swipeSeekTargetSec = swipeSeekTargetSec
@@ -155,7 +154,7 @@ fun PlayerScreen(
         )
 
         // ── Gesture & Tap Overlay ────────────────────────────────────────────
-        if (!uiState.isLocked) {
+        if (!viewModel.uiState.value.isLocked) {
             Box(modifier = Modifier.clearAndSetSemantics {}) {
                 PlayerGestureBox(
                     viewModel = viewModel,
@@ -170,89 +169,88 @@ fun PlayerScreen(
         // ── Top Hold for 2x Fast-Forward Banner ──────────────────────────────
         // Fix 5: controlsVisible-dependent padding moved inside PlayerHoldToFastForwardContainer
         // so PlayerScreen body has zero reads of controlsVisible outside param pass-throughs.
-        if (!(activity?.isInPictureInPictureMode == true)) {
-            PlayerHoldToFastForwardContainer(
-                visible = uiState.isFastForwarding,
-                controlsVisible = controlsVisible,
-                modifier = Modifier.align(Alignment.TopCenter)
-            )
-        }
+        PlayerHoldToFastForwardContainer(
+            isPipMode = activity?.isInPictureInPictureMode == true,
+            visible = { viewModel.uiState.value.isFastForwarding },
+            controlsVisible = controlsVisible,
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
 
-        PlayerLoadingIndicator(isLoading = uiState.isLoading)
+        PlayerLoadingIndicatorContainer(isLoading = { viewModel.uiState.value.isLoading })
 
-        PlayerErrorState(error = uiState.error)
+        PlayerErrorStateContainer(error = { viewModel.uiState.value.error })
 
-        if (uiState.fileLoaded && !(activity?.isInPictureInPictureMode == true)) {
+        // ── Top bar ──────────────────────────────────────────────────────
+        PlayerTopBarContainer(
+            fileLoaded = { viewModel.uiState.value.fileLoaded },
+            isPipMode = activity?.isInPictureInPictureMode == true,
+            controlsVisible = controlsVisible,
+            isLocked = { viewModel.uiState.value.isLocked },
+            swipeSeekTargetSec = swipeSeekTargetSec,
+            fileName = { viewModel.uiState.value.fileName },
+            hwdecCurrent = { viewModel.uiState.value.hwdecCurrent },
+            onBack = onBackStable,
+            onSelectAudioTrack = onSelectAudioTrack,
+            onSelectSubtitleTrack = onSelectSubtitleTrack,
+            onSelectDecoder = onSelectDecoder,
+            onMoreOptions = {
+                // reads activeDialog (changing state) — cannot be stable-wrapped
+                if (activeDialog == ActiveDialog.MoreMenu) viewModel.dismissDialog()
+                else viewModel.showDialog(ActiveDialog.MoreMenu)
+            },
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
 
-            // ── Top bar ──────────────────────────────────────────────────────
-            PlayerTopBarContainer(
-                controlsVisible = controlsVisible,
-                isLocked = uiState.isLocked,
-                swipeSeekTargetSec = swipeSeekTargetSec,
-                fileName = uiState.fileName,
-                hwdecCurrent = uiState.hwdecCurrent,
-                onBack = onBackStable,
-                onSelectAudioTrack = onSelectAudioTrack,
-                onSelectSubtitleTrack = onSelectSubtitleTrack,
-                onSelectDecoder = onSelectDecoder,
-                onMoreOptions = {
-                    // reads activeDialog (changing state) — cannot be stable-wrapped
-                    if (activeDialog == ActiveDialog.MoreMenu) viewModel.dismissDialog()
-                    else viewModel.showDialog(ActiveDialog.MoreMenu)
-                },
-                modifier = Modifier.align(Alignment.TopCenter)
-            )
+        // ── Center play/pause ────────────────────────────────────────────
+        PlayerCenterContainer(
+            fileLoaded = { viewModel.uiState.value.fileLoaded },
+            isPipMode = activity?.isInPictureInPictureMode == true,
+            controlsVisible = controlsVisible,
+            isLocked = { viewModel.uiState.value.isLocked },
+            swipeSeekTargetSec = swipeSeekTargetSec,
+            isPlaying = { viewModel.uiState.value.isPlaying },
+            onTogglePlay = onTogglePlay,
+            modifier = Modifier.align(Alignment.Center)
+        )
 
-            // ── Center play/pause ────────────────────────────────────────────
-            PlayerCenterContainer(
-                controlsVisible = controlsVisible,
-                isLocked = uiState.isLocked,
-                swipeSeekTargetSec = swipeSeekTargetSec,
-                isPlaying = uiState.isPlaying,
-                onTogglePlay = onTogglePlay,
-                modifier = Modifier.align(Alignment.Center)
-            )
+        // ── Bottom controls ──────────────────────────────────────────────
+        PlayerBottomContainer(
+            fileLoaded = { viewModel.uiState.value.fileLoaded },
+            isPipMode = activity?.isInPictureInPictureMode == true,
+            controlsVisible = controlsVisible,
+            isLocked = { viewModel.uiState.value.isLocked },
+            showLockButton = { viewModel.uiState.value.lockButtonEnabled },
+            swipeSeekTargetSec = swipeSeekTargetSec,
+            viewModel = viewModel,
+            isAutoRotation = { viewModel.uiState.value.isAutoRotation },
+            currentFitMode = { viewModel.uiState.value.fitMode },
+            hasPrevious = currentPlaylistIndex > 0,
+            hasNext = currentPlaylistIndex >= 0 &&
+                                currentPlaylistIndex < currentPlaylist.size - 1,
+            onSeekGesture = onSeekGesture,
+            onSeekCommit = onSeekCommit,
+            onToggleAutoRotation = onToggleAutoRotation,
+            onToggleFitMode = onToggleFitMode,
+            onEnterPip = onEnterPip,
+            onToggleLock = onToggleLock,
+            onPrevious = onPrevious,
+            onNext = onNext,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
 
-            // ── Bottom controls ──────────────────────────────────────────────
-            PlayerBottomContainer(
-                controlsVisible = controlsVisible,
-                isLocked = uiState.isLocked,
-                showLockButton = uiState.lockButtonEnabled,
-                swipeSeekTargetSec = swipeSeekTargetSec,
-                viewModel = viewModel,
-                isAutoRotation = uiState.isAutoRotation,
-                currentFitMode = uiState.fitMode,
-                hasPrevious = currentPlaylistIndex > 0,
-                hasNext = currentPlaylistIndex >= 0 &&
-                                    currentPlaylistIndex < currentPlaylist.size - 1,
-                onSeekGesture = onSeekGesture,
-                onSeekCommit = onSeekCommit,
-                onToggleAutoRotation = onToggleAutoRotation,
-                onToggleFitMode = onToggleFitMode,
-                onEnterPip = onEnterPip,
-                onToggleLock = onToggleLock,
-                onPrevious = onPrevious,
-                onNext = onNext,
-                modifier = Modifier.align(Alignment.BottomCenter)
-            )
-        }
-
-        if (uiState.lockButtonEnabled) {
-            PlayerUnlockButton(
-                isLocked = uiState.isLocked,
-                isPipMode = activity?.isInPictureInPictureMode == true,
-                onUnlock = viewModel::toggleLock
-            )
-        }
+        PlayerUnlockButtonContainer(
+            lockButtonEnabled = { viewModel.uiState.value.lockButtonEnabled },
+            isLocked = { viewModel.uiState.value.isLocked },
+            isPipMode = activity?.isInPictureInPictureMode == true,
+            onUnlock = viewModel::toggleLock
+        )
 
         // ponytail: move only, zero new logic
-        if (!(activity?.isInPictureInPictureMode == true)) {
-            PlayerModals(
-                uiState = uiState,
-                viewModel = viewModel,
-                onLaunchFilePicker = { subtitleLauncher.launch(arrayOf("*/*")) }
-            )
-        }
+        PlayerModalsContainer(
+            isPipMode = activity?.isInPictureInPictureMode == true,
+            viewModel = viewModel,
+            onLaunchFilePicker = { subtitleLauncher.launch(arrayOf("*/*")) }
+        )
     }
 }
 
@@ -260,23 +258,28 @@ fun PlayerScreen(
 // PlayerScreen body passes controlsVisible as a parameter; the Dp calculation stays here.
 @Composable
 private fun PlayerHoldToFastForwardContainer(
-    visible: Boolean,
+    isPipMode: Boolean,
+    visible: () -> Boolean,
     controlsVisible: Boolean,
     modifier: Modifier = Modifier
 ) {
-    HoldToFastForward(
-        visible = visible,
-        modifier = modifier.padding(top = if (controlsVisible) 72.dp else 36.dp)
-    )
+    if (!isPipMode) {
+        HoldToFastForward(
+            visible = visible(),
+            modifier = modifier.padding(top = if (controlsVisible) 72.dp else 36.dp)
+        )
+    }
 }
 
 @Composable
 private fun PlayerTopBarContainer(
+    fileLoaded: () -> Boolean,
+    isPipMode: Boolean,
     controlsVisible: Boolean,
-    isLocked: Boolean,
+    isLocked: () -> Boolean,
     swipeSeekTargetSec: Double?,
-    fileName: String,
-    hwdecCurrent: String,
+    fileName: () -> String,
+    hwdecCurrent: () -> String,
     onBack: () -> Unit,
     onSelectAudioTrack: () -> Unit,
     onSelectSubtitleTrack: () -> Unit,
@@ -284,57 +287,65 @@ private fun PlayerTopBarContainer(
     onMoreOptions: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    AnimatedVisibility(
-        visible = controlsVisible && !isLocked && swipeSeekTargetSec == null,
-        enter = fadeIn() + slideInVertically { -it },
-        exit = fadeOut() + slideOutVertically { -it },
-        modifier = modifier
-            .systemBarsPadding()
-            .windowInsetsPadding(WindowInsets.displayCutout)
-    ) {
-        PlayerTopBar(
-            fileName              = fileName,
-            currentDecoder        = hwdecCurrent,
-            onBack                = onBack,
-            onSelectAudioTrack    = onSelectAudioTrack,
-            onSelectSubtitleTrack = onSelectSubtitleTrack,
-            onSelectDecoder       = onSelectDecoder,
-            onMoreOptions         = onMoreOptions
-        )
+    if (fileLoaded() && !isPipMode) {
+        AnimatedVisibility(
+            visible = controlsVisible && !isLocked() && swipeSeekTargetSec == null,
+            enter = fadeIn() + slideInVertically { -it },
+            exit = fadeOut() + slideOutVertically { -it },
+            modifier = modifier
+                .systemBarsPadding()
+                .windowInsetsPadding(WindowInsets.displayCutout)
+        ) {
+            PlayerTopBar(
+                fileName              = fileName(),
+                currentDecoder        = hwdecCurrent(),
+                onBack                = onBack,
+                onSelectAudioTrack    = onSelectAudioTrack,
+                onSelectSubtitleTrack = onSelectSubtitleTrack,
+                onSelectDecoder       = onSelectDecoder,
+                onMoreOptions         = onMoreOptions
+            )
+        }
     }
 }
 
 @Composable
 private fun PlayerCenterContainer(
+    fileLoaded: () -> Boolean,
+    isPipMode: Boolean,
     controlsVisible: Boolean,
-    isLocked: Boolean,
+    isLocked: () -> Boolean,
     swipeSeekTargetSec: Double?,
-    isPlaying: Boolean,
+    isPlaying: () -> Boolean,
     onTogglePlay: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    AnimatedVisibility(
-        visible = controlsVisible && !isLocked && swipeSeekTargetSec == null,
-        enter = fadeIn(),
-        exit = fadeOut(),
-        modifier = modifier
-    ) {
-        PlayerCenterPlayPause(
-            isPlaying = isPlaying,
-            onClick   = onTogglePlay
-        )
+    if (fileLoaded() && !isPipMode) {
+        AnimatedVisibility(
+            visible = controlsVisible && !isLocked() && swipeSeekTargetSec == null,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = modifier
+        ) {
+            PlayerCenterPlayPause(
+                isPlaying = isPlaying(),
+                onClick   = onTogglePlay
+            )
+        }
     }
 }
 
 @Composable
 private fun PlayerBottomContainer(
+    fileLoaded: () -> Boolean,
+    isPipMode: Boolean,
     controlsVisible: Boolean,
-    isLocked: Boolean,
-    showLockButton: Boolean,
+    isLocked: () -> Boolean,
+    showLockButton: () -> Boolean,
     swipeSeekTargetSec: Double?,
     viewModel: PlayerViewModel,
-    isAutoRotation: Boolean,
-    currentFitMode: VideoFitMode,
+    isAutoRotation: () -> Boolean,
+    currentFitMode: () -> VideoFitMode,
     hasPrevious: Boolean,
     hasNext: Boolean,
     onSeekGesture: (Long) -> Unit,
@@ -349,32 +360,74 @@ private fun PlayerBottomContainer(
 ) {
     val progressState by viewModel.progressState.collectAsStateWithLifecycle()
 
-    AnimatedVisibility(
-        visible = controlsVisible && !isLocked && swipeSeekTargetSec == null,
-        enter = fadeIn() + slideInVertically { it },
-        exit = fadeOut() + slideOutVertically { it },
-        modifier = modifier
-            .systemBarsPadding()
-    ) {
-        PlayerBottomControls(
-            progressState        = progressState,
-            onSliderDragStart    = viewModel::onSliderDragStart,
-            isAutoRotation       = isAutoRotation,
-            currentFitMode       = currentFitMode,
-            contentPadding       = WindowInsets.displayCutout.asPaddingValues(),
-            onSeekGesture        = onSeekGesture,
-            onSeekCommit         = onSeekCommit,
-            onDragEnd            = { /* already handled inside onSeekCommit path */ },
-            onToggleAutoRotation = onToggleAutoRotation,
-            onToggleFitMode      = onToggleFitMode,
-            onEnterPip           = onEnterPip,
-            isLocked             = isLocked,
-            onToggleLock         = onToggleLock,
-            showLockButton       = showLockButton,
-            hasPrevious          = hasPrevious,
-            hasNext              = hasNext,
-            onPrevious           = onPrevious,
-            onNext               = onNext
+    if (fileLoaded() && !isPipMode) {
+        AnimatedVisibility(
+            visible = controlsVisible && !isLocked() && swipeSeekTargetSec == null,
+            enter = fadeIn() + slideInVertically { it },
+            exit = fadeOut() + slideOutVertically { it },
+            modifier = modifier
+                .systemBarsPadding()
+        ) {
+            PlayerBottomControls(
+                progressState        = progressState,
+                onSliderDragStart    = viewModel::onSliderDragStart,
+                isAutoRotation       = isAutoRotation(),
+                currentFitMode       = currentFitMode(),
+                contentPadding       = WindowInsets.displayCutout.asPaddingValues(),
+                onSeekGesture        = onSeekGesture,
+                onSeekCommit         = onSeekCommit,
+                onDragEnd            = { /* already handled inside onSeekCommit path */ },
+                onToggleAutoRotation = onToggleAutoRotation,
+                onToggleFitMode      = onToggleFitMode,
+                onEnterPip           = onEnterPip,
+                isLocked             = isLocked(),
+                onToggleLock         = onToggleLock,
+                showLockButton       = showLockButton(),
+                hasPrevious          = hasPrevious,
+                hasNext              = hasNext,
+                onPrevious           = onPrevious,
+                onNext               = onNext
+            )
+        }
+    }
+}
+
+@Composable
+private fun PlayerLoadingIndicatorContainer(isLoading: () -> Boolean) {
+    PlayerLoadingIndicator(isLoading = isLoading())
+}
+
+@Composable
+private fun PlayerErrorStateContainer(error: () -> String?) {
+    PlayerErrorState(error = error())
+}
+
+@Composable
+private fun PlayerUnlockButtonContainer(
+    lockButtonEnabled: () -> Boolean,
+    isLocked: () -> Boolean,
+    isPipMode: Boolean,
+    onUnlock: () -> Unit
+) {
+    if (lockButtonEnabled()) {
+        PlayerUnlockButton(
+            isLocked = isLocked(),
+            isPipMode = isPipMode,
+            onUnlock = onUnlock
         )
+    }
+}
+
+@Composable
+private fun PlayerLifecycleEffectContainer(activity: android.app.Activity?, viewModel: PlayerViewModel) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    PlayerLifecycleEffect(activity = activity, uiState = uiState, viewModel = viewModel)
+}
+
+@Composable
+private fun PlayerModalsContainer(isPipMode: Boolean, viewModel: PlayerViewModel, onLaunchFilePicker: () -> Unit) {
+    if (!isPipMode) {
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+        PlayerModals(uiState = uiState, viewModel = viewModel, onLaunchFilePicker = onLaunchFilePicker)
     }
 }

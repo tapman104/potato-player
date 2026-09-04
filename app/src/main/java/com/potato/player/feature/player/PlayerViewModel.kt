@@ -297,8 +297,7 @@ class PlayerViewModel(
     fun onSliderDragStart(posSec: Double) = seekController.onSliderDragStart(posSec)
     fun onSliderDragChange(posSec: Double) = seekController.onSliderDragChange(posSec)
     fun onSliderDragEnd(posSec: Double) = seekController.onSliderDragEnd(posSec)
-    fun onSwipeSeek(positionSec: Double) = seekController.onSwipeSeek(positionSec)
-    fun onSwipeSeekFinished(targetSec: Double) = seekController.onSwipeSeekFinished(targetSec)
+    fun seekTo(positionSec: Double) = seekController.seekTo(positionSec)
 
     fun setPlaybackSpeed(speed: Double) = seekController.setPlaybackSpeed(speed)
 
