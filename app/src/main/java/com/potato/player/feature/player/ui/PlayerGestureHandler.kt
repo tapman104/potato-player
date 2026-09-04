@@ -86,7 +86,7 @@ fun PlayerGestureBox(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .pointerInput(gesturesEnabled, isPipMode) {
+            .pointerInput(isPipMode) {
                 if (!gesturesEnabled || isPipMode) return@pointerInput
                 controller.handlePointerInput(this)
             }

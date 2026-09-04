@@ -205,8 +205,9 @@ class GestureController(
                     
                     val change = event.changes.firstOrNull() ?: break
                     if (lockedInType == GestureType.NONE) {
-                        totalDx += abs(change.positionChange().x)
-                        totalDy += abs(change.positionChange().y)
+                        val rawDelta = change.position - change.previousPosition
+                        totalDx += abs(rawDelta.x)
+                        totalDy += abs(rawDelta.y)
 
                         val isPanGesture = zoom > 1.05f
                         
@@ -234,9 +235,10 @@ class GestureController(
                     }
 
                     if (lockedInType != GestureType.NONE) {
+                        val rawDelta = change.position - change.previousPosition
                         change.consume()
-                        val dx = change.positionChange().x
-                        val dy = change.positionChange().y
+                        val dx = rawDelta.x
+                        val dy = rawDelta.y
 
                         when (lockedInType) {
                             GestureType.PAN -> {
