@@ -59,7 +59,6 @@ class GestureController(
 ) {
     private val _uiState = MutableStateFlow(GestureUiState(brightnessLevel = initialBrightness))
     val uiState: StateFlow<GestureUiState> = _uiState.asStateFlow()
-        .distinctUntilChanged()
         .stateIn(scope, SharingStarted.WhileSubscribed(), _uiState.value)
 
     private val gestureTypeRef = AtomicReference(GestureType.NONE)
