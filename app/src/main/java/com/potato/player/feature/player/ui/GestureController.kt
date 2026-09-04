@@ -70,6 +70,10 @@ class GestureController(
     private var doubleTapJob: Job? = null
 
     fun resetZoom() {
+        val currentGesture = gestureTypeRef.get()
+        if (currentGesture == GestureType.PINCH || currentGesture == GestureType.PAN) {
+            releaseGesture(currentGesture)
+        }
         zoom = 1.0f
         panX = 0f
         panY = 0f
@@ -119,27 +123,35 @@ class GestureController(
                         _uiState.update { it.copy(showZoomIndicator = true) }
                         hideZoomJob?.cancel()
 
-                        do {
-                            val e2 = awaitPointerEvent(PointerEventPass.Main)
-                            val zoomChange = e2.calculateZoom()
-                            val panChange = e2.calculatePan()
-                            e2.changes.forEach { it.consume() }
+                        var isCancelled = true
+                        try {
+                            do {
+                                val e2 = awaitPointerEvent(PointerEventPass.Main)
+                                val zoomChange = e2.calculateZoom()
+                                val panChange = e2.calculatePan()
+                                e2.changes.forEach { it.consume() }
 
-                            zoom = (zoom * zoomChange).coerceIn(0.5f, 5.0f)
-                            val maxPanX = ((zoom - 1f) * 0.5f).coerceAtLeast(0f)
-                            val maxPanY = ((zoom - 1f) * 0.5f).coerceAtLeast(0f)
-                            panX = (panX + panChange.x / inputScope.size.width).coerceIn(-maxPanX, maxPanX)
-                            panY = (panY + panChange.y / inputScope.size.height).coerceIn(-maxPanY, maxPanY)
-                            
-                            setVideoZoom(zoom, panX, panY)
-                            _uiState.update { it.copy(zoomLevel = zoom) }
-                        } while (e2.changes.any { it.pressed })
+                                zoom = (zoom * zoomChange).coerceIn(0.5f, 5.0f)
+                                val maxPanX = ((zoom - 1f) * 0.5f).coerceAtLeast(0f)
+                                val maxPanY = ((zoom - 1f) * 0.5f).coerceAtLeast(0f)
+                                panX = (panX + panChange.x / inputScope.size.width).coerceIn(-maxPanX, maxPanX)
+                                panY = (panY + panChange.y / inputScope.size.height).coerceIn(-maxPanY, maxPanY)
+                                
+                                setVideoZoom(zoom, panX, panY)
+                                _uiState.update { it.copy(zoomLevel = zoom) }
+                            } while (e2.changes.any { it.pressed })
 
-                        releaseGesture(GestureType.PINCH)
-                        
-                        hideZoomJob = scope.launch {
-                            delay(1500)
-                            _uiState.update { it.copy(showZoomIndicator = false) }
+                            isCancelled = false
+                            hideZoomJob = scope.launch {
+                                delay(1500)
+                                _uiState.update { it.copy(showZoomIndicator = false) }
+                            }
+                        } finally {
+                            releaseGesture(GestureType.PINCH)
+                            if (isCancelled) {
+                                hideZoomJob?.cancel()
+                                _uiState.update { it.copy(showZoomIndicator = false) }
+                            }
                         }
                         break
                     }
