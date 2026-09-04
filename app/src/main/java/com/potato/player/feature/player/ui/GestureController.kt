@@ -113,7 +113,10 @@ class GestureController(
             awaitFirstDown(requireUnconsumed = false)
             do {
                 val event = awaitPointerEvent(PointerEventPass.Main)
-                val pointers = event.changes.filter { it.pressed }
+                val pointers = ArrayList<androidx.compose.ui.input.pointer.PointerInputChange>(event.changes.size)
+                for (i in 0 until event.changes.size) {
+                    if (event.changes[i].pressed) pointers.add(event.changes[i])
+                }
                 if (pointers.size >= 2) {
                     val current = gestureTypeRef.get()
                     if (current == GestureType.NONE || current == GestureType.PINCH) {
