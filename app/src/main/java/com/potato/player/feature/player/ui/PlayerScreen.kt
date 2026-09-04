@@ -48,7 +48,6 @@ fun PlayerScreen(
     val activity = remember(context) { context.findActivity() }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isSeeking by viewModel.isSeekingFlow.collectAsStateWithLifecycle()
-    val progressState by viewModel.progressState.collectAsStateWithLifecycle()
     val activeDialog by viewModel.activeDialog.collectAsStateWithLifecycle()
     val currentPlaylistIndex by viewModel.playlistManager.currentIndex.collectAsStateWithLifecycle()
     val currentPlaylist by viewModel.playlistManager.playlist.collectAsStateWithLifecycle()
@@ -160,8 +159,8 @@ fun PlayerScreen(
             Box(modifier = Modifier.clearAndSetSemantics {}) {
                 PlayerGestureBox(
                     viewModel = viewModel,
-                    positionProvider = { progressState.positionSec },
-                    durationProvider = { progressState.durationSec },
+                    positionProvider = { viewModel.progressState.value.positionSec },
+                    durationProvider = { viewModel.progressState.value.durationSec },
                     onToggleControls = { onUserInteraction() },
                     onGestureActive = { isGestureActive = it }
                 )
@@ -348,6 +347,8 @@ private fun PlayerBottomContainer(
     onNext: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val progressState by viewModel.progressState.collectAsStateWithLifecycle()
+
     AnimatedVisibility(
         visible = controlsVisible && !isLocked && swipeSeekTargetSec == null,
         enter = fadeIn() + slideInVertically { it },
@@ -356,7 +357,8 @@ private fun PlayerBottomContainer(
             .systemBarsPadding()
     ) {
         PlayerBottomControls(
-            viewModel            = viewModel,
+            progressState        = progressState,
+            onSliderDragStart    = viewModel::onSliderDragStart,
             isAutoRotation       = isAutoRotation,
             currentFitMode       = currentFitMode,
             contentPadding       = WindowInsets.displayCutout.asPaddingValues(),

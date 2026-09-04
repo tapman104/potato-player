@@ -28,12 +28,13 @@ import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.potato.player.util.TimeFormatter
 
-import com.potato.player.feature.player.PlayerViewModel
+import com.potato.player.feature.player.state.PlaybackProgressState
 import com.potato.player.feature.player.VideoFitMode
 
 @Composable
 fun PlayerBottomControls(
-    viewModel: PlayerViewModel,
+    progressState: PlaybackProgressState,
+    onSliderDragStart: (Double) -> Unit,
     isAutoRotation: Boolean = false,
     currentFitMode: VideoFitMode = VideoFitMode.FIT,
     onSeekGesture: (Long) -> Unit,    // called continuously during drag
@@ -52,8 +53,6 @@ fun PlayerBottomControls(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
-    val progressState by viewModel.progressState.collectAsStateWithLifecycle()
-
     val currentPositionMs = (progressState.positionSec * 1000.0).toLong()
     val durationMs = (progressState.durationSec * 1000.0).toLong()
     val cachedPositionMs = (progressState.cachedSec * 1000.0).toLong()
@@ -72,7 +71,7 @@ fun PlayerBottomControls(
 
     LaunchedEffect(isDragged) {
         if (isDragged && dragFraction < 0f) {
-            viewModel.onSliderDragStart(progressState.positionSec)
+            onSliderDragStart(progressState.positionSec)
         }
     }
 

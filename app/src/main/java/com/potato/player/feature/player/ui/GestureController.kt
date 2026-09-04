@@ -15,6 +15,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -56,6 +59,8 @@ class GestureController(
 ) {
     private val _uiState = MutableStateFlow(GestureUiState(brightnessLevel = initialBrightness))
     val uiState: StateFlow<GestureUiState> = _uiState.asStateFlow()
+        .distinctUntilChanged()
+        .stateIn(scope, SharingStarted.WhileSubscribed(), _uiState.value)
 
     private val gestureTypeRef = AtomicReference(GestureType.NONE)
 
@@ -139,7 +144,16 @@ class GestureController(
                                 
                                 setVideoZoom(zoom, panX, panY)
                                 _uiState.update { it.copy(zoomLevel = zoom) }
-                            } while (e2.changes.any { it.pressed })
+                                
+                                var anyPressed = false
+                                for (i in 0 until e2.changes.size) {
+                                    if (e2.changes[i].pressed) {
+                                        anyPressed = true
+                                        break
+                                    }
+                                }
+                                if (!anyPressed) break
+                            } while (true)
 
                             isCancelled = false
                             hideZoomJob = scope.launch {
@@ -156,7 +170,16 @@ class GestureController(
                         break
                     }
                 }
-            } while (event.changes.any { it.pressed })
+                
+                var anyPressed = false
+                for (i in 0 until event.changes.size) {
+                    if (event.changes[i].pressed) {
+                        anyPressed = true
+                        break
+                    }
+                }
+                if (!anyPressed) break
+            } while (true)
         }
     }
 
@@ -170,12 +193,17 @@ class GestureController(
             var totalDy = 0f
             var lockedInType = GestureType.NONE
             var seekAnchorSec = 0.0
+            var gestureDurationSec = 0.0
             var accumulatedDragX = 0f
 
             try {
                 do {
                     val event = awaitPointerEvent(PointerEventPass.Initial)
-                    if (event.changes.count { it.pressed } >= 2) break // Let pinch take over
+                    var pressedCount = 0
+                    for (i in 0 until event.changes.size) {
+                        if (event.changes[i].pressed) pressedCount++
+                    }
+                    if (pressedCount >= 2) break // Let pinch take over
                     if (gestureTypeRef.get() == GestureType.PINCH) break // Abort if pinch won
                     
                     val change = event.changes.firstOrNull() ?: break
@@ -193,6 +221,7 @@ class GestureController(
                             if (tryAcquireGesture(GestureType.SEEK)) {
                                 lockedInType = GestureType.SEEK
                                 seekAnchorSec = positionProvider()
+                                gestureDurationSec = durationProvider()
                                 _uiState.update { it.copy(swipeDragStartSec = seekAnchorSec) }
                             }
                         } else if (totalDy > 12f && totalDy > totalDx * 2.0f) {
@@ -223,7 +252,7 @@ class GestureController(
                             GestureType.SEEK -> {
                                 accumulatedDragX += dx
                                 val seekDelta = (accumulatedDragX / inputScope.size.width) * 120.0
-                                val target = (seekAnchorSec + seekDelta).coerceIn(0.0, durationProvider())
+                                val target = (seekAnchorSec + seekDelta).coerceIn(0.0, gestureDurationSec)
                                 _uiState.update { it.copy(swipeSeekTargetSec = target) }
                                 onSwipeSeek(target)
                             }
@@ -249,7 +278,15 @@ class GestureController(
                             else -> {}
                         }
                     }
-                } while (event.changes.any { it.pressed })
+                    var dragAnyPressed = false
+                    for (i in 0 until event.changes.size) {
+                        if (event.changes[i].pressed) {
+                            dragAnyPressed = true
+                            break
+                        }
+                    }
+                    if (!dragAnyPressed) break
+                } while (true)
             } finally {
                 if (lockedInType == GestureType.SEEK) {
                     val finalTarget = _uiState.value.swipeSeekTargetSec
