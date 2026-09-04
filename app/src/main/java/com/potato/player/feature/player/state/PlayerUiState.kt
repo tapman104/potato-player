@@ -16,14 +16,7 @@ data class PlaybackProgressState(
     val dragPositionSec: Double? = null
 )
 
-data class PlayerGestureState(
-    val swipeSeekTargetSec: Double? = null,
-    val isSwipingVolumeOrBrightness: Boolean = false,
-    val volume: Int = 100,
-    val videoZoom: Float = 1.0f,
-    val videoPanX: Float = 0f,
-    val videoPanY: Float = 0f
-)
+
 
 data class PlayerUiState(
     val fileName:        String = "",

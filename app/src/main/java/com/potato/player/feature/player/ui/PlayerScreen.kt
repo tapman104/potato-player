@@ -48,7 +48,7 @@ fun PlayerScreen(
     val activity = remember(context) { context.findActivity() }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isSeeking by viewModel.isSeekingFlow.collectAsStateWithLifecycle()
-    val gestureState by viewModel.gestureState.collectAsStateWithLifecycle()
+    val progressState by viewModel.progressState.collectAsStateWithLifecycle()
     val activeDialog by viewModel.activeDialog.collectAsStateWithLifecycle()
     val currentPlaylistIndex by viewModel.playlistManager.currentIndex.collectAsStateWithLifecycle()
     val currentPlaylist by viewModel.playlistManager.playlist.collectAsStateWithLifecycle()
@@ -75,7 +75,7 @@ fun PlayerScreen(
     // ponytail: orientation + insets boilerplate extracted for readability
     PlayerLifecycleEffect(activity = activity, uiState = uiState, viewModel = viewModel)
 
-    val swipeSeekTargetSec = gestureState.swipeSeekTargetSec
+    val swipeSeekTargetSec: Double? = null
 
     val (controlsVisible, onUserInteraction) = rememberControlsVisibility(
         isPlaying = uiState.isPlaying,
@@ -83,7 +83,7 @@ fun PlayerScreen(
         isSeeking = isSeeking,
         isFastForwarding = uiState.isFastForwarding,
         isLocked = uiState.isLocked,
-        isSwipingVolumeOrBrightness = gestureState.isSwipingVolumeOrBrightness,
+        isSwipingVolumeOrBrightness = false,
         isPipMode = activity?.isInPictureInPictureMode == true,
         swipeSeekTargetSec = swipeSeekTargetSec
     )
@@ -159,6 +159,8 @@ fun PlayerScreen(
             Box(modifier = Modifier.clearAndSetSemantics {}) {
                 PlayerGestureBox(
                     viewModel = viewModel,
+                    positionProvider = { progressState.positionSec },
+                    durationProvider = { progressState.durationSec },
                     onToggleControls = { onUserInteraction() }
                 )
             }

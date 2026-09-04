@@ -62,9 +62,6 @@ class PlayerViewModel(
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
-    private val _gestureState = MutableStateFlow(PlayerGestureState())
-    val gestureState: StateFlow<PlayerGestureState> = _gestureState.asStateFlow()
-
     private val isActive = java.util.concurrent.atomic.AtomicBoolean(true)
     private var mySurface: android.view.Surface? = null
 
@@ -77,7 +74,6 @@ class PlayerViewModel(
         wrapper = wrapper,
         isActive = isActive,
         onDragPositionChanged = { pos -> _progressState.update { it.copy(dragPositionSec = pos) } },
-        onSwipeTargetChanged = { target -> _gestureState.update { it.copy(swipeSeekTargetSec = target) } },
         onFastForwardChanged = { ff -> _uiState.update { it.copy(isFastForwarding = ff) } },
         onSpeedChanged = { spd -> _uiState.update { it.copy(playbackSpeed = spd) } }
     )
@@ -302,11 +298,7 @@ class PlayerViewModel(
     fun onSliderDragChange(posSec: Double) = seekController.onSliderDragChange(posSec)
     fun onSliderDragEnd(posSec: Double) = seekController.onSliderDragEnd(posSec)
     fun onSwipeSeek(positionSec: Double) = seekController.onSwipeSeek(positionSec)
-    fun onSwipeSeekFinished() = seekController.onSwipeSeekFinished()
-
-    fun setSwipingVolumeOrBrightness(isSwiping: Boolean) {
-        _gestureState.update { it.copy(isSwipingVolumeOrBrightness = isSwiping) }
-    }
+    fun onSwipeSeekFinished(targetSec: Double) = seekController.onSwipeSeekFinished(targetSec)
 
     fun setPlaybackSpeed(speed: Double) = seekController.setPlaybackSpeed(speed)
 
@@ -345,13 +337,11 @@ class PlayerViewModel(
 
     fun setVideoZoom(zoom: Float, panX: Float, panY: Float) {
         if (!isActive.get()) return
-        val (px, py, z) = geometryManager.setVideoZoom(zoom, panX, panY)
-        _gestureState.update { it.copy(videoZoom = z, videoPanX = px, videoPanY = py) }
+        geometryManager.setVideoZoom(zoom, panX, panY)
     }
 
     fun resetZoom() {
-        val (px, py, z) = geometryManager.resetZoom()
-        _gestureState.update { it.copy(videoZoom = z, videoPanX = px, videoPanY = py) }
+        geometryManager.resetZoom()
     }
 
     // ── Playlist navigation ───────────────────────────────────────────────────

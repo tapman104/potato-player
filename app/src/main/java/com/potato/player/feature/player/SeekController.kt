@@ -7,13 +7,11 @@ class SeekController(
     private val wrapper: MpvWrapper,
     private val isActive: AtomicBoolean,
     private val onDragPositionChanged: (Double?) -> Unit,
-    private val onSwipeTargetChanged: (Double?) -> Unit,
     private val onFastForwardChanged: (Boolean) -> Unit,
     private val onSpeedChanged: (Double) -> Unit
 ) {
     private var isDragging: Boolean = false
     private var lastDragPositionSec: Double = 0.0
-    private var swipeSeekTargetSec: Double? = null
 
     private var normalPlaybackSpeed = 1.0
     private var isFastForwarding = false
@@ -79,19 +77,12 @@ class SeekController(
 
     fun onSwipeSeek(positionSec: Double) {
         if (!isActive.get()) return
-        swipeSeekTargetSec = positionSec
-        onSwipeTargetChanged(positionSec)
     }
 
-    fun onSwipeSeekFinished() {
+    fun onSwipeSeekFinished(targetSec: Double) {
         if (!isActive.get()) return
-        val target = swipeSeekTargetSec
-        swipeSeekTargetSec = null
-        onSwipeTargetChanged(null)
-        if (target != null) {
-            val ms = (target * 1000).toLong()
-            wrapper.seekFast(ms)
-        }
+        val ms = (targetSec * 1000).toLong()
+        wrapper.seekFast(ms)
     }
 
     fun seekExactRelative(offsetSec: Int) {
