@@ -46,7 +46,7 @@ fun PlayerLifecycleEffect(
                     lockOrientation(activity, target)
                     hasSetAspectOrientation = true
                 } else if (!hasSetAspectOrientation) {
-                    lockOrientation(activity, ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE)
+                    lockOrientation(activity, ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
                 }
             }
         }
@@ -61,6 +61,8 @@ fun PlayerLifecycleEffect(
             controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             controller.hide(WindowInsetsCompat.Type.systemBars())
         }
+        
+        viewModel.activity = activity
 
         updateOrientation()
         
@@ -94,6 +96,7 @@ fun PlayerLifecycleEffect(
                     }
                 }
             }
+            viewModel.activity = null
         }
     }
 

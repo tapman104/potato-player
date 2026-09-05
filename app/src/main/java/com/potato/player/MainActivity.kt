@@ -75,7 +75,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             // Lock to landscape immediately, before setContent, to prevent portrait flash.
-            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         }
 
         // Immersive full-screen

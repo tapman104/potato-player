@@ -68,6 +68,19 @@ class PlayerViewModel(
     private var wasPlayingBeforePause: Boolean = false
     private var myPlaybackGeneration: Int = -1
 
+    private var lastVideoWidth: Int = 0
+    private var lastVideoHeight: Int = 0
+    var activity: android.app.Activity? = null
+
+    private fun applyAutoOrientation() {
+        if (_uiState.value.orientationMode != OrientationMode.AUTO) return
+        val orientation = if (lastVideoWidth >= lastVideoHeight)
+            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        else
+            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+        activity?.requestedOrientation = orientation
+    }
+
 
 
     private val seekController = SeekController(
@@ -85,6 +98,16 @@ class PlayerViewModel(
         engineEventHandler.start(
             onLifecycleEvent = { handleLifecycleEvent(it) },
             onEngineState = { uiUpdate, progressUpdate ->
+                val prevWidth = lastVideoWidth
+                val prevHeight = lastVideoHeight
+                lastVideoWidth = uiUpdate.videoWidth
+                lastVideoHeight = uiUpdate.videoHeight
+                
+                if (lastVideoWidth > 0 && lastVideoHeight > 0 && 
+                   (lastVideoWidth != prevWidth || lastVideoHeight != prevHeight)) {
+                    applyAutoOrientation()
+                }
+
                 _uiState.update { it.copy(
                     isPlaying = uiUpdate.isPlaying,
                     isLoading = it.fileLoaded && uiUpdate.isBuffering,
@@ -263,6 +286,12 @@ class PlayerViewModel(
             OrientationMode.LOCK_PORTRAIT -> OrientationMode.AUTO
         }
         _uiState.update { it.copy(orientationMode = next) }
+        
+        when (next) {
+            OrientationMode.AUTO -> applyAutoOrientation()
+            OrientationMode.LOCK_LANDSCAPE -> activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            OrientationMode.LOCK_PORTRAIT -> activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+        }
     }
 
     fun toggleAutoRotation() {
@@ -323,6 +352,8 @@ class PlayerViewModel(
 
     override fun onCleared() {
         isActive.set(false)
+        activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        activity = null
         super.onCleared()
         saveHistoryIfNeeded()
         wrapper.stopIfGeneration(myPlaybackGeneration)
