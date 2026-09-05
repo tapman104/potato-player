@@ -14,6 +14,7 @@ import com.potato.player.engine.PlayerEngineState
 import com.potato.player.feature.player.state.*
 import com.potato.player.util.MediaMetadataRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -72,13 +73,37 @@ class PlayerViewModel(
     private var lastVideoHeight: Int = 0
     var activity: android.app.Activity? = null
 
-    private fun applyAutoOrientation() {
-        if (_uiState.value.orientationMode != OrientationMode.AUTO) return
-        val orientation = if (lastVideoWidth >= lastVideoHeight)
-            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        else
-            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-        activity?.requestedOrientation = orientation
+    /**
+     * Sole owner of activity.requestedOrientation.
+     * Valid call sites (add no others without updating this list):
+     *   1. onEngineState      — AUTO mode only, after real dimensions arrive
+     *   2. cycleOrientationMode — user taps the orientation cycle button
+     *   3. toggleAutoRotation — user toggles the auto-rotation pref
+     *   4. DisposableEffect init in PlayerLifecycleEffect — once per activity assignment
+     */
+    fun applyOrientationFromUiState() {
+        val state = _uiState.value
+        if (state.isAutoRotation) {
+            activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+            return
+        }
+        when (state.orientationMode) {
+            OrientationMode.LOCK_LANDSCAPE ->
+                activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            OrientationMode.LOCK_PORTRAIT ->
+                activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+            OrientationMode.AUTO -> {
+                if (lastVideoWidth > 0 && lastVideoHeight > 0) {
+                    val orientation = if (lastVideoWidth >= lastVideoHeight)
+                        android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                    else
+                        android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+                    activity?.requestedOrientation = orientation
+                } else {
+                    activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                }
+            }
+        }
     }
 
 
@@ -103,9 +128,10 @@ class PlayerViewModel(
                 lastVideoWidth = uiUpdate.videoWidth
                 lastVideoHeight = uiUpdate.videoHeight
                 
-                if (lastVideoWidth > 0 && lastVideoHeight > 0 && 
-                   (lastVideoWidth != prevWidth || lastVideoHeight != prevHeight)) {
-                    applyAutoOrientation()
+                if (lastVideoWidth > 0 && lastVideoHeight > 0 &&
+                   (lastVideoWidth != prevWidth || lastVideoHeight != prevHeight) &&
+                   _uiState.value.orientationMode == OrientationMode.AUTO) {
+                    applyOrientationFromUiState()
                 }
 
                 _uiState.update { it.copy(
@@ -246,6 +272,13 @@ class PlayerViewModel(
         viewModelScope.launch {
             trackManager.applyPreferred()
         }
+
+        // Fix 2: Force track list reload after a short delay to ensure MPV has populated
+        // track-list. This resolves the infinite spinner when MPV does not re-fire TRACK_LIST.
+        viewModelScope.launch {
+            delay(500)
+            trackManager.requestTrackReload(appContext)
+        }
     }
 
     private fun handleEndFile(reason: Int) {
@@ -288,16 +321,13 @@ class PlayerViewModel(
         }
         _uiState.update { it.copy(orientationMode = next) }
         
-        when (next) {
-            OrientationMode.AUTO -> applyAutoOrientation()
-            OrientationMode.LOCK_LANDSCAPE -> activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-            OrientationMode.LOCK_PORTRAIT -> activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-        }
+        applyOrientationFromUiState()
     }
 
     fun toggleAutoRotation() {
         val next = !_uiState.value.isAutoRotation
         _uiState.update { it.copy(isAutoRotation = next) }
+        applyOrientationFromUiState()
         viewModelScope.launch { prefsRepository.setAutoRotation(next) }
     }
 

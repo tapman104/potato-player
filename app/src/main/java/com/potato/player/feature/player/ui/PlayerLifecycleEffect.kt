@@ -9,7 +9,6 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.potato.player.util.lockOrientation
 
 // ponytail: extracted from PlayerScreen — zero new logic
 @Composable
@@ -19,38 +18,6 @@ fun PlayerLifecycleEffect(
     viewModel: PlayerViewModel
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
-    var hasSetAspectOrientation by remember { mutableStateOf(false) }
-
-    fun updateOrientation() {
-        if (uiState.isAutoRotation) {
-            hasSetAspectOrientation = true
-            lockOrientation(activity, ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR)
-            return
-        }
-        when (uiState.orientationMode) {
-            OrientationMode.LOCK_LANDSCAPE -> {
-                hasSetAspectOrientation = true
-                lockOrientation(activity, ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE)
-            }
-            OrientationMode.LOCK_PORTRAIT -> {
-                hasSetAspectOrientation = true
-                lockOrientation(activity, ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT)
-            }
-            OrientationMode.AUTO -> {
-                if (uiState.videoWidth > 0 && uiState.videoHeight > 0) {
-                    val target = if (uiState.videoHeight > uiState.videoWidth) {
-                        ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-                    } else {
-                        ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-                    }
-                    lockOrientation(activity, target)
-                    hasSetAspectOrientation = true
-                } else if (!hasSetAspectOrientation) {
-                    lockOrientation(activity, ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
-                }
-            }
-        }
-    }
 
     val view = androidx.compose.ui.platform.LocalView.current
     DisposableEffect(lifecycleOwner, activity) {
@@ -61,11 +28,12 @@ fun PlayerLifecycleEffect(
             controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             controller.hide(WindowInsetsCompat.Type.systemBars())
         }
-        
-        viewModel.activity = activity
 
-        updateOrientation()
-        
+        viewModel.activity = activity
+        // Apply the persisted orientation mode once the activity reference is live.
+        // PlayerViewModel.applyOrientationFromUiState() is the sole owner of requestedOrientation.
+        viewModel.applyOrientationFromUiState()
+
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_PAUSE) {
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && activity?.isInPictureInPictureMode == true) return@LifecycleEventObserver
@@ -79,7 +47,7 @@ fun PlayerLifecycleEffect(
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        
+
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
             // Do NOT reset orientation while the activity is finishing — the OS renders one
@@ -98,9 +66,5 @@ fun PlayerLifecycleEffect(
             }
             viewModel.activity = null
         }
-    }
-
-    LaunchedEffect(uiState.fileLoaded, uiState.videoWidth, uiState.videoHeight, uiState.orientationMode, uiState.isAutoRotation) {
-        updateOrientation()
     }
 }

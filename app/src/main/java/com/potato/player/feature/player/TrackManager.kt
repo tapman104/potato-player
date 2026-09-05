@@ -184,6 +184,20 @@ class TrackManager(
         _trackState.update { TrackState() }
     }
 
+    /**
+     * Fix 2: Explicitly read track-list from MPV and parse it.
+     * Called from PlayerViewModel after a short delay post-FileLoaded to resolve the
+     * infinite spinner that occurs when MPV does not re-fire the TRACK_LIST property
+     * event (e.g. same-value property between loads, orientation restarts).
+     * No-op if tracks are already loaded by the time this fires.
+     */
+    fun requestTrackReload(context: Context) {
+        if (_trackState.value.tracksLoaded) return
+        val json = wrapper.getPropertyString(MpvProp.TRACK_LIST) ?: return
+        if (json.isBlank()) return
+        loadTracksFromJson(json, context)
+    }
+
     companion object {
         private val LANG_ALIASES = mapOf(
             "eng" to setOf("eng", "en"),
