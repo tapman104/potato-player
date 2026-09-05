@@ -36,6 +36,7 @@ fun SubtitleTrackDialog(
     visible: Boolean,
     tracks: List<TrackUiModel>,
     currentTrackId: Int,
+    tracksLoaded: Boolean,
     onSelectTrack: (Int) -> Unit,
     onLaunchFilePicker: () -> Unit,
     onDismiss: () -> Unit,
@@ -111,80 +112,91 @@ fun SubtitleTrackDialog(
 
                         Spacer(modifier = Modifier.height(20.dp))
 
-                        LazyColumn(
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            // Row 0: "Off" option (id = -1)
-                            item(key = "sub_off") {
-                                val isSelected = currentTrackId == -1
-                                TrackSelectionRow(
-                                    label = "Off",
-                                    isSelected = isSelected,
-                                    onClick = { onSelectTrack(-1) }
-                                )
+                        if (!tracksLoaded) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 24.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(color = Color.White)
                             }
-
-                            // Rows 1..N: embedded subtitle tracks
-                            items(tracks, key = { it.id }) { track ->
-                                val isSelected = track.id == currentTrackId
-                                TrackSelectionRow(
-                                    label = track.displayLabel,
-                                    isSelected = isSelected,
-                                    onClick = { onSelectTrack(track.id) }
-                                )
-                            }
-
-                            // Last row: "Load external subtitle..."
-                            item(key = "sub_external") {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .clickable { onLaunchFilePicker() }
-                                        .padding(vertical = 12.dp, horizontal = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.FolderOpen,
-                                        contentDescription = null,
-                                        tint = Color.White.copy(alpha = 0.8f),
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Text(
-                                        text = "Load external subtitle...",
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Medium,
-                                        fontSize = 15.sp,
-                                        modifier = Modifier.weight(1f)
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                // Row 0: "Off" option (id = -1)
+                                item(key = "sub_off") {
+                                    val isSelected = currentTrackId == -1
+                                    TrackSelectionRow(
+                                        label = "Off",
+                                        isSelected = isSelected,
+                                        onClick = { onSelectTrack(-1) }
                                     )
                                 }
-                            }
 
-                            // Subtitle appearance option
-                            item(key = "sub_appearance") {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .clickable { showAppearanceDialog = true }
-                                        .padding(vertical = 12.dp, horizontal = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Tune,
-                                        contentDescription = null,
-                                        tint = Color.White.copy(alpha = 0.8f),
-                                        modifier = Modifier.size(20.dp)
+                                // Rows 1..N: embedded subtitle tracks
+                                items(tracks, key = { it.id }) { track ->
+                                    val isSelected = track.id == currentTrackId
+                                    TrackSelectionRow(
+                                        label = track.displayLabel,
+                                        isSelected = isSelected,
+                                        onClick = { onSelectTrack(track.id) }
                                     )
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Text(
-                                        text = "Subtitle appearance...",
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Medium,
-                                        fontSize = 15.sp,
-                                        modifier = Modifier.weight(1f)
-                                    )
+                                }
+
+                                // Last row: "Load external subtitle..."
+                                item(key = "sub_external") {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .clickable { onLaunchFilePicker() }
+                                            .padding(vertical = 12.dp, horizontal = 12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.FolderOpen,
+                                            contentDescription = null,
+                                            tint = Color.White.copy(alpha = 0.8f),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Text(
+                                            text = "Load external subtitle...",
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Medium,
+                                            fontSize = 15.sp,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                }
+
+                                // Subtitle appearance option
+                                item(key = "sub_appearance") {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .clickable { showAppearanceDialog = true }
+                                            .padding(vertical = 12.dp, horizontal = 12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Tune,
+                                            contentDescription = null,
+                                            tint = Color.White.copy(alpha = 0.8f),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Text(
+                                            text = "Subtitle appearance...",
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Medium,
+                                            fontSize = 15.sp,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
                                 }
                             }
                         }

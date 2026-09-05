@@ -197,6 +197,7 @@ class PlayerViewModel(
     }
 
     private fun executeLoadFile(uri: String, title: String, resumePosition: Long) {
+        trackManager.clearTracks()
         lastLoadedUri = uri
         currentUri = uri
         currentTitle = title

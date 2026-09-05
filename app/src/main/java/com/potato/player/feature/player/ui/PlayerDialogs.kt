@@ -33,6 +33,7 @@ fun PlayerModals(
         visible = activeDialog == ActiveDialog.Audio,
         tracks = trackState.audioTracks,
         currentTrackId = trackState.currentAudioTrackId,
+        tracksLoaded = trackState.tracksLoaded,
         onSelectTrack = { viewModel.onSelectAudioTrack(it) },
         onDismiss = { viewModel.dismissDialog() }
     )
@@ -41,6 +42,7 @@ fun PlayerModals(
         visible = activeDialog == ActiveDialog.Subtitle,
         tracks = trackState.subtitleTracks,
         currentTrackId = trackState.currentSubtitleTrackId,
+        tracksLoaded = trackState.tracksLoaded,
         onSelectTrack = { viewModel.onSelectSubtitleTrack(it) },
         onLaunchFilePicker = onLaunchFilePicker,
         onDismiss = { viewModel.dismissDialog() },

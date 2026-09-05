@@ -26,7 +26,8 @@ data class TrackState(
     val audioTracks: List<TrackUiModel> = emptyList(),
     val subtitleTracks: List<TrackUiModel> = emptyList(),
     val currentAudioTrackId: Int = -1,
-    val currentSubtitleTrackId: Int = -1
+    val currentSubtitleTrackId: Int = -1,
+    val tracksLoaded: Boolean = false
 )
 
 class TrackManager(
@@ -68,7 +69,8 @@ class TrackManager(
                         audioTracks = audioTracks, 
                         subtitleTracks = subtitleTracks, 
                         currentAudioTrackId = aid, 
-                        currentSubtitleTrackId = sid
+                        currentSubtitleTrackId = sid,
+                        tracksLoaded = true
                     ) 
                 }
             }
@@ -98,7 +100,8 @@ class TrackManager(
                         audioTracks          = audioTracks,
                         subtitleTracks       = subtitleTracks,
                         currentAudioTrackId  = aid,
-                        currentSubtitleTrackId = sid
+                        currentSubtitleTrackId = sid,
+                        tracksLoaded         = true
                     )
                 }
             }
@@ -176,6 +179,10 @@ class TrackManager(
         scale = UserPreferencesRepository.DEFAULT_SUB_SCALE,
         pos = UserPreferencesRepository.DEFAULT_SUB_POS
     )
+
+    fun clearTracks() {
+        _trackState.update { TrackState() }
+    }
 
     companion object {
         private val LANG_ALIASES = mapOf(

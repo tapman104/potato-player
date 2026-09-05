@@ -26,6 +26,7 @@ fun AudioTrackDialog(
     visible: Boolean,
     tracks: List<TrackUiModel>,
     currentTrackId: Int,
+    tracksLoaded: Boolean,
     onSelectTrack: (Int) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
@@ -92,7 +93,16 @@ fun AudioTrackDialog(
 
                         Spacer(modifier = Modifier.height(20.dp))
 
-                        if (tracks.isEmpty()) {
+                        if (!tracksLoaded) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 24.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(color = Color.White)
+                            }
+                        } else if (tracks.isEmpty()) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
