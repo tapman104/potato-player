@@ -43,7 +43,9 @@ class EngineEventHandler(
                     // observeProperty for "width"/"height" is silently broken on
                     // this device — poll until MPV has real dimensions ready.
                     scope.launch {
+                        var found = false
                         repeat(20) { attempt ->
+                            if (found) return@repeat
                             delay(100)
                             val w = wrapper.getVideoWidth()
                             val h = wrapper.getVideoHeight()
@@ -69,7 +71,7 @@ class EngineEventHandler(
                                     cacheDurationSec = current.cacheDurMs / 1000.0
                                 )
                                 onEngineState(uiUpdate, progressUpdate)
-                                return@repeat
+                                found = true
                             }
                         }
                     }
@@ -78,7 +80,6 @@ class EngineEventHandler(
         }
         scope.launch { 
             wrapper.engineState.collect { state ->
-                android.util.Log.d("EngineEventHandler", "Raw from MPV via state: w=${state.videoWidth}, h=${state.videoHeight}, r=${state.videoRotate}")
                 val isBuffering = state.pausedForCache || state.cacheBufferingState < 100
                 val uiUpdate = UiStateUpdate(
                     isPlaying = !state.paused,
