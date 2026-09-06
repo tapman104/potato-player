@@ -1,4 +1,4 @@
-package com.potato.player.feature.player
+﻿package com.potato.player.feature.player
 
 import android.content.Context
 import android.net.Uri
@@ -9,12 +9,7 @@ import com.potato.player.data.VideoHistoryRepository
 import com.potato.player.engine.MpvWrapper
 import com.potato.player.engine.MpvEvent
 import com.potato.player.engine.MpvProp
-import com.potato.player.engine.PlayerEngineState
-
 import com.potato.player.feature.player.state.*
-import com.potato.player.util.MediaMetadataRepository
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,10 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 enum class VideoFitMode { FIT, FILL, STRETCH }
 
@@ -46,13 +38,6 @@ class PlayerViewModel(
     val geometryManager = VideoGeometryManager(wrapper)
     val orientationManager = OrientationManager()
 
-    // ── Fields merged from PlaybackSessionManager ─────────────────────────────
-    private var currentUri: String = ""
-    private var currentTitle: String = ""
-    private var pendingUri: String? = null
-    private var pendingSeekPosition: Long = 0L
-    private var lastLoadedUri: String? = null
-
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
 
@@ -66,8 +51,6 @@ class PlayerViewModel(
 
     private val isActive = java.util.concurrent.atomic.AtomicBoolean(true)
     private var mySurface: android.view.Surface? = null
-
-    private var wasPlayingBeforePause: Boolean = false
     private var myPlaybackGeneration: Int = -1
 
     private val seekController = SeekController(
@@ -79,6 +62,54 @@ class PlayerViewModel(
     )
 
     private val engineEventHandler by lazy { EngineEventHandler(wrapper, prefsRepository, viewModelScope) }
+
+    val sessionManager by lazy {
+        PlaybackSessionManager(
+            wrapper = wrapper,
+            prefsRepository = prefsRepository,
+            historyManager = historyManager,
+            trackManager = trackManager,
+            appContext = appContext,
+            scope = viewModelScope,
+            orientationManager = orientationManager,
+            hasSurface = { mySurface != null },
+            isPlaying = { _uiState.value.isPlaying },
+            getProgressState = { _progressState.value },
+            onFileLoading = { fileName ->
+                _uiState.update {
+                    it.copy(
+                        fileName = fileName,
+                        isLoading = true,
+                        isPlaying = false,
+                        fileLoaded = false,
+                        error = null,
+                        orientationMode = OrientationMode.AUTO
+                    )
+                }
+            },
+            onFileLoaded = { hwdec, speed ->
+                _uiState.update {
+                    it.copy(
+                        fileLoaded = true,
+                        isLoading = false,
+                        fitMode = VideoFitMode.FIT,
+                        hwdecCurrent = hwdec,
+                        playbackSpeed = speed
+                    )
+                }
+            },
+            onEndFile = { reason ->
+                if (reason == 3) {
+                    _uiState.update { it.copy(isPlaying = false, error = "Playback error") }
+                } else {
+                    _uiState.update { it.copy(isPlaying = false) }
+                }
+                if (reason == 0) {
+                    seekController.resetFastForward()
+                }
+            }
+        )
+    }
 
     init {
         myPlaybackGeneration = wrapper.nextGeneration()
@@ -97,7 +128,7 @@ class PlayerViewModel(
                     subScale = uiUpdate.subScale,
                     subPos = uiUpdate.subPos
                 ) }
-                
+
                 orientationManager.onDimensionsChanged(
                     width = uiUpdate.videoWidth,
                     height = uiUpdate.videoHeight,
@@ -123,13 +154,12 @@ class PlayerViewModel(
 
     private fun handleLifecycleEvent(event: MpvEvent.Lifecycle) {
         when (event) {
-            is MpvEvent.Lifecycle.FileLoaded -> handleFileLoaded()
-            is MpvEvent.Lifecycle.EndFile -> handleEndFile(event.reason)
+            is MpvEvent.Lifecycle.FileLoaded -> sessionManager.onFileLoaded()
+            is MpvEvent.Lifecycle.EndFile -> sessionManager.onEndFile(event.reason)
             is MpvEvent.Lifecycle.PlaybackRestart -> handlePlaybackRestart()
             is MpvEvent.Lifecycle.Unknown -> Unit
         }
     }
-
 
     private fun applyPrefs(prefs: PlayerPrefs) {
         wrapper.setSubtitleScale(prefs.subScale)
@@ -158,8 +188,7 @@ class PlayerViewModel(
     fun handleSurfaceReady(surface: android.view.Surface) {
         mySurface = surface
         wrapper.attachSurface(surface)
-        val uri = pendingUri ?: return
-        pendingUri = null
+        val uri = sessionManager.consumePendingUri() ?: return
         wrapper.loadFile(uri)
     }
 
@@ -171,46 +200,12 @@ class PlayerViewModel(
     }
 
     fun prepareUri(defaultUri: String, defaultTitle: String = "") {
-        if (lastLoadedUri == defaultUri) return
-        lastLoadedUri = defaultUri
-
-        viewModelScope.launch(Dispatchers.IO) {
-            val history = historyManager.getByUri(defaultUri)
-            val resumePos = if (history != null && history.lastPlayedPositionSec > 0)
-                (history.lastPlayedPositionSec * 1000).toLong() else 0L
-            withContext(Dispatchers.Main) {
-                executeLoadFile(defaultUri, defaultTitle, resumePos)
-            }
-        }
+        sessionManager.load(defaultUri, defaultTitle)
     }
 
     fun loadFile(uri: String, title: String = "", resumePosition: Long = 0L) {
         if (!isActive.get()) return
-        executeLoadFile(uri, title, resumePosition)
-    }
-
-    private fun executeLoadFile(uri: String, title: String, resumePosition: Long) {
-        trackManager.clearTracks()
-        lastLoadedUri = uri
-        currentUri = uri
-        currentTitle = title
-        orientationManager.clearDimensions()
-        _uiState.update { it.copy(orientationMode = OrientationMode.AUTO) }
-        trackManager.resetAutoSubApplied()
-        val initialName = if (title.isNotBlank()) title else "Video"
-        _uiState.update { it.copy(fileName = initialName, isLoading = true, isPlaying = false, fileLoaded = false, error = null) }
-        if (title.isBlank()) {
-            viewModelScope.launch {
-                val resolvedName = MediaMetadataRepository.resolveFileName(appContext, uri)
-                _uiState.update { it.copy(fileName = resolvedName) }
-            }
-        }
-        pendingSeekPosition = resumePosition
-        if (mySurface != null) {
-            wrapper.loadFile(uri)
-        } else {
-            pendingUri = uri
-        }
+        sessionManager.loadDirect(uri, title, resumePosition)
     }
 
     fun togglePlay() {
@@ -218,64 +213,16 @@ class PlayerViewModel(
         wrapper.togglePlay()
     }
 
-    private fun handleFileLoaded() {
-        _uiState.update { it.copy(fileLoaded = true, isLoading = false, fitMode = VideoFitMode.FIT) }
-        if (pendingSeekPosition > 0L) {
-            wrapper.seekAccurate(pendingSeekPosition)
-            pendingSeekPosition = 0L
-        }
-        // Track list is driven by engineState.trackListJson observer (handleEngineState).
-        // We only need to apply the preferred subtitle once the tracks arrive.
-        viewModelScope.launch {
-            // Apply default decoder and speed from prefs
-            prefsRepository.defaultDecoderFlow.first().let { mode ->
-                wrapper.setDecoder(mode)
-                _uiState.update { it.copy(hwdecCurrent = hwdecLabel(mode)) }
-            }
-            prefsRepository.defaultSpeedFlow.first().let { speed ->
-                wrapper.setSpeed(speed)
-                _uiState.update { it.copy(playbackSpeed = speed) }
-            }
-        }
-
-        viewModelScope.launch {
-            trackManager.applyPreferred()
-        }
-
-        // Fix 2: Force track list reload after a short delay to ensure MPV has populated
-        // track-list. This resolves the infinite spinner when MPV does not re-fire TRACK_LIST.
-        viewModelScope.launch {
-            delay(500)
-            trackManager.requestTrackReload(appContext)
-        }
-    }
-
-    private fun handleEndFile(reason: Int) {
-        if (reason == 3) {
-            _uiState.update { it.copy(isPlaying = false, error = "Playback error") }
-        } else if (reason == 0) {
-            _uiState.update { it.copy(isPlaying = false) }
-            saveHistoryIfNeeded()
-            seekController.resetFastForward()
-        } else {
-            _uiState.update { it.copy(isPlaying = false) }
-        }
-    }
-
     private fun handlePlaybackRestart() {
         _uiState.update { it.copy(isLoading = false) }
     }
 
     fun onPlayerPause() {
-        wasPlayingBeforePause = _uiState.value.isPlaying
-        wrapper.pause()
-        saveHistoryIfNeeded()
+        sessionManager.onPlayerPause()
     }
 
     fun onPlayerResume() {
-        if (wasPlayingBeforePause) {
-            wrapper.resume()
-        }
+        sessionManager.onPlayerResume()
     }
 
     fun toggleLock() {
@@ -289,11 +236,8 @@ class PlayerViewModel(
             OrientationMode.LOCK_PORTRAIT -> OrientationMode.AUTO
         }
         _uiState.update { it.copy(orientationMode = next) }
-        
         orientationManager.apply(next, _uiState.value.videoOrientation, _uiState.value.videoRotate)
     }
-
-
 
     fun cycleFitMode() {
         if (!isActive.get()) return
@@ -336,21 +280,12 @@ class PlayerViewModel(
     fun showDialog(dialog: ActiveDialog) { _activeDialog.value = dialog }
     fun dismissDialog() { _activeDialog.value = ActiveDialog.None }
 
-    private fun saveHistoryIfNeeded() = historyManager.save(
-        uri = currentUri,
-        title = currentTitle,
-        lastPlayedPositionSec = _progressState.value.positionSec,
-        durationSec = _progressState.value.durationSec,
-        lastAudioTrackId = trackManager.trackState.value.currentAudioTrackId,
-        lastSubtitleTrackId = trackManager.trackState.value.currentSubtitleTrackId
-    )
-
     override fun onCleared() {
         isActive.set(false)
         orientationManager.reset()
         orientationManager.activity = null
         super.onCleared()
-        saveHistoryIfNeeded()
+        sessionManager.saveHistoryIfNeeded()
         wrapper.stopIfGeneration(myPlaybackGeneration)
     }
 
