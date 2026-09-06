@@ -266,6 +266,17 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver, PlayerController {
         ifAlive("setRotation") { MPVLib.setPropertyInt(MpvProp.VIDEO_ROTATE, degrees) }
     }
 
+    // ── Direct dimension polling (workaround for broken observeProperty) ───────
+    //
+    // On some devices the eventProperty(name, Long) callback for "width" and
+    // "height" never fires. MPV decodes correctly but the JNI observer is
+    // silently broken. These three functions poll the values synchronously so
+    // EngineEventHandler can call them after FILE_LOADED until w/h are non-zero.
+
+    fun getVideoWidth(): Int  = try { MPVLib.getPropertyInt(MpvProp.WIDTH)              ?: 0 } catch (e: Exception) { 0 }
+    fun getVideoHeight(): Int = try { MPVLib.getPropertyInt(MpvProp.HEIGHT)             ?: 0 } catch (e: Exception) { 0 }
+    fun getVideoRotate(): Long = try { MPVLib.getPropertyInt(MpvProp.VIDEO_PARAMS_ROTATE)?.toLong() ?: 0L } catch (e: Exception) { 0L }
+
     // ── Internal property accessors (not for callers outside this package) ────
     //
     // These are `internal` so upper layers (ViewModel etc.) are forced to use
@@ -327,8 +338,8 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver, PlayerController {
     override fun eventProperty(name: String, value: Long) {
         when (name) {
             MpvProp.SUB_POS               -> _engineState.update { it.copy(subPos = value) }
-            MpvProp.VIDEO_PARAMS_W         -> _engineState.update { it.copy(videoWidth = value) }
-            MpvProp.VIDEO_PARAMS_H         -> _engineState.update { it.copy(videoHeight = value) }
+            MpvProp.WIDTH                  -> _engineState.update { it.copy(videoWidth = value) }
+            MpvProp.HEIGHT                 -> _engineState.update { it.copy(videoHeight = value) }
             MpvProp.VIDEO_PARAMS_ROTATE    -> _engineState.update { it.copy(videoRotate = value) }
             MpvProp.CACHE_BUFFERING_STATE  -> _engineState.update { it.copy(cacheBufferingState = value.toInt()) }
         }

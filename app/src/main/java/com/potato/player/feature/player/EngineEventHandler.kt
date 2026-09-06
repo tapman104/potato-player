@@ -8,6 +8,7 @@ import com.potato.player.feature.player.state.UiStateUpdate
 import com.potato.player.feature.player.state.ProgressStateUpdate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 data class PlayerPrefs(
@@ -35,9 +36,49 @@ class EngineEventHandler(
         onPrefsChanged: (PlayerPrefs) -> Unit,
         onTrackListChanged: (String) -> Unit
     ) {
-        scope.launch { wrapper.lifecycleEvents.collect { onLifecycleEvent(it) } }
+        scope.launch {
+            wrapper.lifecycleEvents.collect { event ->
+                onLifecycleEvent(event)
+                if (event is MpvEvent.Lifecycle.FileLoaded) {
+                    // observeProperty for "width"/"height" is silently broken on
+                    // this device — poll until MPV has real dimensions ready.
+                    scope.launch {
+                        repeat(20) { attempt ->
+                            delay(100)
+                            val w = wrapper.getVideoWidth()
+                            val h = wrapper.getVideoHeight()
+                            val r = wrapper.getVideoRotate()
+                            android.util.Log.d("EngineEventHandler", "Dimension poll #$attempt: w=$w, h=$h, r=$r")
+                            if (w > 0 && h > 0) {
+                                val current = wrapper.engineState.value
+                                val uiUpdate = UiStateUpdate(
+                                    isPlaying    = !current.paused,
+                                    isBuffering  = current.pausedForCache || current.cacheBufferingState < 100,
+                                    hwdecActive  = current.hwdecActive,
+                                    videoWidth   = w,
+                                    videoHeight  = h,
+                                    videoRotate  = r,
+                                    playbackSpeed = current.speed,
+                                    subScale     = current.subScale,
+                                    subPos       = current.subPos.toInt()
+                                )
+                                val progressUpdate = com.potato.player.feature.player.state.ProgressStateUpdate(
+                                    positionSec      = current.positionMs / 1000.0,
+                                    durationSec      = current.durationMs / 1000.0,
+                                    cachedSec        = current.cacheTimeMs / 1000.0,
+                                    cacheDurationSec = current.cacheDurMs / 1000.0
+                                )
+                                onEngineState(uiUpdate, progressUpdate)
+                                return@repeat
+                            }
+                        }
+                    }
+                }
+            }
+        }
         scope.launch { 
             wrapper.engineState.collect { state ->
+                android.util.Log.d("EngineEventHandler", "Raw from MPV via state: w=${state.videoWidth}, h=${state.videoHeight}, r=${state.videoRotate}")
                 val isBuffering = state.pausedForCache || state.cacheBufferingState < 100
                 val uiUpdate = UiStateUpdate(
                     isPlaying = !state.paused,

@@ -82,11 +82,15 @@ class PlayerViewModel(
      *   3. toggleAutoRotation — user toggles the auto-rotation pref
      *   4. DisposableEffect init in PlayerLifecycleEffect — once per activity assignment
      */
-    fun applyOrientationFromUiState() {
+    fun applyOrientationFromUiState(overrideRotate: Long? = null) {
         val state = _uiState.value
         val w = lastVideoWidth
         val h = lastVideoHeight
-        val rotate = state.videoRotate
+        val rotate = overrideRotate ?: state.videoRotate
+        android.util.Log.d("OrientationDebug", 
+            "apply: w=$w h=$h rotate=$rotate " +
+            "orientationMode=${state.orientationMode} " +
+            "videoOrientation=${state.videoOrientation}")
 
         // Session override wins over persistent setting
         when (state.orientationMode) {
@@ -108,6 +112,11 @@ class PlayerViewModel(
             return if (swapped) h > w else w >= h
         }
 
+        if (w == 0 || h == 0) {
+            // Dimensions not known yet — onEngineState will call us again once they arrive
+            return
+        }
+
         activity?.requestedOrientation = when (state.videoOrientation) {
             "landscape"        -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
             "portrait"         -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
@@ -125,12 +134,9 @@ class PlayerViewModel(
                     else -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
                 }
             }
-            else -> { // "auto"
-                if (w > 0 && h > 0)
-                    if (effectiveLandscape()) android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-                    else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-                else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-            }
+            else -> // "auto"
+                if (effectiveLandscape()) android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
         }
     }
 
@@ -174,7 +180,11 @@ class PlayerViewModel(
                 if (lastVideoWidth > 0 && lastVideoHeight > 0 &&
                    (lastVideoWidth != prevWidth || lastVideoHeight != prevHeight || uiUpdate.videoRotate != prevRotate) &&
                    _uiState.value.orientationMode == OrientationMode.AUTO) {
-                    applyOrientationFromUiState()
+                    android.util.Log.d("OrientationDebug",
+                        "engineState: w=${uiUpdate.videoWidth} " +
+                        "h=${uiUpdate.videoHeight} " +
+                        "rotate=${uiUpdate.videoRotate}")
+                    applyOrientationFromUiState(overrideRotate = uiUpdate.videoRotate)
                 }
 
                 _progressState.update { it.copy(
@@ -214,9 +224,13 @@ class PlayerViewModel(
             controlsHideDelay = prefs.controlsHideDelay
         )}
         // default decoder and speed applied on file load, not here
-        // Re-apply orientation if dims already known — prefs may arrive after first engineState update
-        if (lastVideoWidth > 0 && lastVideoHeight > 0 &&
-            _uiState.value.orientationMode == OrientationMode.AUTO) {
+        // Re-apply orientation — prefs may arrive after first engineState update
+        if (_uiState.value.orientationMode == OrientationMode.AUTO &&
+            lastVideoWidth > 0 && lastVideoHeight > 0) {
+            android.util.Log.d("OrientationDebug",
+                "applyPrefs: w=$lastVideoWidth " +
+                "h=$lastVideoHeight " +
+                "orientation=${prefs.videoOrientation}")
             applyOrientationFromUiState()
         }
     }
@@ -266,6 +280,8 @@ class PlayerViewModel(
         currentTitle = title
         lastVideoWidth = 0
         lastVideoHeight = 0
+        _uiState.update { it.copy(orientationMode = OrientationMode.AUTO) }
+        lastOrientationUri = uri
         trackManager.resetAutoSubApplied()
         val initialName = if (title.isNotBlank()) title else "Video"
         _uiState.update { it.copy(fileName = initialName, isLoading = true, isPlaying = false, fileLoaded = false, error = null) }
@@ -289,10 +305,6 @@ class PlayerViewModel(
     }
 
     private fun handleFileLoaded() {
-        if (currentUri != lastOrientationUri) {
-            lastOrientationUri = currentUri
-            _uiState.update { it.copy(orientationMode = OrientationMode.AUTO) }
-        }
         _uiState.update { it.copy(fileLoaded = true, isLoading = false, fitMode = VideoFitMode.FIT) }
         if (pendingSeekPosition > 0L) {
             wrapper.seekAccurate(pendingSeekPosition)

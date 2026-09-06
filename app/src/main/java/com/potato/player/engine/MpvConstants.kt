@@ -42,8 +42,8 @@ internal object MpvProp {
     const val SUB_POS   = "sub-pos"
 
     // ── Video params ──────────────────────────────────────────────────────────
-    const val VIDEO_PARAMS_W = "video-params/w"
-    const val VIDEO_PARAMS_H = "video-params/h"
+    const val WIDTH  = "width"
+    const val HEIGHT = "height"
     const val VIDEO_PARAMS_ROTATE = "video-params/rotate"
 
     // ── Video transform ───────────────────────────────────────────────────────
