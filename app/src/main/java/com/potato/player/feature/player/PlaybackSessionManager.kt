@@ -194,7 +194,6 @@ class PlaybackSessionManager(
     }
 
     private fun handleEndFile(reason: Int) {
-        onEndFile(reason)
         if (reason == 0) {
             saveHistoryIfNeeded()
         }
