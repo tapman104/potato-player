@@ -87,6 +87,21 @@ class PlayerViewModel(
         val h = lastVideoHeight
         val rotate = state.videoRotate
 
+        // Session override wins over persistent setting
+        when (state.orientationMode) {
+            OrientationMode.LOCK_LANDSCAPE -> {
+                activity?.requestedOrientation =
+                    android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                return
+            }
+            OrientationMode.LOCK_PORTRAIT -> {
+                activity?.requestedOrientation =
+                    android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+                return
+            }
+            OrientationMode.AUTO -> Unit // fall through to persistent setting below
+        }
+
         fun effectiveLandscape(): Boolean {
             val swapped = rotate == 90L || rotate == 270L
             return if (swapped) h > w else w >= h
@@ -265,6 +280,7 @@ class PlayerViewModel(
     }
 
     private fun handleFileLoaded() {
+        _uiState.update { it.copy(orientationMode = OrientationMode.AUTO) }
         _uiState.update { it.copy(fileLoaded = true, isLoading = false, fitMode = VideoFitMode.FIT) }
         if (pendingSeekPosition > 0L) {
             wrapper.seekAccurate(pendingSeekPosition)
