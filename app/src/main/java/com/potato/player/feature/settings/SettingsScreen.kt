@@ -216,7 +216,7 @@ fun SettingsScreen(
 
             item {
                 Text(
-                    text = "About",
+                    text = stringResource(R.string.section_about),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -225,7 +225,7 @@ fun SettingsScreen(
             item {
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.about)) },
-                    supportingContent = { Text("Version ${uiState.appVersion}") },
+                    supportingContent = { Text(stringResource(R.string.app_version_format, uiState.appVersion)) },
                     leadingContent = { Icon(Icons.Default.Info, contentDescription = null) },
                     modifier = Modifier.clickable(onClick = onNavigateToAbout)
                 )

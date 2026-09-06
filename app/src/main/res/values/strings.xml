@@ -92,4 +92,8 @@
 
     <!-- Settings screen — button labels -->
     <string name="close">Close</string>
+
+    <!-- Settings screen — about section -->
+    <string name="section_about">About</string>
+    <string name="app_version_format">Version %1$s</string>
 </resources>
