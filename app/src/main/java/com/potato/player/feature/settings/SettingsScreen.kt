@@ -32,7 +32,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
@@ -41,10 +40,8 @@ import com.potato.player.R
 import com.potato.player.data.UserPreferencesRepository
 import com.potato.player.feature.home.PillBarTab
 import com.potato.player.feature.home.PotatoPillBar
-import kotlinx.coroutines.launch
 
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,7 +86,7 @@ fun SettingsScreen(
         ) {
             item {
                 Text(
-                    text = "Playback",
+                    text = stringResource(R.string.section_playback),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -97,12 +94,12 @@ fun SettingsScreen(
             }
             item {
                 ListItem(
-                    headlineContent = { Text("Default decoder") },
+                    headlineContent = { Text(stringResource(R.string.default_decoder)) },
                     supportingContent = { 
                         val label = when(uiState.defaultDecoder) {
-                            "mediacodec-copy" -> "HW+ (MediaCodec Copy)"
-                            "mediacodec" -> "HW (MediaCodec)"
-                            "no" -> "SW (Software)"
+                            "mediacodec-copy" -> stringResource(R.string.decoder_hw_plus)
+                            "mediacodec" -> stringResource(R.string.decoder_hw)
+                            "no" -> stringResource(R.string.decoder_sw)
                             else -> uiState.defaultDecoder
                         }
                         Text(label)
@@ -112,7 +109,7 @@ fun SettingsScreen(
             }
             item {
                 ListItem(
-                    headlineContent = { Text("Default speed") },
+                    headlineContent = { Text(stringResource(R.string.default_speed)) },
                     supportingContent = { Text("${uiState.defaultSpeed}×") },
                     modifier = Modifier.clickable { showSpeedDialog = true }
                 )
@@ -121,7 +118,7 @@ fun SettingsScreen(
 
             item {
                 Text(
-                    text = "Subtitles",
+                    text = stringResource(R.string.section_subtitles),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -129,13 +126,13 @@ fun SettingsScreen(
             }
             item {
                 ListItem(
-                    headlineContent = { Text("Default language") },
+                    headlineContent = { Text(stringResource(R.string.default_language)) },
                     supportingContent = { 
                         val label = when(uiState.preferredSubLang) {
-                            "eng" -> "English (eng)"
-                            "jpn" -> "Japanese (jpn)"
-                            "kor" -> "Korean (kor)"
-                            "off" -> "None (off)"
+                            "eng" -> stringResource(R.string.lang_english)
+                            "jpn" -> stringResource(R.string.lang_japanese)
+                            "kor" -> stringResource(R.string.lang_korean)
+                            "off" -> stringResource(R.string.lang_none)
                             else -> uiState.preferredSubLang
                         }
                         Text(label) 
@@ -145,15 +142,15 @@ fun SettingsScreen(
             }
             item {
                 ListItem(
-                    headlineContent = { Text("Subtitle appearance") },
-                    supportingContent = { Text("Configure in player") }
+                    headlineContent = { Text(stringResource(R.string.subtitle_appearance)) },
+                    supportingContent = { Text(stringResource(R.string.configure_in_player)) }
                 )
             }
             item { HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp)) }
 
             item {
                 Text(
-                    text = "Interface",
+                    text = stringResource(R.string.section_interface),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -161,12 +158,12 @@ fun SettingsScreen(
             }
             item {
                 ListItem(
-                    headlineContent = { Text("Auto-hide delay") },
+                    headlineContent = { Text(stringResource(R.string.auto_hide_delay)) },
                     supportingContent = { 
                         val label = when(uiState.controlsHideDelay) {
-                            2000 -> "2 seconds"
-                            3000 -> "3 seconds"
-                            5000 -> "5 seconds"
+                            2000 -> stringResource(R.string.delay_2s)
+                            3000 -> stringResource(R.string.delay_3s)
+                            5000 -> stringResource(R.string.delay_5s)
                             else -> "${uiState.controlsHideDelay / 1000} seconds"
                         }
                         Text(label)
@@ -176,7 +173,7 @@ fun SettingsScreen(
             }
             item {
                 ListItem(
-                    headlineContent = { Text("Gestures") },
+                    headlineContent = { Text(stringResource(R.string.gestures)) },
                     trailingContent = { 
                         androidx.compose.material3.Switch(
                             checked = uiState.gesturesEnabled,
@@ -187,7 +184,7 @@ fun SettingsScreen(
             }
             item {
                 ListItem(
-                    headlineContent = { Text("Lock button") },
+                    headlineContent = { Text(stringResource(R.string.lock_button)) },
                     trailingContent = { 
                         androidx.compose.material3.Switch(
                             checked = uiState.lockButtonEnabled,
@@ -198,16 +195,16 @@ fun SettingsScreen(
             }
             item {
                 ListItem(
-                    headlineContent = { Text("Video orientation") },
+                    headlineContent = { Text(stringResource(R.string.video_orientation)) },
                     supportingContent = { 
                         val label = when(uiState.videoOrientation) {
-                            "auto" -> "Auto (by video)"
-                            "landscape" -> "Landscape"
-                            "portrait" -> "Portrait"
-                            "sensor" -> "Sensor (all directions)"
-                            "sensor_landscape" -> "Sensor Landscape"
-                            "sensor_portrait" -> "Sensor Portrait"
-                            "locked" -> "Locked (current)"
+                            "auto" -> stringResource(R.string.orientation_auto)
+                            "landscape" -> stringResource(R.string.orientation_landscape)
+                            "portrait" -> stringResource(R.string.orientation_portrait)
+                            "sensor" -> stringResource(R.string.orientation_sensor)
+                            "sensor_landscape" -> stringResource(R.string.orientation_sensor_land)
+                            "sensor_portrait" -> stringResource(R.string.orientation_sensor_port)
+                            "locked" -> stringResource(R.string.orientation_locked)
                             else -> uiState.videoOrientation
                         }
                         Text(label)
@@ -239,13 +236,13 @@ fun SettingsScreen(
         if (showDecoderDialog) {
             AlertDialog(
                 onDismissRequest = { showDecoderDialog = false },
-                title = { Text("Default decoder") },
+                title = { Text(stringResource(R.string.dialog_default_decoder)) },
                 text = {
                     Column {
                         val options = listOf(
-                            "mediacodec-copy" to "HW+ (MediaCodec Copy)",
-                            "mediacodec" to "HW (MediaCodec)",
-                            "no" to "SW (Software)"
+                            "mediacodec-copy" to stringResource(R.string.decoder_hw_plus),
+                            "mediacodec" to stringResource(R.string.decoder_hw),
+                            "no" to stringResource(R.string.decoder_sw)
                         )
                         options.forEach { (code, label) ->
                             Row(
@@ -274,7 +271,7 @@ fun SettingsScreen(
                     }
                 },
                 confirmButton = {
-                    TextButton(onClick = { showDecoderDialog = false }) { Text("Close") }
+                    TextButton(onClick = { showDecoderDialog = false }) { Text(stringResource(R.string.close)) }
                 }
             )
         }
@@ -282,7 +279,7 @@ fun SettingsScreen(
         if (showSpeedDialog) {
             AlertDialog(
                 onDismissRequest = { showSpeedDialog = false },
-                title = { Text("Default speed") },
+                title = { Text(stringResource(R.string.dialog_default_speed)) },
                 text = {
                     Column {
                         val options = listOf(
@@ -322,7 +319,7 @@ fun SettingsScreen(
                     }
                 },
                 confirmButton = {
-                    TextButton(onClick = { showSpeedDialog = false }) { Text("Close") }
+                    TextButton(onClick = { showSpeedDialog = false }) { Text(stringResource(R.string.close)) }
                 }
             )
         }
@@ -330,13 +327,13 @@ fun SettingsScreen(
         if (showHideDelayDialog) {
             AlertDialog(
                 onDismissRequest = { showHideDelayDialog = false },
-                title = { Text("Auto-hide delay") },
+                title = { Text(stringResource(R.string.dialog_auto_hide_delay)) },
                 text = {
                     Column {
                         val options = listOf(
-                            2000 to "2 seconds",
-                            3000 to "3 seconds",
-                            5000 to "5 seconds"
+                            2000 to stringResource(R.string.delay_2s),
+                            3000 to stringResource(R.string.delay_3s),
+                            5000 to stringResource(R.string.delay_5s)
                         )
                         options.forEach { (value, label) ->
                             Row(
@@ -365,7 +362,7 @@ fun SettingsScreen(
                     }
                 },
                 confirmButton = {
-                    TextButton(onClick = { showHideDelayDialog = false }) { Text("Close") }
+                    TextButton(onClick = { showHideDelayDialog = false }) { Text(stringResource(R.string.close)) }
                 }
             )
         }
@@ -373,10 +370,10 @@ fun SettingsScreen(
         if (showSubLangDialog) {
             AlertDialog(
                 onDismissRequest = { showSubLangDialog = false },
-                title = { Text("Default subtitle language") },
+                title = { Text(stringResource(R.string.dialog_sub_lang)) },
                 text = {
                     Column {
-                        val options = listOf("eng" to "English (eng)", "jpn" to "Japanese (jpn)", "kor" to "Korean (kor)", "off" to "None (off)")
+                        val options = listOf("eng" to stringResource(R.string.lang_english), "jpn" to stringResource(R.string.lang_japanese), "kor" to stringResource(R.string.lang_korean), "off" to stringResource(R.string.lang_none))
                         options.forEach { (code, label) ->
                             Row(
                                 modifier = Modifier
@@ -405,7 +402,7 @@ fun SettingsScreen(
                 },
                 confirmButton = {
                     TextButton(onClick = { showSubLangDialog = false }) {
-                        Text("Close")
+                        Text(stringResource(R.string.close))
                     }
                 }
             )
@@ -414,17 +411,17 @@ fun SettingsScreen(
         if (showOrientationDialog) {
             AlertDialog(
                 onDismissRequest = { showOrientationDialog = false },
-                title = { Text("Video orientation") },
+                title = { Text(stringResource(R.string.dialog_video_orientation)) },
                 text = {
                     Column {
                         val options = listOf(
-                            "auto" to "Auto (by video)",
-                            "landscape" to "Landscape",
-                            "portrait" to "Portrait",
-                            "sensor" to "Sensor (all directions)",
-                            "sensor_landscape" to "Sensor Landscape",
-                            "sensor_portrait" to "Sensor Portrait",
-                            "locked" to "Locked (current)"
+                            "auto" to stringResource(R.string.orientation_auto),
+                            "landscape" to stringResource(R.string.orientation_landscape),
+                            "portrait" to stringResource(R.string.orientation_portrait),
+                            "sensor" to stringResource(R.string.orientation_sensor),
+                            "sensor_landscape" to stringResource(R.string.orientation_sensor_land),
+                            "sensor_portrait" to stringResource(R.string.orientation_sensor_port),
+                            "locked" to stringResource(R.string.orientation_locked)
                         )
                         options.forEach { (code, label) ->
                             Row(
@@ -454,7 +451,7 @@ fun SettingsScreen(
                 },
                 confirmButton = {
                     TextButton(onClick = { showOrientationDialog = false }) {
-                        Text("Close")
+                        Text(stringResource(R.string.close))
                     }
                 }
             )

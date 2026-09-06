@@ -41,4 +41,55 @@
     <string name="upi_description">Pay via GPay, PhonePe, Paytm or any UPI app</string>
     <string name="coming_soon">Coming soon</string>
     <string name="no_app_found_to_open_link">No app found to open this link</string>
+
+    <!-- Settings screen — section headers -->
+    <string name="section_playback">Playback</string>
+    <string name="section_subtitles">Subtitles</string>
+    <string name="section_interface">Interface</string>
+
+    <!-- Settings screen — list item labels -->
+    <string name="default_decoder">Default decoder</string>
+    <string name="default_speed">Default speed</string>
+    <string name="default_language">Default language</string>
+    <string name="subtitle_appearance">Subtitle appearance</string>
+    <string name="configure_in_player">Configure in player</string>
+    <string name="auto_hide_delay">Auto-hide delay</string>
+    <string name="gestures">Gestures</string>
+    <string name="lock_button">Lock button</string>
+    <string name="video_orientation">Video orientation</string>
+
+    <!-- Settings screen — decoder labels -->
+    <string name="decoder_hw_plus">HW+ (MediaCodec Copy)</string>
+    <string name="decoder_hw">HW (MediaCodec)</string>
+    <string name="decoder_sw">SW (Software)</string>
+
+    <!-- Settings screen — delay labels -->
+    <string name="delay_2s">2 seconds</string>
+    <string name="delay_3s">3 seconds</string>
+    <string name="delay_5s">5 seconds</string>
+
+    <!-- Settings screen — subtitle language labels -->
+    <string name="lang_english">English (eng)</string>
+    <string name="lang_japanese">Japanese (jpn)</string>
+    <string name="lang_korean">Korean (kor)</string>
+    <string name="lang_none">None (off)</string>
+
+    <!-- Settings screen — orientation labels -->
+    <string name="orientation_auto">Auto (by video)</string>
+    <string name="orientation_landscape">Landscape</string>
+    <string name="orientation_portrait">Portrait</string>
+    <string name="orientation_sensor">Sensor (all directions)</string>
+    <string name="orientation_sensor_land">Sensor Landscape</string>
+    <string name="orientation_sensor_port">Sensor Portrait</string>
+    <string name="orientation_locked">Locked (current)</string>
+
+    <!-- Settings screen — dialog titles -->
+    <string name="dialog_default_decoder">Default decoder</string>
+    <string name="dialog_default_speed">Default speed</string>
+    <string name="dialog_auto_hide_delay">Auto-hide delay</string>
+    <string name="dialog_sub_lang">Default subtitle language</string>
+    <string name="dialog_video_orientation">Video orientation</string>
+
+    <!-- Settings screen — button labels -->
+    <string name="close">Close</string>
 </resources>

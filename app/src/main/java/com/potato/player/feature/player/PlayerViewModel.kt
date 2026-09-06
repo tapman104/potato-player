@@ -51,6 +51,7 @@ class PlayerViewModel(
     private var pendingUri: String? = null
     private var pendingSeekPosition: Long = 0L
     private var lastLoadedUri: String? = null
+    private var lastOrientationUri: String = ""
 
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
@@ -159,7 +160,7 @@ class PlayerViewModel(
                 
                 if (lastVideoWidth > 0 && lastVideoHeight > 0 &&
                    (lastVideoWidth != prevWidth || lastVideoHeight != prevHeight || uiUpdate.videoRotate != prevRotate) &&
-                   _uiState.value.videoOrientation == "auto") {
+                   _uiState.value.orientationMode == OrientationMode.AUTO) {
                     applyOrientationFromUiState()
                 }
 
@@ -212,6 +213,11 @@ class PlayerViewModel(
             controlsHideDelay = prefs.controlsHideDelay
         )}
         // default decoder and speed applied on file load, not here
+        // Re-apply orientation if dims already known — prefs may arrive after first engineState update
+        if (lastVideoWidth > 0 && lastVideoHeight > 0 &&
+            _uiState.value.orientationMode == OrientationMode.AUTO) {
+            applyOrientationFromUiState()
+        }
     }
 
     fun setSurfaceSize(width: Int, height: Int) {
@@ -280,7 +286,10 @@ class PlayerViewModel(
     }
 
     private fun handleFileLoaded() {
-        _uiState.update { it.copy(orientationMode = OrientationMode.AUTO) }
+        if (currentUri != lastOrientationUri) {
+            lastOrientationUri = currentUri
+            _uiState.update { it.copy(orientationMode = OrientationMode.AUTO) }
+        }
         _uiState.update { it.copy(fileLoaded = true, isLoading = false, fitMode = VideoFitMode.FIT) }
         if (pendingSeekPosition > 0L) {
             wrapper.seekAccurate(pendingSeekPosition)
