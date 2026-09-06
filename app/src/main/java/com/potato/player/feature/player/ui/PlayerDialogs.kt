@@ -34,7 +34,7 @@ fun PlayerModals(
         tracks = trackState.audioTracks,
         currentTrackId = trackState.currentAudioTrackId,
         tracksLoaded = trackState.tracksLoaded,
-        onSelectTrack = { viewModel.onSelectAudioTrack(it) },
+        onSelectTrack = { viewModel.onSelectAudioTrack(it); viewModel.dismissDialog() },
         onDismiss = { viewModel.dismissDialog() }
     )
 
@@ -43,7 +43,7 @@ fun PlayerModals(
         tracks = trackState.subtitleTracks,
         currentTrackId = trackState.currentSubtitleTrackId,
         tracksLoaded = trackState.tracksLoaded,
-        onSelectTrack = { viewModel.onSelectSubtitleTrack(it) },
+        onSelectTrack = { viewModel.onSelectSubtitleTrack(it); viewModel.dismissDialog() },
         onLaunchFilePicker = onLaunchFilePicker,
         onDismiss = { viewModel.dismissDialog() },
         uiState = uiState,
