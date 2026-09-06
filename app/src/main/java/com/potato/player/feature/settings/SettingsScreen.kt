@@ -177,9 +177,10 @@ fun SettingsScreen(
                     trailingContent = { 
                         androidx.compose.material3.Switch(
                             checked = uiState.gesturesEnabled,
-                            onCheckedChange = { viewModel.setGesturesEnabled(it) }
+                            onCheckedChange = null
                         ) 
-                    }
+                    },
+                    modifier = Modifier.clickable { viewModel.setGesturesEnabled(!uiState.gesturesEnabled) }
                 )
             }
             item {
@@ -188,9 +189,10 @@ fun SettingsScreen(
                     trailingContent = { 
                         androidx.compose.material3.Switch(
                             checked = uiState.lockButtonEnabled,
-                            onCheckedChange = { viewModel.setLockButtonEnabled(it) }
+                            onCheckedChange = null
                         ) 
-                    }
+                    },
+                    modifier = Modifier.clickable { viewModel.setLockButtonEnabled(!uiState.lockButtonEnabled) }
                 )
             }
             item {
