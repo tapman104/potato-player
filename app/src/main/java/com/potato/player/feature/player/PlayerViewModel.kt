@@ -157,12 +157,6 @@ class PlayerViewModel(
                 lastVideoHeight = uiUpdate.videoHeight
                 
                 val prevRotate = _uiState.value.videoRotate
-                
-                if (lastVideoWidth > 0 && lastVideoHeight > 0 &&
-                   (lastVideoWidth != prevWidth || lastVideoHeight != prevHeight || uiUpdate.videoRotate != prevRotate) &&
-                   _uiState.value.orientationMode == OrientationMode.AUTO) {
-                    applyOrientationFromUiState()
-                }
 
                 _uiState.update { it.copy(
                     isPlaying = uiUpdate.isPlaying,
@@ -176,6 +170,13 @@ class PlayerViewModel(
                     subScale = uiUpdate.subScale,
                     subPos = uiUpdate.subPos
                 ) }
+                
+                if (lastVideoWidth > 0 && lastVideoHeight > 0 &&
+                   (lastVideoWidth != prevWidth || lastVideoHeight != prevHeight || uiUpdate.videoRotate != prevRotate) &&
+                   _uiState.value.orientationMode == OrientationMode.AUTO) {
+                    applyOrientationFromUiState()
+                }
+
                 _progressState.update { it.copy(
                     positionSec = progressUpdate.positionSec ?: it.positionSec,
                     durationSec = progressUpdate.durationSec,
@@ -263,6 +264,8 @@ class PlayerViewModel(
         lastLoadedUri = uri
         currentUri = uri
         currentTitle = title
+        lastVideoWidth = 0
+        lastVideoHeight = 0
         trackManager.resetAutoSubApplied()
         val initialName = if (title.isNotBlank()) title else "Video"
         _uiState.update { it.copy(fileName = initialName, isLoading = true, isPlaying = false, fileLoaded = false, error = null) }
