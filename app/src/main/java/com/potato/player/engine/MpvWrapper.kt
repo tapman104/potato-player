@@ -329,6 +329,7 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver, PlayerController {
             MpvProp.SUB_POS               -> _engineState.update { it.copy(subPos = value) }
             MpvProp.VIDEO_PARAMS_W         -> _engineState.update { it.copy(videoWidth = value) }
             MpvProp.VIDEO_PARAMS_H         -> _engineState.update { it.copy(videoHeight = value) }
+            MpvProp.VIDEO_PARAMS_ROTATE    -> _engineState.update { it.copy(videoRotate = value) }
             MpvProp.CACHE_BUFFERING_STATE  -> _engineState.update { it.copy(cacheBufferingState = value.toInt()) }
         }
     }

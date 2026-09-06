@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 data class PlayerPrefs(
     val subScale: Double,
     val subPos: Int,
-    val autoRotation: Boolean,
+    val videoOrientation: String,
     val gesturesEnabled: Boolean,
     val lockButtonEnabled: Boolean,
     val defaultDecoder: String,
@@ -45,6 +45,7 @@ class EngineEventHandler(
                     hwdecActive = state.hwdecActive,
                     videoWidth = state.videoWidth.toInt(),
                     videoHeight = state.videoHeight.toInt(),
+                    videoRotate = state.videoRotate,
                     playbackSpeed = state.speed,
                     subScale = state.subScale,
                     subPos = state.subPos.toInt()
@@ -66,7 +67,7 @@ class EngineEventHandler(
             combine(
                 prefsRepository.subScaleFlow,
                 prefsRepository.subPosFlow,
-                prefsRepository.autoRotationFlow,
+                prefsRepository.videoOrientationFlow,
                 prefsRepository.gesturesEnabledFlow,
                 prefsRepository.lockButtonEnabledFlow,
                 prefsRepository.defaultDecoderFlow,
@@ -76,7 +77,7 @@ class EngineEventHandler(
                 PlayerPrefs(
                     subScale          = values[0] as Double,
                     subPos            = values[1] as Int,
-                    autoRotation      = values[2] as Boolean,
+                    videoOrientation  = values[2] as String,
                     gesturesEnabled   = values[3] as Boolean,
                     lockButtonEnabled = values[4] as Boolean,
                     defaultDecoder    = values[5] as String,

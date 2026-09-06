@@ -34,13 +34,13 @@ import com.potato.player.feature.player.VideoFitMode
 @Composable
 fun PlayerBottomControls(
     progressState: PlaybackProgressState,
-    onSliderDragStart: (Double) -> Unit,
-    isAutoRotation: Boolean = false,
+    onSliderDragStart: (Double) -> Unit = {},
+    orientationMode: com.potato.player.feature.player.state.OrientationMode = com.potato.player.feature.player.state.OrientationMode.AUTO,
     currentFitMode: VideoFitMode = VideoFitMode.FIT,
     onSeekGesture: (Long) -> Unit,    // called continuously during drag
-    onSeekCommit: (Long) -> Unit,     // called once on finger lift
-    onDragEnd: () -> Unit,            // tells repository to re-enable echo-backs
-    onToggleAutoRotation: () -> Unit = {},
+    onSeekCommit: (Long) -> Unit = {},
+    onDragEnd: () -> Unit = {},
+    onCycleOrientationMode: () -> Unit = {},
     onToggleFitMode: () -> Unit = {},
     onEnterPip: () -> Unit = {},
     isLocked: Boolean = false,
@@ -224,11 +224,11 @@ fun PlayerBottomControls(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
 
-                IconButton(onClick = onToggleAutoRotation, modifier = buttonModifier) {
+                IconButton(onClick = onCycleOrientationMode, modifier = buttonModifier) {
                     Icon(
-                        imageVector        = if (isAutoRotation) Icons.Default.ScreenRotation else Icons.Default.ScreenLockLandscape,
-                        contentDescription = if (isAutoRotation) "Auto-rotation on" else "Rotation locked",
-                        tint               = if (isAutoRotation) Color(0xFF90CAF9) else Color.White
+                        imageVector        = if (orientationMode == com.potato.player.feature.player.state.OrientationMode.AUTO) androidx.compose.material.icons.Icons.Default.ScreenRotation else androidx.compose.material.icons.Icons.Default.ScreenLockLandscape,
+                        contentDescription = if (orientationMode == com.potato.player.feature.player.state.OrientationMode.AUTO) "Auto-rotation on" else "Rotation locked",
+                        tint               = if (orientationMode == com.potato.player.feature.player.state.OrientationMode.AUTO) androidx.compose.ui.graphics.Color(0xFF90CAF9) else androidx.compose.ui.graphics.Color.White
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))

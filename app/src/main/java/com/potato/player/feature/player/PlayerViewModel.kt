@@ -83,25 +83,37 @@ class PlayerViewModel(
      */
     fun applyOrientationFromUiState() {
         val state = _uiState.value
-        if (state.isAutoRotation) {
-            activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
-            return
+        val w = lastVideoWidth
+        val h = lastVideoHeight
+        val rotate = state.videoRotate
+
+        fun effectiveLandscape(): Boolean {
+            val swapped = rotate == 90L || rotate == 270L
+            return if (swapped) h > w else w >= h
         }
-        when (state.orientationMode) {
-            OrientationMode.LOCK_LANDSCAPE ->
-                activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-            OrientationMode.LOCK_PORTRAIT ->
-                activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-            OrientationMode.AUTO -> {
-                if (lastVideoWidth > 0 && lastVideoHeight > 0) {
-                    val orientation = if (lastVideoWidth >= lastVideoHeight)
-                        android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-                    else
-                        android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-                    activity?.requestedOrientation = orientation
-                } else {
-                    activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+
+        activity?.requestedOrientation = when (state.videoOrientation) {
+            "landscape"        -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            "portrait"         -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+            "sensor"           -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+            "sensor_landscape" -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            "sensor_portrait"  -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+            "locked"           -> {
+                val display = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R)
+                    activity?.display
+                else
+                    @Suppress("DEPRECATION") activity?.windowManager?.defaultDisplay
+                when (display?.rotation) {
+                    android.view.Surface.ROTATION_0, 
+                    android.view.Surface.ROTATION_180 -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                    else -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
                 }
+            }
+            else -> { // "auto"
+                if (w > 0 && h > 0)
+                    if (effectiveLandscape()) android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                    else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+                else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
             }
         }
     }
@@ -128,9 +140,11 @@ class PlayerViewModel(
                 lastVideoWidth = uiUpdate.videoWidth
                 lastVideoHeight = uiUpdate.videoHeight
                 
+                val prevRotate = _uiState.value.videoRotate
+                
                 if (lastVideoWidth > 0 && lastVideoHeight > 0 &&
-                   (lastVideoWidth != prevWidth || lastVideoHeight != prevHeight) &&
-                   _uiState.value.orientationMode == OrientationMode.AUTO) {
+                   (lastVideoWidth != prevWidth || lastVideoHeight != prevHeight || uiUpdate.videoRotate != prevRotate) &&
+                   _uiState.value.videoOrientation == "auto") {
                     applyOrientationFromUiState()
                 }
 
@@ -141,6 +155,7 @@ class PlayerViewModel(
                         hwdecLabel(uiUpdate.hwdecActive) else it.hwdecCurrent,
                     videoWidth = uiUpdate.videoWidth,
                     videoHeight = uiUpdate.videoHeight,
+                    videoRotate = uiUpdate.videoRotate,
                     playbackSpeed = uiUpdate.playbackSpeed,
                     subScale = uiUpdate.subScale,
                     subPos = uiUpdate.subPos
@@ -176,7 +191,7 @@ class PlayerViewModel(
         _uiState.update { it.copy(
             subScale          = prefs.subScale,
             subPos            = prefs.subPos,
-            isAutoRotation    = prefs.autoRotation,
+            videoOrientation  = prefs.videoOrientation,
             gesturesEnabled   = prefs.gesturesEnabled,
             lockButtonEnabled = prefs.lockButtonEnabled,
             controlsHideDelay = prefs.controlsHideDelay
@@ -324,12 +339,7 @@ class PlayerViewModel(
         applyOrientationFromUiState()
     }
 
-    fun toggleAutoRotation() {
-        val next = !_uiState.value.isAutoRotation
-        _uiState.update { it.copy(isAutoRotation = next) }
-        applyOrientationFromUiState()
-        viewModelScope.launch { prefsRepository.setAutoRotation(next) }
-    }
+
 
     fun cycleFitMode() {
         if (!isActive.get()) return

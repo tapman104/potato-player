@@ -19,7 +19,7 @@ class UserPreferencesRepository(private val context: Context) {
     companion object {
         val SUB_SCALE    = doublePreferencesKey("sub_scale")
         val SUB_POS      = intPreferencesKey("sub_pos")
-        val AUTO_ROTATION = booleanPreferencesKey("auto_rotation")
+        val VIDEO_ORIENTATION = stringPreferencesKey("video_orientation")
         val PREFERRED_SUB_LANG = stringPreferencesKey("preferred_sub_lang")
         val DEFAULT_DECODER     = stringPreferencesKey("default_decoder")
         val DEFAULT_SPEED       = doublePreferencesKey("default_speed")
@@ -29,6 +29,7 @@ class UserPreferencesRepository(private val context: Context) {
 
         const val DEFAULT_SUB_SCALE = 1.0
         const val DEFAULT_SUB_POS = 100
+        const val DEFAULT_VIDEO_ORIENTATION = "auto"
         const val DEFAULT_DECODER_VALUE      = "mediacodec-copy"   // HW+
         const val DEFAULT_SPEED_VALUE        = 1.0
         const val DEFAULT_HIDE_DELAY_MS      = 3000                // 3 seconds
@@ -44,8 +45,8 @@ class UserPreferencesRepository(private val context: Context) {
         preferences[SUB_POS] ?: 100
     }
 
-    val autoRotationFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[AUTO_ROTATION] ?: false
+    val videoOrientationFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[VIDEO_ORIENTATION] ?: DEFAULT_VIDEO_ORIENTATION
     }
 
     val preferredSubLangFlow: Flow<String> = context.dataStore.data.map { preferences ->
@@ -91,9 +92,9 @@ class UserPreferencesRepository(private val context: Context) {
         }
     }
 
-    suspend fun setAutoRotation(enabled: Boolean) {
+    suspend fun setVideoOrientation(mode: String) {
         context.dataStore.edit { preferences ->
-            preferences[AUTO_ROTATION] = enabled
+            preferences[VIDEO_ORIENTATION] = mode
         }
     }
 

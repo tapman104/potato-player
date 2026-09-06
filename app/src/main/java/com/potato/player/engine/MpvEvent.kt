@@ -29,6 +29,7 @@ data class PlayerEngineState(
     val subPos:        Long    = 100L,
     val videoWidth:    Long    = 0L,
     val videoHeight:   Long    = 0L,
+    val videoRotate:   Long    = 0L,
     val hwdecActive:   String  = "",
     val trackListJson: String  = ""
 )

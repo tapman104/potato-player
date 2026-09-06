@@ -44,6 +44,7 @@ internal object MpvProp {
     // ── Video params ──────────────────────────────────────────────────────────
     const val VIDEO_PARAMS_W = "video-params/w"
     const val VIDEO_PARAMS_H = "video-params/h"
+    const val VIDEO_PARAMS_ROTATE = "video-params/rotate"
 
     // ── Video transform ───────────────────────────────────────────────────────
     const val VIDEO_ASPECT_OVERRIDE = "video-aspect-override"

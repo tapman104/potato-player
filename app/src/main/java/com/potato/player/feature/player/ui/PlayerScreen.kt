@@ -94,7 +94,7 @@ fun PlayerScreen(
     val onSelectDecoder       = remember(viewModel) { { viewModel.showDialog(ActiveDialog.Decoder) } }
     val onTogglePlay          = remember(viewModel) { { viewModel.togglePlay() } }
     val onToggleLock          = remember(viewModel) { { viewModel.toggleLock() } }
-    val onToggleAutoRotation  = remember(viewModel) { { viewModel.toggleAutoRotation() } }
+    val onCycleOrientationMode = remember(viewModel) { { viewModel.cycleOrientationMode() } }
     val onToggleFitMode       = remember(viewModel) { { viewModel.cycleFitMode() } }
     val onEnterPip            = remember(viewModel, activity) { { enterPip(activity) } }
     val onPrevious            = remember(viewModel) { { viewModel.playPrevious() } }
@@ -219,7 +219,7 @@ fun PlayerScreen(
                                 currentPlaylistIndex < currentPlaylist.size - 1,
             onSeekGesture = onSeekGesture,
             onSeekCommit = onSeekCommit,
-            onToggleAutoRotation = onToggleAutoRotation,
+            onCycleOrientationMode = onCycleOrientationMode,
             onToggleFitMode = onToggleFitMode,
             onEnterPip = onEnterPip,
             onToggleLock = onToggleLock,
@@ -332,7 +332,7 @@ private fun PlayerBottomContainer(
     hasNext: Boolean,
     onSeekGesture: (Long) -> Unit,
     onSeekCommit: (Long) -> Unit,
-    onToggleAutoRotation: () -> Unit,
+    onCycleOrientationMode: () -> Unit,
     onToggleFitMode: () -> Unit,
     onEnterPip: () -> Unit,
     onToggleLock: () -> Unit,
@@ -354,13 +354,13 @@ private fun PlayerBottomContainer(
             PlayerBottomControls(
                 progressState        = progressState,
                 onSliderDragStart    = viewModel::onSliderDragStart,
-                isAutoRotation       = uiState.isAutoRotation,
+                orientationMode      = uiState.orientationMode,
                 currentFitMode       = uiState.fitMode,
                 contentPadding       = WindowInsets.displayCutout.asPaddingValues(),
                 onSeekGesture        = onSeekGesture,
                 onSeekCommit         = onSeekCommit,
                 onDragEnd            = { /* already handled inside onSeekCommit path */ },
-                onToggleAutoRotation = onToggleAutoRotation,
+                onCycleOrientationMode = onCycleOrientationMode,
                 onToggleFitMode      = onToggleFitMode,
                 onEnterPip           = onEnterPip,
                 isLocked             = uiState.isLocked,

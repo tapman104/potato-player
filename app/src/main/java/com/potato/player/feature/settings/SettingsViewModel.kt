@@ -26,7 +26,7 @@ data class SettingsUiState(
     val controlsHideDelay: Int = UserPreferencesRepository.DEFAULT_HIDE_DELAY_MS,
     val gesturesEnabled: Boolean = UserPreferencesRepository.DEFAULT_GESTURES_ENABLED,
     val lockButtonEnabled: Boolean = UserPreferencesRepository.DEFAULT_LOCK_BUTTON,
-    val autoRotation: Boolean = false
+    val videoOrientation: String = UserPreferencesRepository.DEFAULT_VIDEO_ORIENTATION
 )
 
 @HiltViewModel
@@ -47,7 +47,7 @@ class SettingsViewModel @Inject constructor(
         prefsRepository.controlsHideDelayFlow,
         prefsRepository.gesturesEnabledFlow,
         prefsRepository.lockButtonEnabledFlow,
-        prefsRepository.autoRotationFlow,
+        prefsRepository.videoOrientationFlow,
         _appVersion
     ) { values ->
         SettingsUiState(
@@ -57,7 +57,7 @@ class SettingsViewModel @Inject constructor(
             controlsHideDelay = values[3] as Int,
             gesturesEnabled   = values[4] as Boolean,
             lockButtonEnabled = values[5] as Boolean,
-            autoRotation      = values[6] as Boolean,
+            videoOrientation  = values[6] as String,
             appVersion        = values[7] as String
         )
     }.stateIn(
@@ -92,7 +92,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { prefsRepository.setLockButtonEnabled(enabled) }
     }
 
-    fun setAutoRotation(enabled: Boolean) {
-        viewModelScope.launch { prefsRepository.setAutoRotation(enabled) }
+    fun setVideoOrientation(mode: String) {
+        viewModelScope.launch { prefsRepository.setVideoOrientation(mode) }
     }
 }

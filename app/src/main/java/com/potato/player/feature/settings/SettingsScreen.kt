@@ -59,6 +59,7 @@ fun SettingsScreen(
     var showSpeedDialog by remember { mutableStateOf(false) }
     var showHideDelayDialog by remember { mutableStateOf(false) }
     var showSubLangDialog by remember { mutableStateOf(false) }
+    var showOrientationDialog by remember { mutableStateOf(false) }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -197,13 +198,21 @@ fun SettingsScreen(
             }
             item {
                 ListItem(
-                    headlineContent = { Text("Auto-rotation") },
-                    trailingContent = { 
-                        androidx.compose.material3.Switch(
-                            checked = uiState.autoRotation,
-                            onCheckedChange = { viewModel.setAutoRotation(it) }
-                        ) 
-                    }
+                    headlineContent = { Text("Video orientation") },
+                    supportingContent = { 
+                        val label = when(uiState.videoOrientation) {
+                            "auto" -> "Auto (by video)"
+                            "landscape" -> "Landscape"
+                            "portrait" -> "Portrait"
+                            "sensor" -> "Sensor (all directions)"
+                            "sensor_landscape" -> "Sensor Landscape"
+                            "sensor_portrait" -> "Sensor Portrait"
+                            "locked" -> "Locked (current)"
+                            else -> uiState.videoOrientation
+                        }
+                        Text(label)
+                    },
+                    modifier = Modifier.clickable { showOrientationDialog = true }
                 )
             }
             item { HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp)) }
@@ -396,6 +405,55 @@ fun SettingsScreen(
                 },
                 confirmButton = {
                     TextButton(onClick = { showSubLangDialog = false }) {
+                        Text("Close")
+                    }
+                }
+            )
+        }
+
+        if (showOrientationDialog) {
+            AlertDialog(
+                onDismissRequest = { showOrientationDialog = false },
+                title = { Text("Video orientation") },
+                text = {
+                    Column {
+                        val options = listOf(
+                            "auto" to "Auto (by video)",
+                            "landscape" to "Landscape",
+                            "portrait" to "Portrait",
+                            "sensor" to "Sensor (all directions)",
+                            "sensor_landscape" to "Sensor Landscape",
+                            "sensor_portrait" to "Sensor Portrait",
+                            "locked" to "Locked (current)"
+                        )
+                        options.forEach { (code, label) ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .selectable(
+                                        selected = (code == uiState.videoOrientation),
+                                        onClick = {
+                                            viewModel.setVideoOrientation(code)
+                                            showOrientationDialog = false
+                                        }
+                                    )
+                                    .padding(vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = (code == uiState.videoOrientation),
+                                    onClick = null
+                                )
+                                Text(
+                                    text = label,
+                                    modifier = Modifier.padding(start = 16.dp)
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showOrientationDialog = false }) {
                         Text("Close")
                     }
                 }

@@ -14,7 +14,7 @@ import com.potato.player.feature.home.HomeScreen
 import com.potato.player.feature.player.ui.PlayerScreen
 import com.potato.player.feature.player.PlayerViewModel
 import com.potato.player.feature.settings.SettingsScreen
-import android.content.pm.ActivityInfo
+
 import com.potato.player.util.findActivity
 import kotlinx.serialization.Serializable
 
@@ -70,7 +70,7 @@ fun AppNavigation(
         composable<HomeRoute> {
             HomeScreen(
                 onNavigateToPlayer = { uri, title ->
-                    activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+
                     navController.navigate(
                         PlayerRoute(
                             videoUri = android.net.Uri.encode(uri),
@@ -98,7 +98,7 @@ fun AppNavigation(
                 bucketId = route.bucketId,
                 folderName = route.folderName,
                 onNavigateToPlayer = { uri, title, playlist ->
-                    activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+
                     navController.navigate(
                         PlayerRoute(
                             videoUri = android.net.Uri.encode(uri),

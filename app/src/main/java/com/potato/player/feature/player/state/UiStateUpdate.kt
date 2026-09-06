@@ -6,6 +6,7 @@ data class UiStateUpdate(
     val hwdecActive: String,
     val videoWidth: Int,
     val videoHeight: Int,
+    val videoRotate: Long,
     val playbackSpeed: Double,
     val subScale: Double,
     val subPos: Int

@@ -140,6 +140,7 @@ internal class MpvOptionsConfigurator {
         MPVLib.observeProperty(MpvProp.SUB_POS,              MpvFmt.INT64)
         MPVLib.observeProperty(MpvProp.VIDEO_PARAMS_W,       MpvFmt.INT64)
         MPVLib.observeProperty(MpvProp.VIDEO_PARAMS_H,       MpvFmt.INT64)
+        MPVLib.observeProperty(MpvProp.VIDEO_PARAMS_ROTATE,  MpvFmt.INT64)
         MPVLib.observeProperty(MpvProp.TRACK_LIST,              MpvFmt.STRING)
         MPVLib.observeProperty(MpvProp.PAUSED_FOR_CACHE,        MpvFmt.FLAG)
         MPVLib.observeProperty(MpvProp.CACHE_BUFFERING_STATE,   MpvFmt.INT64)
