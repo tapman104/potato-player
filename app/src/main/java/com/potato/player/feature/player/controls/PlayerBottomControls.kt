@@ -228,7 +228,7 @@ fun PlayerBottomControls(
                     Icon(
                         imageVector        = if (orientationMode == com.potato.player.feature.player.state.OrientationMode.AUTO) androidx.compose.material.icons.Icons.Default.ScreenRotation else androidx.compose.material.icons.Icons.Default.ScreenLockLandscape,
                         contentDescription = if (orientationMode == com.potato.player.feature.player.state.OrientationMode.AUTO) "Auto-rotation on" else "Rotation locked",
-                        tint               = if (orientationMode == com.potato.player.feature.player.state.OrientationMode.AUTO) androidx.compose.ui.graphics.Color(0xFF90CAF9) else androidx.compose.ui.graphics.Color.White
+                        tint               = if (orientationMode != com.potato.player.feature.player.state.OrientationMode.AUTO) androidx.compose.ui.graphics.Color(0xFF90CAF9) else androidx.compose.ui.graphics.Color.White
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
