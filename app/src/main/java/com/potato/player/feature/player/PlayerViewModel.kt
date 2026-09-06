@@ -44,6 +44,7 @@ class PlayerViewModel(
     val playlistManager = PlaylistManager()
     val trackManager by lazy { TrackManager(prefsRepository, viewModelScope, wrapper) }
     val geometryManager = VideoGeometryManager(wrapper)
+    val orientationManager = OrientationManager()
 
     // ── Fields merged from PlaybackSessionManager ─────────────────────────────
     private var currentUri: String = ""
@@ -51,7 +52,6 @@ class PlayerViewModel(
     private var pendingUri: String? = null
     private var pendingSeekPosition: Long = 0L
     private var lastLoadedUri: String? = null
-    private var lastOrientationUri: String = ""
 
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
@@ -70,78 +70,6 @@ class PlayerViewModel(
     private var wasPlayingBeforePause: Boolean = false
     private var myPlaybackGeneration: Int = -1
 
-    private var lastVideoWidth: Int = 0
-    private var lastVideoHeight: Int = 0
-    var activity: android.app.Activity? = null
-
-    /**
-     * Sole owner of activity.requestedOrientation.
-     * Valid call sites (add no others without updating this list):
-     *   1. onEngineState      — AUTO mode only, after real dimensions arrive
-     *   2. cycleOrientationMode — user taps the orientation cycle button
-     *   3. toggleAutoRotation — user toggles the auto-rotation pref
-     *   4. DisposableEffect init in PlayerLifecycleEffect — once per activity assignment
-     */
-    fun applyOrientationFromUiState(overrideRotate: Long? = null) {
-        val state = _uiState.value
-        val w = lastVideoWidth
-        val h = lastVideoHeight
-        val rotate = overrideRotate ?: state.videoRotate
-        android.util.Log.d("OrientationDebug", 
-            "apply: w=$w h=$h rotate=$rotate " +
-            "orientationMode=${state.orientationMode} " +
-            "videoOrientation=${state.videoOrientation}")
-
-        // Session override wins over persistent setting
-        when (state.orientationMode) {
-            OrientationMode.LOCK_LANDSCAPE -> {
-                activity?.requestedOrientation =
-                    android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-                return
-            }
-            OrientationMode.LOCK_PORTRAIT -> {
-                activity?.requestedOrientation =
-                    android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-                return
-            }
-            OrientationMode.AUTO -> Unit // fall through to persistent setting below
-        }
-
-        fun effectiveLandscape(): Boolean {
-            val swapped = rotate == 90L || rotate == 270L
-            return if (swapped) h > w else w >= h
-        }
-
-        if (w == 0 || h == 0) {
-            // Dimensions not known yet — onEngineState will call us again once they arrive
-            return
-        }
-
-        activity?.requestedOrientation = when (state.videoOrientation) {
-            "landscape"        -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-            "portrait"         -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-            "sensor"           -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
-            "sensor_landscape" -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-            "sensor_portrait"  -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-            "locked"           -> {
-                val display = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R)
-                    activity?.display
-                else
-                    @Suppress("DEPRECATION") activity?.windowManager?.defaultDisplay
-                when (display?.rotation) {
-                    android.view.Surface.ROTATION_0, 
-                    android.view.Surface.ROTATION_180 -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-                    else -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-                }
-            }
-            else -> // "auto"
-                if (effectiveLandscape()) android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-                else android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-        }
-    }
-
-
-
     private val seekController = SeekController(
         wrapper = wrapper,
         isActive = isActive,
@@ -157,13 +85,6 @@ class PlayerViewModel(
         engineEventHandler.start(
             onLifecycleEvent = { handleLifecycleEvent(it) },
             onEngineState = { uiUpdate, progressUpdate ->
-                val prevWidth = lastVideoWidth
-                val prevHeight = lastVideoHeight
-                lastVideoWidth = uiUpdate.videoWidth
-                lastVideoHeight = uiUpdate.videoHeight
-                
-                val prevRotate = _uiState.value.videoRotate
-
                 _uiState.update { it.copy(
                     isPlaying = uiUpdate.isPlaying,
                     isLoading = it.fileLoaded && uiUpdate.isBuffering,
@@ -177,15 +98,13 @@ class PlayerViewModel(
                     subPos = uiUpdate.subPos
                 ) }
                 
-                if (lastVideoWidth > 0 && lastVideoHeight > 0 &&
-                   (lastVideoWidth != prevWidth || lastVideoHeight != prevHeight || uiUpdate.videoRotate != prevRotate) &&
-                   _uiState.value.orientationMode == OrientationMode.AUTO) {
-                    android.util.Log.d("OrientationDebug",
-                        "engineState: w=${uiUpdate.videoWidth} " +
-                        "h=${uiUpdate.videoHeight} " +
-                        "rotate=${uiUpdate.videoRotate}")
-                    applyOrientationFromUiState(overrideRotate = uiUpdate.videoRotate)
-                }
+                orientationManager.onDimensionsChanged(
+                    width = uiUpdate.videoWidth,
+                    height = uiUpdate.videoHeight,
+                    rotate = uiUpdate.videoRotate,
+                    orientationMode = _uiState.value.orientationMode,
+                    videoOrientation = _uiState.value.videoOrientation
+                )
 
                 _progressState.update { it.copy(
                     positionSec = progressUpdate.positionSec ?: it.positionSec,
@@ -225,14 +144,11 @@ class PlayerViewModel(
         )}
         // default decoder and speed applied on file load, not here
         // Re-apply orientation — prefs may arrive after first engineState update
-        if (_uiState.value.orientationMode == OrientationMode.AUTO &&
-            lastVideoWidth > 0 && lastVideoHeight > 0) {
-            android.util.Log.d("OrientationDebug",
-                "applyPrefs: w=$lastVideoWidth " +
-                "h=$lastVideoHeight " +
-                "orientation=${prefs.videoOrientation}")
-            applyOrientationFromUiState()
-        }
+        orientationManager.apply(
+            orientationMode = _uiState.value.orientationMode,
+            videoOrientation = prefs.videoOrientation,
+            videoRotate = _uiState.value.videoRotate
+        )
     }
 
     fun setSurfaceSize(width: Int, height: Int) {
@@ -278,10 +194,8 @@ class PlayerViewModel(
         lastLoadedUri = uri
         currentUri = uri
         currentTitle = title
-        lastVideoWidth = 0
-        lastVideoHeight = 0
+        orientationManager.clearDimensions()
         _uiState.update { it.copy(orientationMode = OrientationMode.AUTO) }
-        lastOrientationUri = uri
         trackManager.resetAutoSubApplied()
         val initialName = if (title.isNotBlank()) title else "Video"
         _uiState.update { it.copy(fileName = initialName, isLoading = true, isPlaying = false, fileLoaded = false, error = null) }
@@ -376,7 +290,7 @@ class PlayerViewModel(
         }
         _uiState.update { it.copy(orientationMode = next) }
         
-        applyOrientationFromUiState()
+        orientationManager.apply(next, _uiState.value.videoOrientation, _uiState.value.videoRotate)
     }
 
 
@@ -433,8 +347,8 @@ class PlayerViewModel(
 
     override fun onCleared() {
         isActive.set(false)
-        activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-        activity = null
+        orientationManager.reset()
+        orientationManager.activity = null
         super.onCleared()
         saveHistoryIfNeeded()
         wrapper.stopIfGeneration(myPlaybackGeneration)

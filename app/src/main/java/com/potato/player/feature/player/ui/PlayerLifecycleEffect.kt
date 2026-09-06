@@ -29,10 +29,14 @@ fun PlayerLifecycleEffect(
             controller.hide(WindowInsetsCompat.Type.systemBars())
         }
 
-        viewModel.activity = activity
+        viewModel.orientationManager.activity = activity
         // Apply the persisted orientation mode once the activity reference is live.
-        // PlayerViewModel.applyOrientationFromUiState() is the sole owner of requestedOrientation.
-        viewModel.applyOrientationFromUiState()
+        // OrientationManager is the sole owner of requestedOrientation.
+        viewModel.orientationManager.apply(
+            orientationMode = uiState.orientationMode,
+            videoOrientation = uiState.videoOrientation,
+            videoRotate = uiState.videoRotate
+        )
 
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_PAUSE) {
@@ -55,7 +59,7 @@ fun PlayerLifecycleEffect(
             // flash. Only unlock if we are NOT finishing (e.g. unexpected recomposition).
             if (activity?.isChangingConfigurations == false && activity?.isFinishing == false) {
                 if (activity.requestedOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
-                    activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                    viewModel.orientationManager.reset()
                 }
                 if (activity.isInPictureInPictureMode == false) {
                     if (window != null) {
@@ -64,7 +68,7 @@ fun PlayerLifecycleEffect(
                     }
                 }
             }
-            viewModel.activity = null
+            viewModel.orientationManager.activity = null
         }
     }
 }
