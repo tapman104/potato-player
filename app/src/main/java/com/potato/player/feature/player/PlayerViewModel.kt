@@ -1,4 +1,4 @@
-﻿package com.potato.player.feature.player
+package com.potato.player.feature.player
 
 import android.content.Context
 import android.net.Uri
@@ -8,7 +8,6 @@ import com.potato.player.data.UserPreferencesRepository
 import com.potato.player.data.VideoHistoryRepository
 import com.potato.player.engine.MpvWrapper
 import com.potato.player.engine.MpvEvent
-import com.potato.player.engine.MpvProp
 import com.potato.player.feature.player.state.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -50,7 +49,6 @@ class PlayerViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     private val isActive = java.util.concurrent.atomic.AtomicBoolean(true)
-    private var mySurface: android.view.Surface? = null
     private var myPlaybackGeneration: Int = -1
 
     private val seekController = SeekController(
@@ -63,6 +61,14 @@ class PlayerViewModel(
 
     private val engineEventHandler by lazy { EngineEventHandler(wrapper, prefsRepository, viewModelScope) }
 
+    private val surfaceManager: SurfaceManager = SurfaceManager(
+        wrapper = wrapper,
+        onReadyToLoad = {
+            val uri = sessionManager.consumePendingUri()
+            if (uri != null) wrapper.loadFile(uri)
+        }
+    )
+
     val sessionManager by lazy {
         PlaybackSessionManager(
             wrapper = wrapper,
@@ -72,7 +78,7 @@ class PlayerViewModel(
             appContext = appContext,
             scope = viewModelScope,
             orientationManager = orientationManager,
-            hasSurface = { mySurface != null },
+            hasSurface = { surfaceManager.hasSurface() },
             isPlaying = { _uiState.value.isPlaying },
             getProgressState = { _progressState.value },
             onFileLoading = { fileName ->
@@ -182,21 +188,15 @@ class PlayerViewModel(
     }
 
     fun setSurfaceSize(width: Int, height: Int) {
-        wrapper.setPropertyString(MpvProp.ANDROID_SURFACE_SIZE, "${width}x${height}")
+        surfaceManager.setSurfaceSize(width, height)
     }
 
     fun handleSurfaceReady(surface: android.view.Surface) {
-        mySurface = surface
-        wrapper.attachSurface(surface)
-        val uri = sessionManager.consumePendingUri() ?: return
-        wrapper.loadFile(uri)
+        surfaceManager.onSurfaceReady(surface)
     }
 
     fun handleSurfaceDestroyed() {
-        if (mySurface != null) {
-            wrapper.detachSurface()
-            mySurface = null
-        }
+        surfaceManager.onSurfaceDestroyed()
     }
 
     fun prepareUri(defaultUri: String, defaultTitle: String = "") {
