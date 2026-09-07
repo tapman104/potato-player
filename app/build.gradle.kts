@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,6 +7,31 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+}
+
+// ── Version resolution ────────────────────────────────────────────────────
+val versionPropsFile = rootProject.file("version.properties")
+val versionProps = Properties().apply {
+    if (versionPropsFile.exists()) load(versionPropsFile.inputStream())
+}
+
+val ciVersionCode = System.getenv("VERSION_CODE")?.toIntOrNull()
+val ciVersionName = System.getenv("VERSION_NAME")
+
+val resolvedVersionCode: Int
+val resolvedVersionName: String
+
+if (ciVersionCode != null) {
+    // CI build — use env vars, do not touch version.properties
+    resolvedVersionCode = ciVersionCode
+    resolvedVersionName = ciVersionName ?: versionProps.getProperty("VERSION_NAME", "1.7.3")
+} else {
+    // Local build — read from file, increment, write back
+    resolvedVersionCode = (versionProps.getProperty("VERSION_CODE", "3").toIntOrNull() ?: 3)
+    resolvedVersionName = versionProps.getProperty("VERSION_NAME", "1.7.3")
+    // Write incremented value back for next build
+    versionProps.setProperty("VERSION_CODE", (resolvedVersionCode + 1).toString())
+    versionPropsFile.outputStream().use { versionProps.store(it, "Auto-managed — do not edit VERSION_CODE manually") }
 }
 
 android {
@@ -15,8 +42,8 @@ android {
         applicationId = "com.potato.player"
         minSdk = 24
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.7.3"
+        versionCode = resolvedVersionCode
+        versionName = resolvedVersionName
     }
 
     buildTypes {
