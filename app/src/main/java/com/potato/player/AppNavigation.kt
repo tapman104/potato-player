@@ -13,10 +13,30 @@ import com.potato.player.feature.home.FolderScreen
 import com.potato.player.feature.home.HomeScreen
 import com.potato.player.feature.player.ui.PlayerScreen
 import com.potato.player.feature.player.PlayerViewModel
+import com.potato.player.feature.settings.AboutScreen
+import com.potato.player.feature.settings.AdvancedScreen
+import com.potato.player.feature.settings.AppearanceScreen
+import com.potato.player.feature.settings.AudioScreen
+import com.potato.player.feature.settings.DecoderScreen
+import com.potato.player.feature.settings.PlayerScreen as PlayerSettingsScreen
 import com.potato.player.feature.settings.SettingsScreen
+import com.potato.player.feature.settings.SubtitlesScreen
 
 import com.potato.player.util.findActivity
 import kotlinx.serialization.Serializable
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
+import com.potato.player.data.UserPreferencesRepository
+
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface AppNavigationEntryPoint {
+    fun userPreferencesRepository(): UserPreferencesRepository
+}
+
+// ── Top-level routes ──────────────────────────────────────────────────────────
 
 @Serializable
 data object HomeRoute
@@ -39,8 +59,36 @@ data class PlayerRoute(
 @Serializable
 data object SettingsRoute
 
+// ── Settings sub-routes ───────────────────────────────────────────────────────
+
+@Serializable
+data object AppearanceRoute
+
+@Serializable
+data object PlayerSettingsRoute
+
+@Serializable
+data object DecoderRoute
+
+@Serializable
+data object SubtitlesSettingsRoute
+
+@Serializable
+data object AudioRoute
+
+@Serializable
+data object AdvancedRoute
+
 @Serializable
 data object AboutRoute
+
+// ── Placeholder routes (callbacks wired but screens not yet implemented) ──────
+
+@Serializable
+data object ChangelogRoute
+
+@Serializable
+data object LicensesRoute
 
 @Composable
 fun AppNavigation(
@@ -113,23 +161,79 @@ fun AppNavigation(
             )
         }
 
+        // ── Settings hub (stateless category list) ────────────────────────────
         composable<SettingsRoute> {
             SettingsScreen(
-                onBack = { navController.popBackStack() },
-                onNavigateToHome = {
-                    navController.popBackStack(HomeRoute, inclusive = false)
-                },
-                onNavigateToAbout = { navController.navigate(AboutRoute) }
+                onBack             = { navController.popBackStack() },
+                onNavigateToHome   = { navController.popBackStack(HomeRoute, inclusive = false) },
+                onNavigateToAppearance = { navController.navigate(AppearanceRoute) },
+                onNavigateToPlayer     = { navController.navigate(PlayerSettingsRoute) },
+                onNavigateToDecoder    = { navController.navigate(DecoderRoute) },
+                onNavigateToSubtitles  = { navController.navigate(SubtitlesSettingsRoute) },
+                onNavigateToAudio      = { navController.navigate(AudioRoute) },
+                onNavigateToAdvanced   = { navController.navigate(AdvancedRoute) },
+                onNavigateToAbout      = { navController.navigate(AboutRoute) }
             )
         }
 
+        // ── Settings sub-screens ──────────────────────────────────────────────
+        composable<AppearanceRoute> {
+            AppearanceScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<PlayerSettingsRoute> {
+            PlayerSettingsScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<DecoderRoute> {
+            DecoderScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<SubtitlesSettingsRoute> {
+            SubtitlesScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<AudioRoute> {
+            AudioScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<AdvancedRoute> {
+            AdvancedScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // ── About + placeholder sub-routes ────────────────────────────────────
         composable<AboutRoute> {
-            com.potato.player.feature.settings.AboutScreen(
-                onBack = { navController.popBackStack() },
-                onChangelog = { },
-                onLicenses = { },
+            AboutScreen(
+                onBack         = { navController.popBackStack() },
+                onChangelog    = { navController.navigate(ChangelogRoute) },
+                onLicenses     = { navController.navigate(LicensesRoute) },
                 onPrivacyPolicy = { }
             )
+        }
+
+        // Placeholder — no screen implemented yet, just pop back immediately
+        composable<ChangelogRoute> {
+            androidx.compose.runtime.LaunchedEffect(Unit) {
+                navController.popBackStack()
+            }
+        }
+
+        composable<LicensesRoute> {
+            androidx.compose.runtime.LaunchedEffect(Unit) {
+                navController.popBackStack()
+            }
         }
 
         composable<PlayerRoute> { backStackEntry ->
@@ -147,11 +251,23 @@ fun AppNavigation(
                 com.potato.player.data.VideoHistoryRepository(db.videoHistoryDao())
             }
 
+            val prefsRepository = androidx.compose.runtime.remember(context) {
+                EntryPointAccessors.fromApplication(
+                    context.applicationContext,
+                    AppNavigationEntryPoint::class.java
+                ).userPreferencesRepository()
+            }
+
             val playerViewModel: PlayerViewModel = viewModel(
                 factory = object : androidx.lifecycle.ViewModelProvider.Factory {
                     override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
                         @Suppress("UNCHECKED_CAST")
-                        return PlayerViewModel(context.applicationContext, wrapper, historyRepository) as T
+                        return PlayerViewModel(
+                            context.applicationContext, 
+                            wrapper, 
+                            historyRepository,
+                            prefsRepository
+                        ) as T
                     }
                 }
             )

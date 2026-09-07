@@ -96,4 +96,35 @@
     <!-- Settings screen — about section -->
     <string name="section_about">About</string>
     <string name="app_version_format">Version %1$s</string>
+
+    <!-- Settings categories (new nav-based hub) -->
+    <string name="category_appearance">Appearance</string>
+    <string name="category_player">Player</string>
+    <string name="category_decoder">Decoder</string>
+    <string name="category_subtitles">Subtitles</string>
+    <string name="category_audio">Audio</string>
+    <string name="category_advanced">Advanced</string>
+    <string name="settings_desc_appearance">Dark mode, material you</string>
+    <string name="settings_desc_player">Orientation, gestures and controls</string>
+    <string name="settings_desc_decoder">Hardware decoding, pixel format, debanding</string>
+    <string name="settings_desc_subtitles">Preferred languages, fonts</string>
+    <string name="settings_desc_audio">Preferred languages, audio channels, pitch correction</string>
+    <string name="settings_desc_advanced">Configuration location, mpv.conf, input.conf</string>
+
+    <!-- Audio preference labels -->
+    <string name="preferred_audio_language">Preferred audio language</string>
+    <string name="audio_channels">Audio channels</string>
+    <string name="channels_auto">Auto</string>
+    <string name="channels_stereo">Stereo</string>
+    <string name="channels_mono">Mono</string>
+    <string name="channels_surround">Surround</string>
+
+    <!-- Decoder screen -->
+    <string name="pixel_format">Pixel format</string>
+    <string name="debanding">Debanding</string>
+
+    <!-- Advanced screen -->
+    <string name="configuration_location">Configuration location</string>
+    <string name="mpv_conf">mpv.conf</string>
+    <string name="input_conf">input.conf</string>
 </resources>
