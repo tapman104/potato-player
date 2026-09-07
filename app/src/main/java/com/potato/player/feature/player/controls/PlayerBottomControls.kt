@@ -43,6 +43,9 @@ fun PlayerBottomControls(
     onCycleOrientationMode: () -> Unit = {},
     onToggleFitMode: () -> Unit = {},
     onEnterPip: () -> Unit = {},
+    isLocked: Boolean = false,
+    onToggleLock: () -> Unit = {},
+    showLockButton: Boolean = true,
     onPrevious: () -> Unit = {},
     onNext: () -> Unit = {},
     hasPrevious: Boolean = false,
@@ -194,7 +197,17 @@ fun PlayerBottomControls(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
 
-
+                // Lock / Unlock
+                if (showLockButton) {
+                    IconButton(onClick = onToggleLock, modifier = buttonModifier) {
+                        Icon(
+                            imageVector        = if (isLocked) Icons.Default.LockOpen else Icons.Default.Lock,
+                            contentDescription = if (isLocked) "Unlock" else "Lock",
+                            tint               = Color.White
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
 
                 // Fit mode
                 IconButton(onClick = onToggleFitMode, modifier = buttonModifier) {

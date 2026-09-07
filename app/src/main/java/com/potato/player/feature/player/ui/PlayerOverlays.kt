@@ -2,17 +2,10 @@ package com.potato.player.feature.player.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -21,9 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import java.util.Locale
 import kotlin.math.abs
-import com.potato.player.feature.player.controls.PlayerControlsStyles
 
 @Composable
 fun SwipeSeekOverlay(
@@ -64,33 +55,9 @@ fun SwipeSeekOverlay(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "[$sign${kotlin.math.abs(delta).toInt()}s]",
+                    text = "[${sign}${abs(delta).toInt()}s]",
                     color = Color.White,
                     fontSize = 16.sp
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun PlayerUnlockButton(
-    isLocked: Boolean,
-    isPipMode: Boolean,
-    onUnlock: () -> Unit
-) {
-    // ── Centered Unlock Button ───────────────────────────────────────────
-    if (isLocked && !isPipMode) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            IconButton(
-                onClick = onUnlock,
-                modifier = Modifier.align(Alignment.Center).then(PlayerControlsStyles.iconButtonModifier)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = "Unlock",
-                    tint = Color.White,
-                    modifier = Modifier.size(32.dp)
                 )
             }
         }

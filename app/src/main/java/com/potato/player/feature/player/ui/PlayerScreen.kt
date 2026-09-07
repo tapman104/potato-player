@@ -24,10 +24,8 @@ import com.potato.player.feature.player.controls.PlayerCenterPlayPause
 import com.potato.player.feature.player.controls.PlayerTopBar
 import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import com.potato.player.util.findActivity
-import kotlinx.coroutines.delay
 
 private fun enterPip(activity: android.app.Activity?) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -219,7 +217,7 @@ fun PlayerScreen(
             swipeSeekTargetSec = swipeSeekTargetSec,
             hasPrevious = currentPlaylistIndex > 0,
             hasNext = currentPlaylistIndex >= 0 &&
-                                currentPlaylistIndex < currentPlaylist.size - 1,
+                                currentPlaylist.size - 1 > currentPlaylistIndex,
             onSeekGesture = onSeekGesture,
             onSeekCommit = onSeekCommit,
             onCycleOrientationMode = onCycleOrientationMode,
@@ -231,12 +229,6 @@ fun PlayerScreen(
             modifier = Modifier.align(Alignment.BottomCenter)
         )
 
-        PlayerUnlockButtonContainer(
-            viewModel = viewModel,
-            isPipMode = activity?.isInPictureInPictureMode == true,
-            controlsVisible = controlsVisible,
-            onToggleLock = onToggleLock
-        )
 
         // ponytail: move only, zero new logic
         PlayerModalsContainer(
@@ -348,6 +340,7 @@ private fun PlayerBottomContainer(
     val progressState by viewModel.progressState.collectAsStateWithLifecycle()
 
     if (uiState.fileLoaded && !isPipMode) {
+        // Layer 1 — full controls bar: hidden when locked
         AnimatedVisibility(
             visible = controlsVisible && !uiState.isLocked && swipeSeekTargetSec == null,
             enter = fadeIn() + slideInVertically { it },
@@ -367,11 +360,34 @@ private fun PlayerBottomContainer(
                 onCycleOrientationMode = onCycleOrientationMode,
                 onToggleFitMode      = onToggleFitMode,
                 onEnterPip           = onEnterPip,
+                isLocked             = uiState.isLocked,
+                onToggleLock         = onToggleLock,
+                showLockButton       = !uiState.isLocked && uiState.lockButtonEnabled,
                 hasPrevious          = hasPrevious,
                 hasNext              = hasNext,
                 onPrevious           = onPrevious,
                 onNext               = onNext
             )
+        }
+
+        // Layer 2 — unlock button only: always visible while locked so the user can unlock
+        if (uiState.isLocked && uiState.lockButtonEnabled) {
+            Box(
+                modifier = modifier
+                    .systemBarsPadding()
+                    .windowInsetsPadding(WindowInsets.displayCutout)
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp),
+                contentAlignment = Alignment.BottomEnd
+            ) {
+                androidx.compose.material3.IconButton(onClick = onToggleLock) {
+                    androidx.compose.material3.Icon(
+                        imageVector        = Icons.Default.LockOpen,
+                        contentDescription = "Unlock",
+                        tint               = Color.White
+                    )
+                }
+            }
         }
     }
 }
@@ -388,53 +404,6 @@ private fun PlayerErrorStateContainer(viewModel: PlayerViewModel) {
     PlayerErrorState(error = uiState.error)
 }
 
-@Composable
-private fun PlayerUnlockButtonContainer(
-    viewModel: PlayerViewModel,
-    isPipMode: Boolean,
-    controlsVisible: Boolean,
-    onToggleLock: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    if (uiState.lockButtonEnabled && !isPipMode) {
-        if (uiState.isLocked) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                androidx.compose.material3.IconButton(
-                    onClick = onToggleLock,
-                    modifier = Modifier.align(Alignment.Center).then(com.potato.player.feature.player.controls.PlayerControlsStyles.iconButtonModifier)
-                ) {
-                    androidx.compose.material3.Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = "Unlock",
-                        tint = Color.White,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-            }
-        } else {
-            androidx.compose.animation.AnimatedVisibility(
-                visible = controlsVisible,
-                enter = androidx.compose.animation.fadeIn(),
-                exit = androidx.compose.animation.fadeOut(),
-                modifier = modifier
-            ) {
-                Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                    androidx.compose.material3.IconButton(
-                        onClick = onToggleLock,
-                        modifier = Modifier.align(Alignment.CenterStart).then(com.potato.player.feature.player.controls.PlayerControlsStyles.iconButtonModifier)
-                    ) {
-                        androidx.compose.material3.Icon(
-                            imageVector = Icons.Default.LockOpen,
-                            contentDescription = "Lock",
-                            tint = Color.White
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
 
 @Composable
 private fun PlayerLifecycleEffectContainer(activity: android.app.Activity?, viewModel: PlayerViewModel) {
