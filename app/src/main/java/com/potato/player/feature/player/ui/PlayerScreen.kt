@@ -23,6 +23,9 @@ import com.potato.player.feature.player.controls.PlayerBottomControls
 import com.potato.player.feature.player.controls.PlayerCenterPlayPause
 import com.potato.player.feature.player.controls.PlayerTopBar
 import androidx.activity.compose.BackHandler
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
 import com.potato.player.util.findActivity
 import kotlinx.coroutines.delay
 
@@ -402,7 +405,7 @@ private fun PlayerUnlockButtonContainer(
                     modifier = Modifier.align(Alignment.Center).then(com.potato.player.feature.player.controls.PlayerControlsStyles.iconButtonModifier)
                 ) {
                     androidx.compose.material3.Icon(
-                        imageVector = androidx.compose.material.icons.Icons.Default.Lock,
+                        imageVector = Icons.Default.Lock,
                         contentDescription = "Unlock",
                         tint = Color.White,
                         modifier = Modifier.size(32.dp)
@@ -422,7 +425,7 @@ private fun PlayerUnlockButtonContainer(
                         modifier = Modifier.align(Alignment.CenterStart).then(com.potato.player.feature.player.controls.PlayerControlsStyles.iconButtonModifier)
                     ) {
                         androidx.compose.material3.Icon(
-                            imageVector = androidx.compose.material.icons.Icons.Default.LockOpen,
+                            imageVector = Icons.Default.LockOpen,
                             contentDescription = "Lock",
                             tint = Color.White
                         )
