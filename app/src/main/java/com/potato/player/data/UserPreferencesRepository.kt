@@ -26,6 +26,8 @@ class UserPreferencesRepository(private val context: Context) {
         val CONTROLS_HIDE_DELAY = intPreferencesKey("controls_hide_delay")
         val GESTURES_ENABLED    = booleanPreferencesKey("gestures_enabled")
         val LOCK_BUTTON_ENABLED = booleanPreferencesKey("lock_button_enabled")
+        val PREFERRED_AUDIO_LANG = stringPreferencesKey("preferred_audio_lang")
+        val AUDIO_CHANNELS       = stringPreferencesKey("audio_channels")
 
         const val DEFAULT_SUB_SCALE = 1.0
         const val DEFAULT_SUB_POS = 100
@@ -35,6 +37,8 @@ class UserPreferencesRepository(private val context: Context) {
         const val DEFAULT_HIDE_DELAY_MS      = 3000                // 3 seconds
         const val DEFAULT_GESTURES_ENABLED   = true
         const val DEFAULT_LOCK_BUTTON        = true
+        const val DEFAULT_AUDIO_LANG         = "eng"
+        const val DEFAULT_AUDIO_CHANNELS     = "auto"
     }
 
     val subScaleFlow: Flow<Double> = context.dataStore.data.map { preferences ->
@@ -71,6 +75,14 @@ class UserPreferencesRepository(private val context: Context) {
 
     val lockButtonEnabledFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[LOCK_BUTTON_ENABLED] ?: DEFAULT_LOCK_BUTTON
+    }
+
+    val preferredAudioLangFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[PREFERRED_AUDIO_LANG] ?: DEFAULT_AUDIO_LANG
+    }
+
+    val audioChannelsFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[AUDIO_CHANNELS] ?: DEFAULT_AUDIO_CHANNELS
     }
 
     suspend fun setSubScale(scale: Double) {
@@ -131,6 +143,18 @@ class UserPreferencesRepository(private val context: Context) {
     suspend fun setLockButtonEnabled(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[LOCK_BUTTON_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setPreferredAudioLang(lang: String) {
+        context.dataStore.edit { preferences ->
+            preferences[PREFERRED_AUDIO_LANG] = lang
+        }
+    }
+
+    suspend fun setAudioChannels(channels: String) {
+        context.dataStore.edit { preferences ->
+            preferences[AUDIO_CHANNELS] = channels
         }
     }
 }
