@@ -29,6 +29,8 @@ class UserPreferencesRepository(private val context: Context) {
         val PREFERRED_AUDIO_LANG = stringPreferencesKey("preferred_audio_lang")
         val AUDIO_CHANNELS       = stringPreferencesKey("audio_channels")
         val THEME_MODE           = stringPreferencesKey("theme_mode")
+        val RECENTLY_PLAYED_ENABLED = booleanPreferencesKey("recently_played_enabled")
+        val VERBOSE_LOGGING_ENABLED = booleanPreferencesKey("verbose_logging_enabled")
 
         const val DEFAULT_SUB_SCALE = 1.0
         const val DEFAULT_SUB_POS = 100
@@ -41,6 +43,8 @@ class UserPreferencesRepository(private val context: Context) {
         const val DEFAULT_AUDIO_LANG         = "eng"
         const val DEFAULT_AUDIO_CHANNELS     = "auto"
         const val DEFAULT_THEME_MODE         = "system"
+        const val DEFAULT_RECENTLY_PLAYED_ENABLED = true
+        const val DEFAULT_VERBOSE_LOGGING_ENABLED = false
     }
 
     val subScaleFlow: Flow<Double> = context.dataStore.data.map { preferences ->
@@ -89,6 +93,14 @@ class UserPreferencesRepository(private val context: Context) {
 
     val themeModeFlow: Flow<String> = context.dataStore.data.map { preferences ->
         preferences[THEME_MODE] ?: DEFAULT_THEME_MODE
+    }
+
+    val recentlyPlayedEnabledFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[RECENTLY_PLAYED_ENABLED] ?: DEFAULT_RECENTLY_PLAYED_ENABLED
+    }
+
+    val verboseLoggingEnabledFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[VERBOSE_LOGGING_ENABLED] ?: DEFAULT_VERBOSE_LOGGING_ENABLED
     }
 
     suspend fun setSubScale(scale: Double) {
@@ -167,6 +179,18 @@ class UserPreferencesRepository(private val context: Context) {
     suspend fun setThemeMode(mode: String) {
         context.dataStore.edit { preferences ->
             preferences[THEME_MODE] = mode
+        }
+    }
+
+    suspend fun setRecentlyPlayedEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[RECENTLY_PLAYED_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setVerboseLoggingEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[VERBOSE_LOGGING_ENABLED] = enabled
         }
     }
 }

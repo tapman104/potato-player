@@ -16,4 +16,7 @@ interface VideoHistoryDao {
 
     @Query("SELECT * FROM video_history ORDER BY lastPlayedTimestamp DESC")
     fun getAllOrderedByTimestamp(): Flow<List<VideoHistory>>
+
+    @Query("DELETE FROM video_history")
+    suspend fun deleteAll()
 }

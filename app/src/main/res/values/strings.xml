@@ -135,4 +135,43 @@
     <string name="theme_amoled">AMOLED Black</string>
     <string name="dialog_theme_mode">Choose theme</string>
     <string name="section_orientation">Orientation</string>
+
+    <!-- Feedback (AboutScreen) -->
+    <string name="section_feedback">Feedback</string>
+    <string name="send_feedback">Send feedback</string>
+    <string name="send_feedback_desc">Share your thoughts, suggestions or questions</string>
+    <string name="report_bug">Report a bug</string>
+    <string name="report_bug_desc">Found something wrong? Send a bug report with logs</string>
+    <string name="feedback_email_body">Device: %1$s %2$s\nAndroid: %3$s (API %4$d)\nApp: Potato Player %5$s (%6$s)\n\n[Write your feedback here]</string>
+    <string name="bug_report_email_body">Device: %1$s %2$s\nAndroid: %3$s (API %4$d)\nApp: Potato Player %5$s (%6$s)\n\n[Describe the bug here. Do not remove the attached log file.]</string>
+
+    <!-- Advanced screen — History -->
+    <string name="section_history">History</string>
+    <string name="recently_played">Recently played</string>
+    <string name="recently_played_desc">Track and display recently played videos and playlists</string>
+    <string name="clear_playback_history">Clear playback history</string>
+    <string name="clear_playback_history_desc">Clears all saved playback history</string>
+    <string name="clear_playback_history_confirm">This will permanently delete all playback history. Continue?</string>
+
+    <!-- Advanced screen — Cache -->
+    <string name="section_cache">Cache</string>
+    <string name="clear_config_cache">Clear config cache</string>
+    <string name="clear_config_cache_desc">Clear the cached mpv.conf settings</string>
+    <string name="clear_thumbnail_cache">Clear thumbnail cache</string>
+    <string name="clear_thumbnail_cache_desc">Delete all cached video thumbnails</string>
+    <string name="clear_cached_fonts">Clear cached fonts</string>
+    <string name="clear_cached_fonts_desc">Remove all cached subtitle fonts</string>
+
+    <!-- Advanced screen — Logging -->
+    <string name="section_logging">Logging</string>
+    <string name="verbose_logging">Verbose logging</string>
+    <string name="verbose_logging_desc">Helps with debugging but may affect performance</string>
+    <string name="dump_logs">Dump logs</string>
+    <string name="dump_logs_desc">Export app logs to share with developers</string>
+    <string name="log_dump_error">Failed to capture logs: %1$s</string>
+
+    <!-- Common dialog buttons -->
+    <string name="confirm">Confirm</string>
+    <string name="cancel">Cancel</string>
+    <string name="history_cleared">Playback history cleared</string>
 </resources>

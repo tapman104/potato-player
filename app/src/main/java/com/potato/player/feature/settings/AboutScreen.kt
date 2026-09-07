@@ -12,9 +12,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Android
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.Coffee
 import androidx.compose.material.icons.filled.Devices
+import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.OpenInNew
@@ -34,6 +35,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -60,8 +62,55 @@ fun AboutScreen(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
-    
+
     val comingSoonMessage = stringResource(R.string.coming_soon)
+
+    // ── Bug report: fire email intent once log file is ready ──────────────────
+    LaunchedEffect(uiState.logFile) {
+        val file = uiState.logFile ?: return@LaunchedEffect
+        val uri = androidx.core.content.FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+        val bodyText = context.getString(
+            R.string.bug_report_email_body,
+            uiState.manufacturer.replaceFirstChar { it.uppercase() },
+            uiState.model,
+            uiState.androidVersion,
+            uiState.apiLevel,
+            uiState.appVersion,
+            uiState.buildType.replaceFirstChar { it.uppercase() }
+        )
+        val emailIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "message/rfc822"
+            putExtra(Intent.EXTRA_EMAIL, arrayOf("tapman104@proton.me"))
+            putExtra(
+                Intent.EXTRA_SUBJECT,
+                "Potato Player | Bug Report | v${uiState.appVersion}"
+            )
+            putExtra(Intent.EXTRA_TEXT, bodyText)
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        try {
+            context.startActivity(Intent.createChooser(emailIntent, "Send bug report"))
+        } catch (e: ActivityNotFoundException) {
+            snackbarHostState.showSnackbar(
+                context.getString(R.string.no_app_found_to_open_link)
+            )
+        }
+        viewModel.clearLogFile()
+    }
+
+    // ── Show snackbar on log capture error ───────────────────────────────────
+    LaunchedEffect(uiState.logError) {
+        val err = uiState.logError ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(
+            context.getString(R.string.log_dump_error, err)
+        )
+        viewModel.clearLogFile()
+    }
 
     Scaffold(
         topBar = {
@@ -202,6 +251,65 @@ fun AboutScreen(
                     },
                     modifier = Modifier.clickable {
                         context.openUrl("https://github.com/tapman104/potato-ultra-x")
+                    }
+                )
+            }
+            item {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            }
+
+            // --- SECTION: FEEDBACK ---
+            item {
+                Text(
+                    text = stringResource(R.string.section_feedback),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+            item {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.send_feedback)) },
+                    supportingContent = { Text(stringResource(R.string.send_feedback_desc)) },
+                    leadingContent = { Icon(Icons.Default.Feedback, contentDescription = null) },
+                    modifier = Modifier.clickable {
+                        val bodyText = context.getString(
+                            R.string.feedback_email_body,
+                            uiState.manufacturer.replaceFirstChar { it.uppercase() },
+                            uiState.model,
+                            uiState.androidVersion,
+                            uiState.apiLevel,
+                            uiState.appVersion,
+                            uiState.buildType.replaceFirstChar { it.uppercase() }
+                        )
+                        val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
+                            data = Uri.parse("mailto:")
+                            putExtra(Intent.EXTRA_EMAIL, arrayOf("tapman104@proton.me"))
+                            putExtra(
+                                Intent.EXTRA_SUBJECT,
+                                "Potato Player | Feedback | v${uiState.appVersion}"
+                            )
+                            putExtra(Intent.EXTRA_TEXT, bodyText)
+                        }
+                        try {
+                            context.startActivity(emailIntent)
+                        } catch (e: ActivityNotFoundException) {
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar(
+                                    context.getString(R.string.no_app_found_to_open_link)
+                                )
+                            }
+                        }
+                    }
+                )
+            }
+            item {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.report_bug)) },
+                    supportingContent = { Text(stringResource(R.string.report_bug_desc)) },
+                    leadingContent = { Icon(Icons.Default.BugReport, contentDescription = null) },
+                    modifier = Modifier.clickable {
+                        viewModel.dumpLogs()
                     }
                 )
             }
