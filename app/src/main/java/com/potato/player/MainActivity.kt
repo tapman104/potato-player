@@ -21,7 +21,10 @@ import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.ui.platform.LocalContext
 import com.potato.player.data.UserPreferencesRepository
 
 private val AmoledDarkColorScheme = darkColorScheme(
@@ -105,8 +108,13 @@ class MainActivity : ComponentActivity() {
 
             val amoled = themeMode == "amoled"
 
+            val context = LocalContext.current
             val colorScheme = when {
                 amoled -> AmoledDarkColorScheme
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+                    if (darkTheme) dynamicDarkColorScheme(context)
+                    else dynamicLightColorScheme(context)
+                }
                 darkTheme -> darkColorScheme()
                 else -> lightColorScheme()
             }
