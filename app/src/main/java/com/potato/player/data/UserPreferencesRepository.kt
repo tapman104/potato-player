@@ -28,6 +28,7 @@ class UserPreferencesRepository(private val context: Context) {
         val LOCK_BUTTON_ENABLED = booleanPreferencesKey("lock_button_enabled")
         val PREFERRED_AUDIO_LANG = stringPreferencesKey("preferred_audio_lang")
         val AUDIO_CHANNELS       = stringPreferencesKey("audio_channels")
+        val THEME_MODE           = stringPreferencesKey("theme_mode")
 
         const val DEFAULT_SUB_SCALE = 1.0
         const val DEFAULT_SUB_POS = 100
@@ -39,6 +40,7 @@ class UserPreferencesRepository(private val context: Context) {
         const val DEFAULT_LOCK_BUTTON        = true
         const val DEFAULT_AUDIO_LANG         = "eng"
         const val DEFAULT_AUDIO_CHANNELS     = "auto"
+        const val DEFAULT_THEME_MODE         = "system"
     }
 
     val subScaleFlow: Flow<Double> = context.dataStore.data.map { preferences ->
@@ -83,6 +85,10 @@ class UserPreferencesRepository(private val context: Context) {
 
     val audioChannelsFlow: Flow<String> = context.dataStore.data.map { preferences ->
         preferences[AUDIO_CHANNELS] ?: DEFAULT_AUDIO_CHANNELS
+    }
+
+    val themeModeFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[THEME_MODE] ?: DEFAULT_THEME_MODE
     }
 
     suspend fun setSubScale(scale: Double) {
@@ -155,6 +161,12 @@ class UserPreferencesRepository(private val context: Context) {
     suspend fun setAudioChannels(channels: String) {
         context.dataStore.edit { preferences ->
             preferences[AUDIO_CHANNELS] = channels
+        }
+    }
+
+    suspend fun setThemeMode(mode: String) {
+        context.dataStore.edit { preferences ->
+            preferences[THEME_MODE] = mode
         }
     }
 }
