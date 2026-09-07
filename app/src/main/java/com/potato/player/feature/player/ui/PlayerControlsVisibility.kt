@@ -23,7 +23,17 @@ fun rememberControlsVisibility(
     var controlsVisible by rememberSaveable { mutableStateOf(false) }
     var interactionTick by remember { mutableStateOf(0L) }
 
+    LaunchedEffect(isLocked) {
+        if (isLocked) {
+            controlsVisible = false
+        } else {
+            controlsVisible = true
+            interactionTick = System.currentTimeMillis()
+        }
+    }
+
     LaunchedEffect(interactionTick, isPlaying, isSeeking, isFastForwarding, isLocked, isSwipingVolumeOrBrightness) {
+        if (isLocked) return@LaunchedEffect
         if (controlsVisible && isPlaying && !isSeeking && !isFastForwarding && !isSwipingVolumeOrBrightness) {
             delay(hideDelayMs)
             controlsVisible = false

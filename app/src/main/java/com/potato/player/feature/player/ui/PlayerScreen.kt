@@ -231,7 +231,8 @@ fun PlayerScreen(
         PlayerUnlockButtonContainer(
             viewModel = viewModel,
             isPipMode = activity?.isInPictureInPictureMode == true,
-            onUnlock = viewModel::toggleLock
+            controlsVisible = controlsVisible,
+            onToggleLock = onToggleLock
         )
 
         // ponytail: move only, zero new logic
@@ -363,9 +364,6 @@ private fun PlayerBottomContainer(
                 onCycleOrientationMode = onCycleOrientationMode,
                 onToggleFitMode      = onToggleFitMode,
                 onEnterPip           = onEnterPip,
-                isLocked             = uiState.isLocked,
-                onToggleLock         = onToggleLock,
-                showLockButton       = uiState.lockButtonEnabled,
                 hasPrevious          = hasPrevious,
                 hasNext              = hasNext,
                 onPrevious           = onPrevious,
@@ -391,15 +389,47 @@ private fun PlayerErrorStateContainer(viewModel: PlayerViewModel) {
 private fun PlayerUnlockButtonContainer(
     viewModel: PlayerViewModel,
     isPipMode: Boolean,
-    onUnlock: () -> Unit
+    controlsVisible: Boolean,
+    onToggleLock: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    if (uiState.lockButtonEnabled) {
-        PlayerUnlockButton(
-            isLocked = uiState.isLocked,
-            isPipMode = isPipMode,
-            onUnlock = onUnlock
-        )
+    if (uiState.lockButtonEnabled && !isPipMode) {
+        if (uiState.isLocked) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                androidx.compose.material3.IconButton(
+                    onClick = onToggleLock,
+                    modifier = Modifier.align(Alignment.Center).then(com.potato.player.feature.player.controls.PlayerControlsStyles.iconButtonModifier)
+                ) {
+                    androidx.compose.material3.Icon(
+                        imageVector = androidx.compose.material.icons.Icons.Default.Lock,
+                        contentDescription = "Unlock",
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+            }
+        } else {
+            androidx.compose.animation.AnimatedVisibility(
+                visible = controlsVisible,
+                enter = androidx.compose.animation.fadeIn(),
+                exit = androidx.compose.animation.fadeOut(),
+                modifier = modifier
+            ) {
+                Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                    androidx.compose.material3.IconButton(
+                        onClick = onToggleLock,
+                        modifier = Modifier.align(Alignment.CenterStart).then(com.potato.player.feature.player.controls.PlayerControlsStyles.iconButtonModifier)
+                    ) {
+                        androidx.compose.material3.Icon(
+                            imageVector = androidx.compose.material.icons.Icons.Default.LockOpen,
+                            contentDescription = "Lock",
+                            tint = Color.White
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
