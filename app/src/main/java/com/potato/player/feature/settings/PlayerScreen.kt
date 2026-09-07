@@ -7,10 +7,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -23,6 +27,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -58,7 +64,10 @@ fun PlayerScreen(
                             contentDescription = stringResource(R.string.navigate_back)
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             )
         }
     ) { padding ->
@@ -73,17 +82,23 @@ fun PlayerScreen(
                     text = stringResource(R.string.section_playback),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp)
                 )
             }
             item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.default_speed)) },
-                    supportingContent = { Text("${uiState.defaultSpeed}×") },
-                    modifier = Modifier.clickable { showSpeedDialog = true }
-                )
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    Column {
+                        ListItem(
+                            headlineContent = { Text(stringResource(R.string.default_speed)) },
+                            supportingContent = { Text("${uiState.defaultSpeed}×") },
+                            modifier = Modifier.clickable { showSpeedDialog = true }
+                        )
+                    }
+                }
             }
-            item { HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp)) }
 
             // ── Controls ───────────────────────────────────────────────────────
             item {
@@ -91,53 +106,57 @@ fun PlayerScreen(
                     text = stringResource(R.string.section_interface),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp)
                 )
             }
             item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.auto_hide_delay)) },
-                    supportingContent = {
-                        val label = when (uiState.controlsHideDelay) {
-                            2000 -> stringResource(R.string.delay_2s)
-                            3000 -> stringResource(R.string.delay_3s)
-                            5000 -> stringResource(R.string.delay_5s)
-                            else -> "${uiState.controlsHideDelay / 1000} seconds"
-                        }
-                        Text(label)
-                    },
-                    modifier = Modifier.clickable { showHideDelayDialog = true }
-                )
-            }
-            item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.gestures)) },
-                    trailingContent = {
-                        Switch(
-                            checked = uiState.gesturesEnabled,
-                            onCheckedChange = null
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    Column {
+                        ListItem(
+                            headlineContent = { Text(stringResource(R.string.auto_hide_delay)) },
+                            supportingContent = {
+                                val label = when (uiState.controlsHideDelay) {
+                                    2000 -> stringResource(R.string.delay_2s)
+                                    3000 -> stringResource(R.string.delay_3s)
+                                    5000 -> stringResource(R.string.delay_5s)
+                                    else -> "${uiState.controlsHideDelay / 1000} seconds"
+                                }
+                                Text(label)
+                            },
+                            modifier = Modifier.clickable { showHideDelayDialog = true }
                         )
-                    },
-                    modifier = Modifier.clickable {
-                        viewModel.setGesturesEnabled(!uiState.gesturesEnabled)
-                    }
-                )
-            }
-            item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.lock_button)) },
-                    trailingContent = {
-                        Switch(
-                            checked = uiState.lockButtonEnabled,
-                            onCheckedChange = null
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        ListItem(
+                            headlineContent = { Text(stringResource(R.string.gestures)) },
+                            trailingContent = {
+                                Switch(
+                                    checked = uiState.gesturesEnabled,
+                                    onCheckedChange = { viewModel.setGesturesEnabled(it) }
+                                )
+                            },
+                            modifier = Modifier.clickable {
+                                viewModel.setGesturesEnabled(!uiState.gesturesEnabled)
+                            }
                         )
-                    },
-                    modifier = Modifier.clickable {
-                        viewModel.setLockButtonEnabled(!uiState.lockButtonEnabled)
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        ListItem(
+                            headlineContent = { Text(stringResource(R.string.lock_button)) },
+                            trailingContent = {
+                                Switch(
+                                    checked = uiState.lockButtonEnabled,
+                                    onCheckedChange = { viewModel.setLockButtonEnabled(it) }
+                                )
+                            },
+                            modifier = Modifier.clickable {
+                                viewModel.setLockButtonEnabled(!uiState.lockButtonEnabled)
+                            }
+                        )
                     }
-                )
+                }
             }
-            item { HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp)) }
 
             // ── Orientation ────────────────────────────────────────────────────
             item {
@@ -145,27 +164,34 @@ fun PlayerScreen(
                     text = stringResource(R.string.section_orientation),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp)
                 )
             }
             item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.video_orientation)) },
-                    supportingContent = {
-                        val label = when (uiState.videoOrientation) {
-                            "auto"             -> stringResource(R.string.orientation_auto)
-                            "landscape"        -> stringResource(R.string.orientation_landscape)
-                            "portrait"         -> stringResource(R.string.orientation_portrait)
-                            "sensor"           -> stringResource(R.string.orientation_sensor)
-                            "sensor_landscape" -> stringResource(R.string.orientation_sensor_land)
-                            "sensor_portrait"  -> stringResource(R.string.orientation_sensor_port)
-                            "locked"           -> stringResource(R.string.orientation_locked)
-                            else               -> uiState.videoOrientation
-                        }
-                        Text(label)
-                    },
-                    modifier = Modifier.clickable { showOrientationDialog = true }
-                )
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    Column {
+                        ListItem(
+                            headlineContent = { Text(stringResource(R.string.video_orientation)) },
+                            supportingContent = {
+                                val label = when (uiState.videoOrientation) {
+                                    "auto"             -> stringResource(R.string.orientation_auto)
+                                    "landscape"        -> stringResource(R.string.orientation_landscape)
+                                    "portrait"         -> stringResource(R.string.orientation_portrait)
+                                    "sensor"           -> stringResource(R.string.orientation_sensor)
+                                    "sensor_landscape" -> stringResource(R.string.orientation_sensor_land)
+                                    "sensor_portrait"  -> stringResource(R.string.orientation_sensor_port)
+                                    "locked"           -> stringResource(R.string.orientation_locked)
+                                    else               -> uiState.videoOrientation
+                                }
+                                Text(label)
+                            },
+                            modifier = Modifier.clickable { showOrientationDialog = true }
+                        )
+                    }
+                }
             }
         }
 
@@ -174,7 +200,7 @@ fun PlayerScreen(
                 onDismissRequest = { showSpeedDialog = false },
                 title = { Text(stringResource(R.string.dialog_default_speed)) },
                 text = {
-                    Column {
+                    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                         val options = listOf(
                             0.25 to "0.25×",
                             0.5  to "0.5×",
@@ -189,6 +215,7 @@ fun PlayerScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
                                     .selectable(
                                         selected = (value == uiState.defaultSpeed),
                                         onClick = {
@@ -196,7 +223,7 @@ fun PlayerScreen(
                                             showSpeedDialog = false
                                         }
                                     )
-                                    .padding(vertical = 12.dp),
+                                    .padding(vertical = 12.dp, horizontal = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(
@@ -224,7 +251,7 @@ fun PlayerScreen(
                 onDismissRequest = { showHideDelayDialog = false },
                 title = { Text(stringResource(R.string.dialog_auto_hide_delay)) },
                 text = {
-                    Column {
+                    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                         val options = listOf(
                             2000 to stringResource(R.string.delay_2s),
                             3000 to stringResource(R.string.delay_3s),
@@ -234,6 +261,7 @@ fun PlayerScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
                                     .selectable(
                                         selected = (value == uiState.controlsHideDelay),
                                         onClick = {
@@ -241,7 +269,7 @@ fun PlayerScreen(
                                             showHideDelayDialog = false
                                         }
                                     )
-                                    .padding(vertical = 12.dp),
+                                    .padding(vertical = 12.dp, horizontal = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(
@@ -269,7 +297,7 @@ fun PlayerScreen(
                 onDismissRequest = { showOrientationDialog = false },
                 title = { Text(stringResource(R.string.dialog_video_orientation)) },
                 text = {
-                    Column {
+                    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                         val options = listOf(
                             "auto"             to stringResource(R.string.orientation_auto),
                             "landscape"        to stringResource(R.string.orientation_landscape),
@@ -283,6 +311,7 @@ fun PlayerScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
                                     .selectable(
                                         selected = (code == uiState.videoOrientation),
                                         onClick = {
@@ -290,7 +319,7 @@ fun PlayerScreen(
                                             showOrientationDialog = false
                                         }
                                     )
-                                    .padding(vertical = 12.dp),
+                                    .padding(vertical = 12.dp, horizontal = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(

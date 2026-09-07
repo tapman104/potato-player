@@ -3,13 +3,18 @@ package com.potato.player.feature.settings
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -21,6 +26,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -140,7 +146,10 @@ fun AdvancedScreen(
                             contentDescription = stringResource(R.string.navigate_back)
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -150,64 +159,46 @@ fun AdvancedScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            item {
-                Text(
-                    text = stringResource(R.string.settings_desc_advanced),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-            }
-
-            // ── MPV config items (existing, kept as coming soon) ─────────────
-            item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.configuration_location)) },
-                    supportingContent = { Text(stringResource(R.string.coming_soon)) }
-                )
-            }
-            item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.mpv_conf)) },
-                    supportingContent = { Text(stringResource(R.string.coming_soon)) }
-                )
-            }
-            item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.input_conf)) },
-                    supportingContent = { Text(stringResource(R.string.coming_soon)) }
-                )
-            }
-
             // ── SECTION: HISTORY ─────────────────────────────────────────────
             item {
                 Text(
                     text = stringResource(R.string.section_history),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp)
                 )
             }
             item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.recently_played)) },
-                    supportingContent = { Text(stringResource(R.string.recently_played_desc)) },
-                    trailingContent = {
-                        Switch(
-                            checked = recentlyPlayedEnabled,
-                            onCheckedChange = { viewModel.setRecentlyPlayedEnabled(it) }
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    Column {
+                        ListItem(
+                            headlineContent = { Text(stringResource(R.string.recently_played)) },
+                            supportingContent = { Text(stringResource(R.string.recently_played_desc)) },
+                            trailingContent = {
+                                Switch(
+                                    checked = recentlyPlayedEnabled,
+                                    onCheckedChange = { viewModel.setRecentlyPlayedEnabled(it) }
+                                )
+                            }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        ListItem(
+                            headlineContent = { 
+                                Text(
+                                    text = stringResource(R.string.clear_playback_history),
+                                    color = MaterialTheme.colorScheme.error
+                                ) 
+                            },
+                            supportingContent = { Text(stringResource(R.string.clear_playback_history_desc)) },
+                            modifier = Modifier.clickable {
+                                showClearHistoryDialog = true
+                            }
                         )
                     }
-                )
-            }
-            item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.clear_playback_history)) },
-                    supportingContent = { Text(stringResource(R.string.clear_playback_history_desc)) },
-                    modifier = Modifier.clickable {
-                        showClearHistoryDialog = true
-                    }
-                )
+                }
             }
 
             // ── SECTION: CACHE ───────────────────────────────────────────────
@@ -216,26 +207,31 @@ fun AdvancedScreen(
                     text = stringResource(R.string.section_cache),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp)
                 )
             }
             item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.clear_config_cache)) },
-                    supportingContent = { Text(stringResource(R.string.clear_config_cache_desc)) }
-                )
-            }
-            item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.clear_thumbnail_cache)) },
-                    supportingContent = { Text(stringResource(R.string.clear_thumbnail_cache_desc)) }
-                )
-            }
-            item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.clear_cached_fonts)) },
-                    supportingContent = { Text(stringResource(R.string.clear_cached_fonts_desc)) }
-                )
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    Column {
+                        ListItem(
+                            headlineContent = { Text(stringResource(R.string.clear_config_cache)) },
+                            supportingContent = { Text(stringResource(R.string.clear_config_cache_desc)) }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        ListItem(
+                            headlineContent = { Text(stringResource(R.string.clear_thumbnail_cache)) },
+                            supportingContent = { Text(stringResource(R.string.clear_thumbnail_cache_desc)) }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        ListItem(
+                            headlineContent = { Text(stringResource(R.string.clear_cached_fonts)) },
+                            supportingContent = { Text(stringResource(R.string.clear_cached_fonts_desc)) }
+                        )
+                    }
+                }
             }
 
             // ── SECTION: LOGGING ─────────────────────────────────────────────
@@ -244,29 +240,42 @@ fun AdvancedScreen(
                     text = stringResource(R.string.section_logging),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp)
                 )
             }
             item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.verbose_logging)) },
-                    supportingContent = { Text(stringResource(R.string.verbose_logging_desc)) },
-                    trailingContent = {
-                        Switch(
-                            checked = verboseLoggingEnabled,
-                            onCheckedChange = { viewModel.setVerboseLoggingEnabled(it) }
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    Column {
+                        ListItem(
+                            headlineContent = { Text(stringResource(R.string.verbose_logging)) },
+                            supportingContent = { Text(stringResource(R.string.verbose_logging_desc)) },
+                            trailingContent = {
+                                Switch(
+                                    checked = verboseLoggingEnabled,
+                                    onCheckedChange = { viewModel.setVerboseLoggingEnabled(it) }
+                                )
+                            }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        ListItem(
+                            headlineContent = { Text(stringResource(R.string.dump_logs)) },
+                            supportingContent = { Text(stringResource(R.string.dump_logs_desc)) },
+                            leadingContent = {
+                                Icon(
+                                    imageVector = Icons.Default.BugReport,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            },
+                            modifier = Modifier.clickable {
+                                viewModel.dumpLogs()
+                            }
                         )
                     }
-                )
-            }
-            item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.dump_logs)) },
-                    supportingContent = { Text(stringResource(R.string.dump_logs_desc)) },
-                    modifier = Modifier.clickable {
-                        viewModel.dumpLogs()
-                    }
-                )
+                }
             }
         }
     }

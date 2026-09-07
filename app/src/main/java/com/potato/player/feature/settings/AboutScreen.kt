@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Feedback
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.PhoneAndroid
@@ -31,10 +33,11 @@ import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.VideoFile
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -42,6 +45,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -134,7 +138,10 @@ fun AboutScreen(
                             contentDescription = stringResource(R.string.navigate_back)
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -152,24 +159,16 @@ fun AboutScreen(
                         .fillMaxWidth()
                         .padding(top = 24.dp, bottom = 24.dp)
                 ) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = CircleShape,
+                    Icon(
+                        imageVector = Icons.Default.Movie,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(72.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_launcher_foreground),
-                                contentDescription = null,
-                                tint = Color.Unspecified,
-                                modifier = Modifier.size(56.dp)
-                            )
-                        }
-                    }
+                    )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = stringResource(R.string.app_name),
-                        style = MaterialTheme.typography.headlineSmall
+                        style = MaterialTheme.typography.headlineMedium
                     )
                     val buildTypeCapitalized = uiState.buildType.replaceFirstChar { it.uppercase() }
                     Text(
@@ -184,199 +183,9 @@ fun AboutScreen(
             item {
                 Text(
                     text = stringResource(R.string.section_device),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 8.dp)
-                )
-            }
-            item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.android_version)) },
-                    supportingContent = { Text("${uiState.androidVersion} (API ${uiState.apiLevel})") },
-                    leadingContent = {
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer,
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                                Icon(
-                                    Icons.Default.Android,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                    }
-                )
-            }
-            item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.manufacturer)) },
-                    supportingContent = { Text(uiState.manufacturer.replaceFirstChar { it.uppercase() }) },
-                    leadingContent = {
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer,
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                                Icon(
-                                    Icons.Default.PhoneAndroid,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                    }
-                )
-            }
-            item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.model)) },
-                    supportingContent = { Text(uiState.model) },
-                    leadingContent = {
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer,
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                                Icon(
-                                    Icons.Default.Devices,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                    }
-                )
-            }
-            item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.device_codename)) },
-                    supportingContent = { Text(uiState.device) },
-                    leadingContent = {
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer,
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                                Icon(
-                                    Icons.Default.Code,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                    }
-                )
-            }
-
-            // --- SECTION: LIBRARIES ---
-            item {
-                Text(
-                    text = stringResource(R.string.section_libraries),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 8.dp)
-                )
-            }
-            item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.mpv)) },
-                    supportingContent = { Text(stringResource(R.string.version_info_coming_soon)) },
-                    leadingContent = {
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer,
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                                Icon(
-                                    Icons.Default.PlayCircle,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                    }
-                )
-            }
-            item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.ffmpeg)) },
-                    supportingContent = { Text(stringResource(R.string.version_info_coming_soon)) },
-                    leadingContent = {
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer,
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                                Icon(
-                                    Icons.Default.VideoFile,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                    }
-                )
-            }
-
-            // --- SECTION: SOURCE ---
-            item {
-                Text(
-                    text = stringResource(R.string.section_source),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 8.dp)
-                )
-            }
-            item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.github)) },
-                    supportingContent = { Text("tapman104/potato-ultra-x") },
-                    leadingContent = {
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer,
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_github),
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                    },
-                    trailingContent = {
-                        Icon(Icons.Default.OpenInNew, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    },
-                    modifier = Modifier.clickable {
-                        context.openUrl("https://github.com/tapman104/potato-ultra-x")
-                    }
-                )
-            }
-
-            // --- SECTION: FEEDBACK ---
-            item {
-                Text(
-                    text = stringResource(R.string.section_feedback),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 8.dp)
+                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp)
                 )
             }
             item {
@@ -386,11 +195,8 @@ fun AboutScreen(
                 ) {
                     Column {
                         ListItem(
-                            colors = ListItemDefaults.colors(
-                                containerColor = Color.Transparent
-                            ),
-                            headlineContent = { Text(stringResource(R.string.send_feedback)) },
-                            supportingContent = { Text(stringResource(R.string.send_feedback_desc)) },
+                            headlineContent = { Text(stringResource(R.string.android_version)) },
+                            supportingContent = { Text("${uiState.androidVersion} (API ${uiState.apiLevel})") },
                             leadingContent = {
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
@@ -399,52 +205,19 @@ fun AboutScreen(
                                 ) {
                                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                                         Icon(
-                                            Icons.Default.Feedback,
+                                            Icons.Default.Android,
                                             contentDescription = null,
                                             tint = MaterialTheme.colorScheme.onSecondaryContainer,
                                             modifier = Modifier.size(20.dp)
                                         )
                                     }
                                 }
-                            },
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable {
-                                    val bodyText = context.getString(
-                                        R.string.feedback_email_body,
-                                        uiState.manufacturer.replaceFirstChar { it.uppercase() },
-                                        uiState.model,
-                                        uiState.androidVersion,
-                                        uiState.apiLevel,
-                                        uiState.appVersion,
-                                        uiState.buildType.replaceFirstChar { it.uppercase() }
-                                    )
-                                    val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
-                                        data = Uri.parse("mailto:")
-                                        putExtra(Intent.EXTRA_EMAIL, arrayOf("tapman104@proton.me"))
-                                        putExtra(
-                                            Intent.EXTRA_SUBJECT,
-                                            "Potato Player | Feedback | v${uiState.appVersion}"
-                                        )
-                                        putExtra(Intent.EXTRA_TEXT, bodyText)
-                                    }
-                                    try {
-                                        context.startActivity(emailIntent)
-                                    } catch (e: ActivityNotFoundException) {
-                                        coroutineScope.launch {
-                                            snackbarHostState.showSnackbar(
-                                                context.getString(R.string.no_app_found_to_open_link)
-                                            )
-                                        }
-                                    }
-                                }
+                            }
                         )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                         ListItem(
-                            colors = ListItemDefaults.colors(
-                                containerColor = Color.Transparent
-                            ),
-                            headlineContent = { Text(stringResource(R.string.report_bug)) },
-                            supportingContent = { Text(stringResource(R.string.report_bug_desc)) },
+                            headlineContent = { Text(stringResource(R.string.manufacturer)) },
+                            supportingContent = { Text(uiState.manufacturer.replaceFirstChar { it.uppercase() }) },
                             leadingContent = {
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
@@ -453,20 +226,158 @@ fun AboutScreen(
                                 ) {
                                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                                         Icon(
-                                            Icons.Default.BugReport,
+                                            Icons.Default.PhoneAndroid,
                                             contentDescription = null,
                                             tint = MaterialTheme.colorScheme.onSecondaryContainer,
                                             modifier = Modifier.size(20.dp)
                                         )
                                     }
                                 }
-                            },
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable {
-                                    viewModel.dumpLogs()
-                                }
+                            }
                         )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        ListItem(
+                            headlineContent = { Text(stringResource(R.string.model)) },
+                            supportingContent = { Text(uiState.model) },
+                            leadingContent = {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MaterialTheme.colorScheme.secondaryContainer,
+                                    modifier = Modifier.size(40.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                        Icon(
+                                            Icons.Default.Devices,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        ListItem(
+                            headlineContent = { Text(stringResource(R.string.device_codename)) },
+                            supportingContent = { Text(uiState.device) },
+                            leadingContent = {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MaterialTheme.colorScheme.secondaryContainer,
+                                    modifier = Modifier.size(40.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                        Icon(
+                                            Icons.Default.Code,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+
+            // --- SECTION: SOURCE ---
+            item {
+                Text(
+                    text = stringResource(R.string.section_source),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp)
+                )
+            }
+            item {
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    ListItem(
+                        headlineContent = { Text(stringResource(R.string.github)) },
+                        supportingContent = { Text("tapman104/potato-ultra-x") },
+                        leadingContent = {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_github),
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        },
+                        trailingContent = {
+                            Icon(Icons.Default.OpenInNew, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        },
+                        modifier = Modifier.clickable {
+                            context.openUrl("https://github.com/tapman104/potato-ultra-x")
+                        }
+                    )
+                }
+            }
+
+            // --- SECTION: FEEDBACK ---
+            item {
+                Text(
+                    text = stringResource(R.string.section_feedback),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+                )
+            }
+            item {
+                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    FilledTonalButton(
+                        onClick = {
+                            val bodyText = context.getString(
+                                R.string.feedback_email_body,
+                                uiState.manufacturer.replaceFirstChar { it.uppercase() },
+                                uiState.model,
+                                uiState.androidVersion,
+                                uiState.apiLevel,
+                                uiState.appVersion,
+                                uiState.buildType.replaceFirstChar { it.uppercase() }
+                            )
+                            val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
+                                data = Uri.parse("mailto:")
+                                putExtra(Intent.EXTRA_EMAIL, arrayOf("tapman104@proton.me"))
+                                putExtra(
+                                    Intent.EXTRA_SUBJECT,
+                                    "Potato Player | Feedback | v${uiState.appVersion}"
+                                )
+                                putExtra(Intent.EXTRA_TEXT, bodyText)
+                            }
+                            try {
+                                context.startActivity(emailIntent)
+                            } catch (e: ActivityNotFoundException) {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        context.getString(R.string.no_app_found_to_open_link)
+                                    )
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                    ) {
+                        Icon(Icons.Default.Feedback, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.send_feedback))
+                    }
+                    FilledTonalButton(
+                        onClick = { viewModel.dumpLogs() },
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                    ) {
+                        Icon(Icons.Default.BugReport, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.report_bug))
                     }
                 }
             }
@@ -475,9 +386,9 @@ fun AboutScreen(
             item {
                 Text(
                     text = stringResource(R.string.section_donate),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 8.dp)
+                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp)
                 )
             }
             item {
@@ -487,9 +398,6 @@ fun AboutScreen(
                 ) {
                     Column {
                         ListItem(
-                            colors = ListItemDefaults.colors(
-                                containerColor = Color.Transparent
-                            ),
                             headlineContent = { Text(stringResource(R.string.buy_me_a_coffee)) },
                             supportingContent = { Text("@tapman") },
                             leadingContent = {
@@ -508,17 +416,13 @@ fun AboutScreen(
                                     }
                                 }
                             },
-                            trailingContent = { Icon(Icons.Default.OpenInNew, contentDescription = null) },
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable {
-                                    context.openUrl("https://buymeacoffee.com/tapman")
-                                }
+                            trailingContent = { Icon(Icons.Default.OpenInNew, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            modifier = Modifier.clickable {
+                                context.openUrl("https://buymeacoffee.com/tapman")
+                            }
                         )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                         ListItem(
-                            colors = ListItemDefaults.colors(
-                                containerColor = Color.Transparent
-                            ),
                             headlineContent = { Text(stringResource(R.string.kofi)) },
                             supportingContent = { Text("@tapman") },
                             leadingContent = {
@@ -537,17 +441,13 @@ fun AboutScreen(
                                     }
                                 }
                             },
-                            trailingContent = { Icon(Icons.Default.OpenInNew, contentDescription = null) },
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable {
-                                    context.openUrl("https://ko-fi.com/tapman")
-                                }
+                            trailingContent = { Icon(Icons.Default.OpenInNew, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            modifier = Modifier.clickable {
+                                context.openUrl("https://ko-fi.com/tapman")
+                            }
                         )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                         ListItem(
-                            colors = ListItemDefaults.colors(
-                                containerColor = Color.Transparent
-                            ),
                             headlineContent = { Text(stringResource(R.string.upi)) },
                             supportingContent = { Text(stringResource(R.string.upi_description)) },
                             leadingContent = {
@@ -566,13 +466,11 @@ fun AboutScreen(
                                     }
                                 }
                             },
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable {
-                                    coroutineScope.launch {
-                                        snackbarHostState.showSnackbar(comingSoonMessage)
-                                    }
+                            modifier = Modifier.clickable {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(comingSoonMessage)
                                 }
+                            }
                         )
                     }
                 }

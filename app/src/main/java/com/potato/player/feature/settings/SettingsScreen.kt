@@ -1,11 +1,14 @@
 package com.potato.player.feature.settings
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ChevronRight
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Info
@@ -13,17 +16,20 @@ import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Subtitles
-import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.potato.player.R
 import com.potato.player.feature.home.PillBarTab
 import com.potato.player.feature.home.PotatoPillBar
@@ -52,7 +58,10 @@ fun SettingsScreen(
                             contentDescription = stringResource(R.string.navigate_back)
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             )
         },
         bottomBar = {
@@ -66,77 +75,134 @@ fun SettingsScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(padding),
+            contentPadding = PaddingValues(vertical = 16.dp)
         ) {
             item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.category_appearance)) },
-                    supportingContent = { Text(stringResource(R.string.settings_desc_appearance)) },
-                    leadingContent = {
-                        Icon(Icons.Default.Palette, contentDescription = null)
-                    },
-                    modifier = Modifier.clickable(onClick = onNavigateToAppearance)
-                )
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    ListItem(
+                        headlineContent = { Text(stringResource(R.string.category_appearance)) },
+                        supportingContent = { Text(stringResource(R.string.settings_desc_appearance)) },
+                        leadingContent = {
+                            Icon(Icons.Default.Palette, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        },
+                        trailingContent = {
+                            Icon(Icons.AutoMirrored.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        },
+                        modifier = Modifier.clickable(onClick = onNavigateToAppearance)
+                    )
+                }
             }
             item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.category_player)) },
-                    supportingContent = { Text(stringResource(R.string.settings_desc_player)) },
-                    leadingContent = {
-                        Icon(Icons.Default.PlayCircle, contentDescription = null)
-                    },
-                    modifier = Modifier.clickable(onClick = onNavigateToPlayer)
-                )
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    ListItem(
+                        headlineContent = { Text(stringResource(R.string.category_player)) },
+                        supportingContent = { Text(stringResource(R.string.settings_desc_player)) },
+                        leadingContent = {
+                            Icon(Icons.Default.PlayCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        },
+                        trailingContent = {
+                            Icon(Icons.AutoMirrored.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        },
+                        modifier = Modifier.clickable(onClick = onNavigateToPlayer)
+                    )
+                }
             }
             item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.category_decoder)) },
-                    supportingContent = { Text(stringResource(R.string.settings_desc_decoder)) },
-                    leadingContent = {
-                        Icon(Icons.Default.Memory, contentDescription = null)
-                    },
-                    modifier = Modifier.clickable(onClick = onNavigateToDecoder)
-                )
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    ListItem(
+                        headlineContent = { Text(stringResource(R.string.category_decoder)) },
+                        supportingContent = { Text(stringResource(R.string.settings_desc_decoder)) },
+                        leadingContent = {
+                            Icon(Icons.Default.Memory, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        },
+                        trailingContent = {
+                            Icon(Icons.AutoMirrored.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        },
+                        modifier = Modifier.clickable(onClick = onNavigateToDecoder)
+                    )
+                }
             }
             item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.category_subtitles)) },
-                    supportingContent = { Text(stringResource(R.string.settings_desc_subtitles)) },
-                    leadingContent = {
-                        Icon(Icons.Default.Subtitles, contentDescription = null)
-                    },
-                    modifier = Modifier.clickable(onClick = onNavigateToSubtitles)
-                )
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    ListItem(
+                        headlineContent = { Text(stringResource(R.string.category_subtitles)) },
+                        supportingContent = { Text(stringResource(R.string.settings_desc_subtitles)) },
+                        leadingContent = {
+                            Icon(Icons.Default.Subtitles, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        },
+                        trailingContent = {
+                            Icon(Icons.AutoMirrored.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        },
+                        modifier = Modifier.clickable(onClick = onNavigateToSubtitles)
+                    )
+                }
             }
             item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.category_audio)) },
-                    supportingContent = { Text(stringResource(R.string.settings_desc_audio)) },
-                    leadingContent = {
-                        Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null)
-                    },
-                    modifier = Modifier.clickable(onClick = onNavigateToAudio)
-                )
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    ListItem(
+                        headlineContent = { Text(stringResource(R.string.category_audio)) },
+                        supportingContent = { Text(stringResource(R.string.settings_desc_audio)) },
+                        leadingContent = {
+                            Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        },
+                        trailingContent = {
+                            Icon(Icons.AutoMirrored.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        },
+                        modifier = Modifier.clickable(onClick = onNavigateToAudio)
+                    )
+                }
             }
             item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.category_advanced)) },
-                    supportingContent = { Text(stringResource(R.string.settings_desc_advanced)) },
-                    leadingContent = {
-                        Icon(Icons.Default.Code, contentDescription = null)
-                    },
-                    modifier = Modifier.clickable(onClick = onNavigateToAdvanced)
-                )
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    ListItem(
+                        headlineContent = { Text(stringResource(R.string.category_advanced)) },
+                        supportingContent = { Text(stringResource(R.string.settings_desc_advanced)) },
+                        leadingContent = {
+                            Icon(Icons.Default.Code, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        },
+                        trailingContent = {
+                            Icon(Icons.AutoMirrored.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        },
+                        modifier = Modifier.clickable(onClick = onNavigateToAdvanced)
+                    )
+                }
             }
             item {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.about)) },
-                    supportingContent = { Text(stringResource(R.string.section_about)) },
-                    leadingContent = {
-                        Icon(Icons.Default.Info, contentDescription = null)
-                    },
-                    modifier = Modifier.clickable(onClick = onNavigateToAbout)
-                )
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    ListItem(
+                        headlineContent = { Text(stringResource(R.string.about)) },
+                        supportingContent = { Text(stringResource(R.string.section_about)) },
+                        leadingContent = {
+                            Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        },
+                        trailingContent = {
+                            Icon(Icons.AutoMirrored.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        },
+                        modifier = Modifier.clickable(onClick = onNavigateToAbout)
+                    )
+                }
             }
         }
     }
