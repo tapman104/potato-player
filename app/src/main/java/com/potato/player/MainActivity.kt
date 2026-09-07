@@ -19,6 +19,10 @@ import com.potato.player.engine.MpvWrapper
 import kotlinx.coroutines.flow.first
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.lightColorScheme
+import com.potato.player.data.UserPreferencesRepository
 
 private val AmoledDarkColorScheme = darkColorScheme(
     background        = Color(0xFF000000),
@@ -41,6 +45,9 @@ class MainActivity : ComponentActivity() {
     // Cold-start routing is handled by resolveStartDestination() before setContent.
     private var pendingIntent by mutableStateOf<Intent?>(null)
     private val mpvWrapper by lazy { MpvWrapper(applicationContext) }
+
+    @Inject
+    lateinit var prefsRepository: UserPreferencesRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,7 +93,25 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            MaterialTheme(colorScheme = AmoledDarkColorScheme) {
+            val themeMode by prefsRepository.themeModeFlow
+                .collectAsState(initial = UserPreferencesRepository.DEFAULT_THEME_MODE)
+
+            val darkTheme = when (themeMode) {
+                "light" -> false
+                "dark"  -> true
+                "amoled" -> true
+                else    -> isSystemInDarkTheme()
+            }
+
+            val amoled = themeMode == "amoled"
+
+            val colorScheme = when {
+                amoled -> AmoledDarkColorScheme
+                darkTheme -> darkColorScheme()
+                else -> lightColorScheme()
+            }
+
+            MaterialTheme(colorScheme = colorScheme) {
                 val navController = rememberNavController()
 
                 // startDest is captured before setContent — NavHost starts on the
