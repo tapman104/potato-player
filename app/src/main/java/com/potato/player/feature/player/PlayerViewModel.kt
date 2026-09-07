@@ -23,10 +23,10 @@ enum class VideoFitMode { FIT, FILL, STRETCH }
 class PlayerViewModel(
     private val appContext: Context,
     private val wrapper: MpvWrapper,
-    private val historyRepository: VideoHistoryRepository
+    private val historyRepository: VideoHistoryRepository,
+    private val prefsRepository: UserPreferencesRepository
 ) : ViewModel() {
 
-    private val prefsRepository by lazy { UserPreferencesRepository(appContext) }
     private val historyManager by lazy { PlaybackHistoryManager(historyRepository, viewModelScope) }
 
     private val _activeDialog = MutableStateFlow<ActiveDialog>(ActiveDialog.None)
