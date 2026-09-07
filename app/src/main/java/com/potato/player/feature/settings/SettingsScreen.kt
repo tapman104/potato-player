@@ -8,7 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ChevronRight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Info
@@ -90,7 +90,7 @@ fun SettingsScreen(
                             Icon(Icons.Default.Palette, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         },
                         trailingContent = {
-                            Icon(Icons.AutoMirrored.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         },
                         modifier = Modifier.clickable(onClick = onNavigateToAppearance)
                     )
@@ -108,7 +108,7 @@ fun SettingsScreen(
                             Icon(Icons.Default.PlayCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         },
                         trailingContent = {
-                            Icon(Icons.AutoMirrored.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         },
                         modifier = Modifier.clickable(onClick = onNavigateToPlayer)
                     )
@@ -126,7 +126,7 @@ fun SettingsScreen(
                             Icon(Icons.Default.Memory, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         },
                         trailingContent = {
-                            Icon(Icons.AutoMirrored.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         },
                         modifier = Modifier.clickable(onClick = onNavigateToDecoder)
                     )
@@ -144,7 +144,7 @@ fun SettingsScreen(
                             Icon(Icons.Default.Subtitles, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         },
                         trailingContent = {
-                            Icon(Icons.AutoMirrored.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         },
                         modifier = Modifier.clickable(onClick = onNavigateToSubtitles)
                     )
@@ -162,7 +162,7 @@ fun SettingsScreen(
                             Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         },
                         trailingContent = {
-                            Icon(Icons.AutoMirrored.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         },
                         modifier = Modifier.clickable(onClick = onNavigateToAudio)
                     )
@@ -180,7 +180,7 @@ fun SettingsScreen(
                             Icon(Icons.Default.Code, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         },
                         trailingContent = {
-                            Icon(Icons.AutoMirrored.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         },
                         modifier = Modifier.clickable(onClick = onNavigateToAdvanced)
                     )
@@ -198,7 +198,7 @@ fun SettingsScreen(
                             Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         },
                         trailingContent = {
-                            Icon(Icons.AutoMirrored.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         },
                         modifier = Modifier.clickable(onClick = onNavigateToAbout)
                     )
