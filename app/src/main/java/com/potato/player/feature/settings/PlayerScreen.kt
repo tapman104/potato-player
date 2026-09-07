@@ -1,4 +1,4 @@
-﻿package com.potato.player.feature.settings
+package com.potato.player.feature.settings
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -45,6 +45,7 @@ fun PlayerScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showSpeedDialog     by remember { mutableStateOf(false) }
     var showHideDelayDialog by remember { mutableStateOf(false) }
+    var showOrientationDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -134,6 +135,36 @@ fun PlayerScreen(
                     modifier = Modifier.clickable {
                         viewModel.setLockButtonEnabled(!uiState.lockButtonEnabled)
                     }
+                )
+            }
+            item { HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp)) }
+
+            // ── Orientation ────────────────────────────────────────────────────
+            item {
+                Text(
+                    text = stringResource(R.string.section_orientation),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+            item {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.video_orientation)) },
+                    supportingContent = {
+                        val label = when (uiState.videoOrientation) {
+                            "auto"             -> stringResource(R.string.orientation_auto)
+                            "landscape"        -> stringResource(R.string.orientation_landscape)
+                            "portrait"         -> stringResource(R.string.orientation_portrait)
+                            "sensor"           -> stringResource(R.string.orientation_sensor)
+                            "sensor_landscape" -> stringResource(R.string.orientation_sensor_land)
+                            "sensor_portrait"  -> stringResource(R.string.orientation_sensor_port)
+                            "locked"           -> stringResource(R.string.orientation_locked)
+                            else               -> uiState.videoOrientation
+                        }
+                        Text(label)
+                    },
+                    modifier = Modifier.clickable { showOrientationDialog = true }
                 )
             }
         }
@@ -227,6 +258,55 @@ fun PlayerScreen(
                 },
                 confirmButton = {
                     TextButton(onClick = { showHideDelayDialog = false }) {
+                        Text(stringResource(R.string.close))
+                    }
+                }
+            )
+        }
+
+        if (showOrientationDialog) {
+            AlertDialog(
+                onDismissRequest = { showOrientationDialog = false },
+                title = { Text(stringResource(R.string.dialog_video_orientation)) },
+                text = {
+                    Column {
+                        val options = listOf(
+                            "auto"             to stringResource(R.string.orientation_auto),
+                            "landscape"        to stringResource(R.string.orientation_landscape),
+                            "portrait"         to stringResource(R.string.orientation_portrait),
+                            "sensor"           to stringResource(R.string.orientation_sensor),
+                            "sensor_landscape" to stringResource(R.string.orientation_sensor_land),
+                            "sensor_portrait"  to stringResource(R.string.orientation_sensor_port),
+                            "locked"           to stringResource(R.string.orientation_locked)
+                        )
+                        options.forEach { (code, label) ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .selectable(
+                                        selected = (code == uiState.videoOrientation),
+                                        onClick = {
+                                            viewModel.setVideoOrientation(code)
+                                            showOrientationDialog = false
+                                        }
+                                    )
+                                    .padding(vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = (code == uiState.videoOrientation),
+                                    onClick = null
+                                )
+                                Text(
+                                    text = label,
+                                    modifier = Modifier.padding(start = 16.dp)
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showOrientationDialog = false }) {
                         Text(stringResource(R.string.close))
                     }
                 }

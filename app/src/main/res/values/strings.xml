@@ -127,4 +127,12 @@
     <string name="configuration_location">Configuration location</string>
     <string name="mpv_conf">mpv.conf</string>
     <string name="input_conf">input.conf</string>
+
+    <string name="theme_mode">Theme</string>
+    <string name="theme_system">System default</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_amoled">AMOLED Black</string>
+    <string name="dialog_theme_mode">Choose theme</string>
+    <string name="section_orientation">Orientation</string>
 </resources>

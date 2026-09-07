@@ -1,4 +1,4 @@
-﻿package com.potato.player.feature.settings
+package com.potato.player.feature.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class AppearanceUiState(
-    val videoOrientation: String = UserPreferencesRepository.DEFAULT_VIDEO_ORIENTATION
+    val themeMode: String = UserPreferencesRepository.DEFAULT_THEME_MODE
 )
 
 @HiltViewModel
@@ -20,15 +20,15 @@ class AppearanceViewModel @Inject constructor(
     private val prefsRepository: UserPreferencesRepository
 ) : ViewModel() {
 
-    val uiState: StateFlow<AppearanceUiState> = prefsRepository.videoOrientationFlow
-        .map { orientation -> AppearanceUiState(videoOrientation = orientation) }
+    val uiState: StateFlow<AppearanceUiState> = prefsRepository.themeModeFlow
+        .map { themeMode -> AppearanceUiState(themeMode = themeMode) }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = AppearanceUiState()
         )
 
-    fun setVideoOrientation(mode: String) {
-        viewModelScope.launch { prefsRepository.setVideoOrientation(mode) }
+    fun setThemeMode(mode: String) {
+        viewModelScope.launch { prefsRepository.setThemeMode(mode) }
     }
 }

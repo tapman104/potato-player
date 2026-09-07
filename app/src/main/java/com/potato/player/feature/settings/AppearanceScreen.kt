@@ -1,4 +1,4 @@
-﻿package com.potato.player.feature.settings
+package com.potato.player.feature.settings
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -41,7 +41,7 @@ fun AppearanceScreen(
     viewModel: AppearanceViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var showOrientationDialog by remember { mutableStateOf(false) }
+    var showThemeDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -73,56 +73,50 @@ fun AppearanceScreen(
             }
             item {
                 ListItem(
-                    headlineContent = { Text(stringResource(R.string.video_orientation)) },
+                    headlineContent = { Text(stringResource(R.string.theme_mode)) },
                     supportingContent = {
-                        val label = when (uiState.videoOrientation) {
-                            "auto"             -> stringResource(R.string.orientation_auto)
-                            "landscape"        -> stringResource(R.string.orientation_landscape)
-                            "portrait"         -> stringResource(R.string.orientation_portrait)
-                            "sensor"           -> stringResource(R.string.orientation_sensor)
-                            "sensor_landscape" -> stringResource(R.string.orientation_sensor_land)
-                            "sensor_portrait"  -> stringResource(R.string.orientation_sensor_port)
-                            "locked"           -> stringResource(R.string.orientation_locked)
-                            else               -> uiState.videoOrientation
+                        val label = when (uiState.themeMode) {
+                            "system" -> stringResource(R.string.theme_system)
+                            "light"  -> stringResource(R.string.theme_light)
+                            "dark"   -> stringResource(R.string.theme_dark)
+                            "amoled" -> stringResource(R.string.theme_amoled)
+                            else     -> uiState.themeMode
                         }
                         Text(label)
                     },
-                    modifier = Modifier.clickable { showOrientationDialog = true }
+                    modifier = Modifier.clickable { showThemeDialog = true }
                 )
             }
         }
 
-        if (showOrientationDialog) {
+        if (showThemeDialog) {
             AlertDialog(
-                onDismissRequest = { showOrientationDialog = false },
-                title = { Text(stringResource(R.string.dialog_video_orientation)) },
+                onDismissRequest = { showThemeDialog = false },
+                title = { Text(stringResource(R.string.dialog_theme_mode)) },
                 text = {
                     Column {
                         val options = listOf(
-                            "auto"             to stringResource(R.string.orientation_auto),
-                            "landscape"        to stringResource(R.string.orientation_landscape),
-                            "portrait"         to stringResource(R.string.orientation_portrait),
-                            "sensor"           to stringResource(R.string.orientation_sensor),
-                            "sensor_landscape" to stringResource(R.string.orientation_sensor_land),
-                            "sensor_portrait"  to stringResource(R.string.orientation_sensor_port),
-                            "locked"           to stringResource(R.string.orientation_locked)
+                            "system" to stringResource(R.string.theme_system),
+                            "light"  to stringResource(R.string.theme_light),
+                            "dark"   to stringResource(R.string.theme_dark),
+                            "amoled" to stringResource(R.string.theme_amoled)
                         )
                         options.forEach { (code, label) ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .selectable(
-                                        selected = (code == uiState.videoOrientation),
+                                        selected = (code == uiState.themeMode),
                                         onClick = {
-                                            viewModel.setVideoOrientation(code)
-                                            showOrientationDialog = false
+                                            viewModel.setThemeMode(code)
+                                            showThemeDialog = false
                                         }
                                     )
                                     .padding(vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(
-                                    selected = (code == uiState.videoOrientation),
+                                    selected = (code == uiState.themeMode),
                                     onClick = null
                                 )
                                 Text(
@@ -134,7 +128,7 @@ fun AppearanceScreen(
                     }
                 },
                 confirmButton = {
-                    TextButton(onClick = { showOrientationDialog = false }) {
+                    TextButton(onClick = { showThemeDialog = false }) {
                         Text(stringResource(R.string.close))
                     }
                 }

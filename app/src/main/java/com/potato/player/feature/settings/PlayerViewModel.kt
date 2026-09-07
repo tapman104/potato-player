@@ -1,4 +1,4 @@
-﻿package com.potato.player.feature.settings
+package com.potato.player.feature.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -15,7 +15,8 @@ data class PlayerUiState(
     val defaultSpeed: Double      = UserPreferencesRepository.DEFAULT_SPEED_VALUE,
     val controlsHideDelay: Int    = UserPreferencesRepository.DEFAULT_HIDE_DELAY_MS,
     val gesturesEnabled: Boolean  = UserPreferencesRepository.DEFAULT_GESTURES_ENABLED,
-    val lockButtonEnabled: Boolean = UserPreferencesRepository.DEFAULT_LOCK_BUTTON
+    val lockButtonEnabled: Boolean = UserPreferencesRepository.DEFAULT_LOCK_BUTTON,
+    val videoOrientation: String   = UserPreferencesRepository.DEFAULT_VIDEO_ORIENTATION
 )
 
 @HiltViewModel
@@ -27,13 +28,15 @@ class PlayerViewModel @Inject constructor(
         prefsRepository.defaultSpeedFlow,
         prefsRepository.controlsHideDelayFlow,
         prefsRepository.gesturesEnabledFlow,
-        prefsRepository.lockButtonEnabledFlow
-    ) { speed, hideDelay, gestures, lockButton ->
+        prefsRepository.lockButtonEnabledFlow,
+        prefsRepository.videoOrientationFlow
+    ) { speed, hideDelay, gestures, lockButton, orientation ->
         PlayerUiState(
             defaultSpeed       = speed,
             controlsHideDelay  = hideDelay,
             gesturesEnabled    = gestures,
-            lockButtonEnabled  = lockButton
+            lockButtonEnabled  = lockButton,
+            videoOrientation   = orientation
         )
     }.stateIn(
         scope = viewModelScope,
@@ -55,5 +58,9 @@ class PlayerViewModel @Inject constructor(
 
     fun setLockButtonEnabled(enabled: Boolean) {
         viewModelScope.launch { prefsRepository.setLockButtonEnabled(enabled) }
+    }
+
+    fun setVideoOrientation(mode: String) {
+        viewModelScope.launch { prefsRepository.setVideoOrientation(mode) }
     }
 }
