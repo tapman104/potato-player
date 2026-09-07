@@ -18,20 +18,21 @@ val versionProps = Properties().apply {
 val ciVersionCode = System.getenv("VERSION_CODE")?.toIntOrNull()
 val ciVersionName = System.getenv("VERSION_NAME")
 
-val resolvedVersionCode: Int
-val resolvedVersionName: String
-
-if (ciVersionCode != null) {
+val resolvedVersionCode = if (ciVersionCode != null) {
     // CI build — use env vars, do not touch version.properties
-    resolvedVersionCode = ciVersionCode
-    resolvedVersionName = ciVersionName ?: versionProps.getProperty("VERSION_NAME", "1.7.3")
+    ciVersionCode
 } else {
     // Local build — read from file, increment, write back
-    resolvedVersionCode = (versionProps.getProperty("VERSION_CODE", "3").toIntOrNull() ?: 3)
-    resolvedVersionName = versionProps.getProperty("VERSION_NAME", "1.7.3")
-    // Write incremented value back for next build
-    versionProps.setProperty("VERSION_CODE", (resolvedVersionCode + 1).toString())
+    val localCode = versionProps.getProperty("VERSION_CODE", "3").toIntOrNull() ?: 3
+    versionProps.setProperty("VERSION_CODE", (localCode + 1).toString())
     versionPropsFile.outputStream().use { versionProps.store(it, "Auto-managed — do not edit VERSION_CODE manually") }
+    localCode
+}
+
+val resolvedVersionName = if (ciVersionCode != null) {
+    ciVersionName ?: versionProps.getProperty("VERSION_NAME", "1.7.3")
+} else {
+    versionProps.getProperty("VERSION_NAME", "1.7.3")
 }
 
 android {
