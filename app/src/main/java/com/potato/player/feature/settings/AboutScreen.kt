@@ -25,8 +25,8 @@ import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Feedback
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.PlayCircle
@@ -315,7 +315,7 @@ fun AboutScreen(
                             }
                         },
                         trailingContent = {
-                            Icon(Icons.Default.OpenInNew, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         },
                         modifier = Modifier.clickable {
                             context.openUrl("https://github.com/tapman104/potato-ultra-x")
@@ -416,7 +416,7 @@ fun AboutScreen(
                                     }
                                 }
                             },
-                            trailingContent = { Icon(Icons.Default.OpenInNew, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            trailingContent = { Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                             modifier = Modifier.clickable {
                                 context.openUrl("https://buymeacoffee.com/tapman")
                             }
@@ -441,7 +441,7 @@ fun AboutScreen(
                                     }
                                 }
                             },
-                            trailingContent = { Icon(Icons.Default.OpenInNew, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            trailingContent = { Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                             modifier = Modifier.clickable {
                                 context.openUrl("https://ko-fi.com/tapman")
                             }
