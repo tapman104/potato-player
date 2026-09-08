@@ -17,8 +17,7 @@ fun rememberControlsVisibility(
     isFastForwarding: Boolean,
     isLocked: Boolean,
     isSwipingVolumeOrBrightness: Boolean,
-    isPipMode: Boolean,
-    swipeSeekTargetSec: Double?
+    isPipMode: Boolean
 ): Pair<Boolean, () -> Unit> {
     var controlsVisible by rememberSaveable { mutableStateOf(false) }
     var interactionTick by remember { mutableStateOf(0L) }
@@ -42,10 +41,6 @@ fun rememberControlsVisibility(
 
     LaunchedEffect(isPipMode) {
         if (isPipMode) controlsVisible = false
-    }
-
-    LaunchedEffect(swipeSeekTargetSec) {
-        if (swipeSeekTargetSec != null) controlsVisible = false
     }
 
     val onUserInteraction: () -> Unit = {
