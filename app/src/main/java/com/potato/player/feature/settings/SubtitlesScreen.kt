@@ -90,14 +90,7 @@ fun SubtitlesScreen(
                         ListItem(
                             headlineContent = { Text(stringResource(R.string.default_language)) },
                             supportingContent = {
-                                val label = when (uiState.preferredSubLang) {
-                                    "eng" -> stringResource(R.string.lang_english)
-                                    "jpn" -> stringResource(R.string.lang_japanese)
-                                    "kor" -> stringResource(R.string.lang_korean)
-                                    "off" -> stringResource(R.string.lang_none)
-                                    else  -> uiState.preferredSubLang
-                                }
-                                Text(label)
+                                Text(displayLabelForCode(uiState.preferredSubLang))
                             },
                             modifier = Modifier.clickable { showLangDialog = true }
                         )
@@ -112,12 +105,7 @@ fun SubtitlesScreen(
                 title = { Text(stringResource(R.string.dialog_sub_lang)) },
                 text = {
                     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                        val options = listOf(
-                            "eng" to stringResource(R.string.lang_english),
-                            "jpn" to stringResource(R.string.lang_japanese),
-                            "kor" to stringResource(R.string.lang_korean),
-                            "off" to stringResource(R.string.lang_none)
-                        )
+                        val options = LANGUAGE_OPTIONS
                         options.forEach { (code, label) ->
                             Row(
                                 modifier = Modifier

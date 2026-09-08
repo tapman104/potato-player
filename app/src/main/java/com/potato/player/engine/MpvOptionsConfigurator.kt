@@ -67,7 +67,7 @@ internal class MpvOptionsConfigurator {
      * setPropertyBoolean only for the two runtime-safe properties that have
      * no option equivalent (keep-open, input-default-bindings).
      */
-    fun initOptions(context: Context) {
+    fun initOptions(context: Context, audioLang: String, subLang: String) {
         val filesDir = context.filesDir.path
 
         // ── Core ─────────────────────────────────────────────────────────────
@@ -115,6 +115,10 @@ internal class MpvOptionsConfigurator {
 
         // ── Audio ─────────────────────────────────────────────────────────────
         MPVLib.setOptionString("audio-pitch-correction", "yes")
+
+        // ── Language preferences ──────────────────────────────────────────────
+        if (audioLang != "off") MPVLib.setOptionString("alang", audioLang)
+        if (subLang   != "off") MPVLib.setOptionString("slang", subLang)
 
         // ── Logging ───────────────────────────────────────────────────────────
         MPVLib.setOptionString("msg-level", "all=warn")

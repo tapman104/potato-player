@@ -39,7 +39,11 @@ import java.util.concurrent.atomic.AtomicBoolean
 //   otherwise. MPVLib JNI is not safe to call from arbitrary threads.
 //   AtomicBoolean `destroyed` guards post-destroy calls.
 // ---------------------------------------------------------------------------
-class MpvWrapper(context: Context) : MPVLib.EventObserver, PlayerController {
+class MpvWrapper(
+    context: Context,
+    audioLang: String,
+    subLang: String
+) : MPVLib.EventObserver, PlayerController {
 
     private val appContext: Context = context.applicationContext
     private val configurator = MpvOptionsConfigurator()
@@ -79,7 +83,7 @@ class MpvWrapper(context: Context) : MPVLib.EventObserver, PlayerController {
     init {
         MPVLib.create(appContext)
         MPVLib.addObserver(this)
-        configurator.initOptions(appContext)
+        configurator.initOptions(appContext, audioLang, subLang)
         MPVLib.init()
         configurator.registerPropertyObservers()
 

@@ -17,6 +17,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.potato.player.engine.MpvWrapper
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -47,7 +48,11 @@ class MainActivity : ComponentActivity() {
     // pendingIntent is ONLY used by the onNewIntent (hot re-open) path.
     // Cold-start routing is handled by resolveStartDestination() before setContent.
     private var pendingIntent by mutableStateOf<Intent?>(null)
-    private val mpvWrapper by lazy { MpvWrapper(applicationContext) }
+    private val mpvWrapper by lazy {
+        val audioLang = runBlocking { prefsRepository.preferredAudioLangFlow.first() }
+        val subLang   = runBlocking { prefsRepository.preferredSubLangFlow.first() }
+        MpvWrapper(applicationContext, audioLang, subLang)
+    }
 
     @Inject
     lateinit var prefsRepository: UserPreferencesRepository

@@ -69,10 +69,6 @@
     <string name="delay_5s">5 seconds</string>
 
     <!-- Settings screen — subtitle language labels -->
-    <string name="lang_english">English (eng)</string>
-    <string name="lang_japanese">Japanese (jpn)</string>
-    <string name="lang_korean">Korean (kor)</string>
-    <string name="lang_none">None (off)</string>
 
     <!-- Settings screen — orientation labels -->
     <string name="orientation_auto">Auto (by video)</string>

@@ -92,14 +92,7 @@ fun AudioScreen(
                         ListItem(
                             headlineContent = { Text(stringResource(R.string.preferred_audio_language)) },
                             supportingContent = {
-                                val label = when (uiState.preferredAudioLang) {
-                                    "eng" -> stringResource(R.string.lang_english)
-                                    "jpn" -> stringResource(R.string.lang_japanese)
-                                    "kor" -> stringResource(R.string.lang_korean)
-                                    "off" -> stringResource(R.string.lang_none)
-                                    else  -> uiState.preferredAudioLang
-                                }
-                                Text(label)
+                                Text(displayLabelForCode(uiState.preferredAudioLang))
                             },
                             modifier = Modifier.clickable { showLangDialog = true }
                         )
@@ -147,12 +140,7 @@ fun AudioScreen(
                 title = { Text(stringResource(R.string.preferred_audio_language)) },
                 text = {
                     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                        val options = listOf(
-                            "eng" to stringResource(R.string.lang_english),
-                            "jpn" to stringResource(R.string.lang_japanese),
-                            "kor" to stringResource(R.string.lang_korean),
-                            "off" to stringResource(R.string.lang_none)
-                        )
+                        val options = LANGUAGE_OPTIONS
                         options.forEach { (code, label) ->
                             Row(
                                 modifier = Modifier
