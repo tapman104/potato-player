@@ -20,7 +20,7 @@ fun PlayerLifecycleEffect(
     val lifecycleOwner = LocalLifecycleOwner.current
 
     val view = androidx.compose.ui.platform.LocalView.current
-    DisposableEffect(lifecycleOwner, activity) {
+    DisposableEffect(lifecycleOwner, activity, uiState.orientationMode, uiState.videoOrientation, uiState.videoRotate) {
         val window = activity?.window
         if (window != null) {
             androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)

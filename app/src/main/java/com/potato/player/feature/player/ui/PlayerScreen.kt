@@ -116,7 +116,7 @@ fun PlayerScreen(
 
 
     // Load the video once the surface is ready; also handles config-change re-attach.
-    LaunchedEffect(viewModel, videoUri) {
+    LaunchedEffect(viewModel, videoUri, title) {
         viewModel.prepareUri(videoUri, title)
     }
 

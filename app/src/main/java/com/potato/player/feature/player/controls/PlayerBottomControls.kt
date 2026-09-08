@@ -63,8 +63,10 @@ fun PlayerBottomControls(
     var dragFraction by remember { mutableFloatStateOf(-1f) }
 
     var lastDragFraction by remember { mutableFloatStateOf(0f) }
-    if (dragFraction >= 0f) {
-        lastDragFraction = dragFraction
+    LaunchedEffect(dragFraction) {
+        if (dragFraction >= 0f) {
+            lastDragFraction = dragFraction
+        }
     }
 
     val interactionSource = remember { MutableInteractionSource() }
@@ -87,11 +89,12 @@ fun PlayerBottomControls(
 
     val durationMsRef = rememberUpdatedState(durationMs)
 
+    val onSeekGestureRef = rememberUpdatedState(onSeekGesture)
     val onValueChange = remember {
         { fraction: Float ->
             dragFraction = fraction
             val targetMs = (fraction * durationMsRef.value).toLong()
-            onSeekGesture(targetMs)
+            onSeekGestureRef.value(targetMs)
         }
     }
 
