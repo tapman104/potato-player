@@ -43,12 +43,14 @@ fun rememberControlsVisibility(
         if (isPipMode) controlsVisible = false
     }
 
-    val onUserInteraction: () -> Unit = {
-        if (controlsVisible) {
-            controlsVisible = false
-        } else {
-            controlsVisible = true
-            interactionTick = System.currentTimeMillis()
+    val onUserInteraction: () -> Unit = remember {
+        {
+            if (controlsVisible) {
+                controlsVisible = false
+            } else {
+                controlsVisible = true
+                interactionTick = System.currentTimeMillis()
+            }
         }
     }
 

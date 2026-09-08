@@ -9,6 +9,7 @@ import com.potato.player.feature.player.controls.PlayerDecoderDialog
 import com.potato.player.feature.player.controls.PlayerRightSideSheet
 import com.potato.player.feature.player.controls.SubtitleTrackDialog
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 // ponytail: move only, zero new logic
@@ -22,11 +23,21 @@ fun PlayerModals(
     val activeDialog by viewModel.activeDialog.collectAsStateWithLifecycle()
     val trackState by viewModel.trackManager.trackState.collectAsStateWithLifecycle()
 
+    val onSelectDecoder     = remember(viewModel) { { mode: String -> viewModel.setDecoder(mode) } }
+    val onDismiss           = remember(viewModel) { { viewModel.dismissDialog() } }
+    val onSelectAudioTrack  = remember(viewModel) { { id: Int -> viewModel.onSelectAudioTrack(id); viewModel.dismissDialog() } }
+    val onSelectSubtitle    = remember(viewModel) { { id: Int -> viewModel.onSelectSubtitleTrack(id); viewModel.dismissDialog() } }
+    val onSetSubAppearance  = remember(viewModel) { { scale: Double, pos: Int -> viewModel.setSubtitleAppearance(scale, pos) } }
+    val onPreviewSubAppearance = remember(viewModel) { { scale: Double, pos: Int -> viewModel.previewSubtitleAppearance(scale, pos) } }
+    val onSelectSpeed       = remember(viewModel) { { speed: Double -> viewModel.setPlaybackSpeed(speed) } }
+    val onShowAudioDialog   = remember(viewModel) { { viewModel.showDialog(ActiveDialog.Audio) } }
+    val onShowSubtitleDialog = remember(viewModel) { { viewModel.showDialog(ActiveDialog.Subtitle) } }
+
     PlayerDecoderDialog(
         visible = activeDialog == ActiveDialog.Decoder,
         currentDecoder = uiState.hwdecCurrent,
-        onSelectDecoder = { mode -> viewModel.setDecoder(mode) },
-        onDismiss = { viewModel.dismissDialog() }
+        onSelectDecoder = onSelectDecoder,
+        onDismiss = onDismiss
     )
 
     AudioTrackDialog(
@@ -34,8 +45,8 @@ fun PlayerModals(
         tracks = trackState.audioTracks,
         currentTrackId = trackState.currentAudioTrackId,
         tracksLoaded = trackState.tracksLoaded,
-        onSelectTrack = { viewModel.onSelectAudioTrack(it); viewModel.dismissDialog() },
-        onDismiss = { viewModel.dismissDialog() }
+        onSelectTrack = onSelectAudioTrack,
+        onDismiss = onDismiss
     )
 
     SubtitleTrackDialog(
@@ -43,14 +54,12 @@ fun PlayerModals(
         tracks = trackState.subtitleTracks,
         currentTrackId = trackState.currentSubtitleTrackId,
         tracksLoaded = trackState.tracksLoaded,
-        onSelectTrack = { viewModel.onSelectSubtitleTrack(it); viewModel.dismissDialog() },
+        onSelectTrack = onSelectSubtitle,
         onLaunchFilePicker = onLaunchFilePicker,
-        onDismiss = { viewModel.dismissDialog() },
+        onDismiss = onDismiss,
         uiState = uiState,
-        onSetSubtitleAppearance = { scale, pos -> viewModel.setSubtitleAppearance(scale, pos) },
-        onPreviewSubtitleAppearance = { scale, pos -> 
-            viewModel.previewSubtitleAppearance(scale, pos)
-        }
+        onSetSubtitleAppearance = onSetSubAppearance,
+        onPreviewSubtitleAppearance = onPreviewSubAppearance
     )
 
     // ponytail: gate sheet on fileLoaded so it never appears on an empty player
@@ -58,10 +67,10 @@ fun PlayerModals(
         PlayerRightSideSheet(
             visible = activeDialog == ActiveDialog.MoreMenu || activeDialog == ActiveDialog.Speed,
             currentSpeed = uiState.playbackSpeed,
-            onSelectSpeed = { viewModel.setPlaybackSpeed(it) },
-            onShowAudioDialog = { viewModel.showDialog(ActiveDialog.Audio) },
-            onShowSubtitleDialog = { viewModel.showDialog(ActiveDialog.Subtitle) },
-            onDismiss = { viewModel.dismissDialog() }
+            onSelectSpeed = onSelectSpeed,
+            onShowAudioDialog = onShowAudioDialog,
+            onShowSubtitleDialog = onShowSubtitleDialog,
+            onDismiss = onDismiss
         )
     }
 }

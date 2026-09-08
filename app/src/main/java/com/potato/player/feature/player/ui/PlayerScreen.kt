@@ -112,7 +112,12 @@ fun PlayerScreen(
             Unit
         }
     }
-    // onMoreOptions: reads activeDialog (changes) — cannot be wrapped in remember(viewModel); left inline below
+    val onMoreOptions = remember(viewModel) {
+        {
+            if (activeDialog == ActiveDialog.MoreMenu) viewModel.dismissDialog()
+            else viewModel.showDialog(ActiveDialog.MoreMenu)
+        }
+    }
 
 
     // Load the video once the surface is ready; also handles config-change re-attach.
@@ -189,11 +194,7 @@ fun PlayerScreen(
             onSelectAudioTrack = onSelectAudioTrack,
             onSelectSubtitleTrack = onSelectSubtitleTrack,
             onSelectDecoder = onSelectDecoder,
-            onMoreOptions = {
-                // reads activeDialog (changing state) — cannot be stable-wrapped
-                if (activeDialog == ActiveDialog.MoreMenu) viewModel.dismissDialog()
-                else viewModel.showDialog(ActiveDialog.MoreMenu)
-            },
+            onMoreOptions = onMoreOptions,
             modifier = Modifier.align(Alignment.TopCenter)
         )
 
