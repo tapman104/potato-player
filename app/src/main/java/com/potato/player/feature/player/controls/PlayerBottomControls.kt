@@ -29,13 +29,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.potato.player.util.TimeFormatter
 
 import com.potato.player.feature.player.state.PlaybackProgressState
+import com.potato.player.feature.player.state.OrientationMode
 import com.potato.player.feature.player.VideoFitMode
 
 @Composable
 fun PlayerBottomControls(
     progressState: PlaybackProgressState,
     onSliderDragStart: (Double) -> Unit = {},
-    orientationMode: com.potato.player.feature.player.state.OrientationMode = com.potato.player.feature.player.state.OrientationMode.AUTO,
+    orientationMode: OrientationMode = OrientationMode.AUTO,
     currentFitMode: VideoFitMode = VideoFitMode.FIT,
     onSeekGesture: (Long) -> Unit,    // called continuously during drag
     onSeekCommit: (Long) -> Unit = {},
@@ -226,9 +227,9 @@ fun PlayerBottomControls(
 
                 IconButton(onClick = onCycleOrientationMode, modifier = buttonModifier) {
                     Icon(
-                        imageVector        = if (orientationMode == com.potato.player.feature.player.state.OrientationMode.AUTO) androidx.compose.material.icons.Icons.Default.ScreenRotation else androidx.compose.material.icons.Icons.Default.ScreenLockLandscape,
-                        contentDescription = if (orientationMode == com.potato.player.feature.player.state.OrientationMode.AUTO) "Auto-rotation on" else "Rotation locked",
-                        tint               = if (orientationMode != com.potato.player.feature.player.state.OrientationMode.AUTO) androidx.compose.ui.graphics.Color(0xFF90CAF9) else androidx.compose.ui.graphics.Color.White
+                        imageVector        = if (orientationMode == OrientationMode.AUTO) Icons.Default.ScreenRotation else Icons.Default.ScreenLockLandscape,
+                        contentDescription = if (orientationMode == OrientationMode.AUTO) "Auto-rotation on" else "Rotation locked",
+                        tint               = if (orientationMode != OrientationMode.AUTO) Color(0xFF90CAF9) else Color.White
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))

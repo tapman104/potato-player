@@ -51,9 +51,10 @@ fun PlayerScreen(
     val activeDialog by viewModel.activeDialog.collectAsStateWithLifecycle()
     val currentPlaylistIndex by viewModel.playlistManager.currentIndex.collectAsStateWithLifecycle()
     val currentPlaylist by viewModel.playlistManager.playlist.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     BackHandler {
-        if (!viewModel.uiState.value.isLocked) {
+        if (!uiState.isLocked) {
             if (isExternalIntent) {
                 activity?.finish()
             } else {
@@ -74,18 +75,16 @@ fun PlayerScreen(
     // ponytail: orientation + insets boilerplate extracted for readability
     PlayerLifecycleEffectContainer(activity = activity, viewModel = viewModel)
 
-    val swipeSeekTargetSec: Double? = null
     var isGestureActive by remember { mutableStateOf(false) }
 
     val (controlsVisible, onUserInteraction) = rememberControlsVisibility(
-        isPlaying = viewModel.uiState.value.isPlaying,
-        hideDelayMs = viewModel.uiState.value.controlsHideDelay.toLong(),
+        isPlaying = uiState.isPlaying,
+        hideDelayMs = uiState.controlsHideDelay.toLong(),
         isSeeking = isSeeking,
-        isFastForwarding = viewModel.uiState.value.isFastForwarding,
-        isLocked = viewModel.uiState.value.isLocked,
+        isFastForwarding = uiState.isFastForwarding,
+        isLocked = uiState.isLocked,
         isSwipingVolumeOrBrightness = isGestureActive,
-        isPipMode = activity?.isInPictureInPictureMode == true,
-        swipeSeekTargetSec = swipeSeekTargetSec
+        isPipMode = activity?.isInPictureInPictureMode == true
     )
 
     // Fix 4 — Stable lambdas: wrap each single-ViewModel-call lambda in remember(viewModel)
@@ -155,7 +154,7 @@ fun PlayerScreen(
         )
 
         // ── Gesture & Tap Overlay ────────────────────────────────────────────
-        if (!viewModel.uiState.value.isLocked) {
+        if (!uiState.isLocked) {
             Box(modifier = Modifier.clearAndSetSemantics {}) {
                 PlayerGestureBox(
                     viewModel = viewModel,
@@ -186,7 +185,6 @@ fun PlayerScreen(
             viewModel = viewModel,
             isPipMode = activity?.isInPictureInPictureMode == true,
             controlsVisible = controlsVisible,
-            swipeSeekTargetSec = swipeSeekTargetSec,
             onBack = onBackStable,
             onSelectAudioTrack = onSelectAudioTrack,
             onSelectSubtitleTrack = onSelectSubtitleTrack,
@@ -204,7 +202,6 @@ fun PlayerScreen(
             viewModel = viewModel,
             isPipMode = activity?.isInPictureInPictureMode == true,
             controlsVisible = controlsVisible,
-            swipeSeekTargetSec = swipeSeekTargetSec,
             onTogglePlay = onTogglePlay,
             modifier = Modifier.align(Alignment.Center)
         )
@@ -214,7 +211,6 @@ fun PlayerScreen(
             viewModel = viewModel,
             isPipMode = activity?.isInPictureInPictureMode == true,
             controlsVisible = controlsVisible,
-            swipeSeekTargetSec = swipeSeekTargetSec,
             hasPrevious = currentPlaylistIndex > 0,
             hasNext = currentPlaylistIndex >= 0 &&
                                 currentPlaylist.size - 1 > currentPlaylistIndex,
@@ -262,7 +258,6 @@ private fun PlayerTopBarContainer(
     viewModel: PlayerViewModel,
     isPipMode: Boolean,
     controlsVisible: Boolean,
-    swipeSeekTargetSec: Double?,
     onBack: () -> Unit,
     onSelectAudioTrack: () -> Unit,
     onSelectSubtitleTrack: () -> Unit,
@@ -273,7 +268,7 @@ private fun PlayerTopBarContainer(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     if (uiState.fileLoaded && !isPipMode) {
         AnimatedVisibility(
-            visible = controlsVisible && !uiState.isLocked && swipeSeekTargetSec == null,
+            visible = controlsVisible && !uiState.isLocked,
             enter = fadeIn() + slideInVertically { -it },
             exit = fadeOut() + slideOutVertically { -it },
             modifier = modifier
@@ -298,14 +293,13 @@ private fun PlayerCenterContainer(
     viewModel: PlayerViewModel,
     isPipMode: Boolean,
     controlsVisible: Boolean,
-    swipeSeekTargetSec: Double?,
     onTogglePlay: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     if (uiState.fileLoaded && !isPipMode) {
         AnimatedVisibility(
-            visible = controlsVisible && !uiState.isLocked && swipeSeekTargetSec == null,
+            visible = controlsVisible && !uiState.isLocked,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = modifier
@@ -323,7 +317,6 @@ private fun PlayerBottomContainer(
     viewModel: PlayerViewModel,
     isPipMode: Boolean,
     controlsVisible: Boolean,
-    swipeSeekTargetSec: Double?,
     hasPrevious: Boolean,
     hasNext: Boolean,
     onSeekGesture: (Long) -> Unit,
@@ -342,7 +335,7 @@ private fun PlayerBottomContainer(
     if (uiState.fileLoaded && !isPipMode) {
         // Layer 1 — full controls bar: hidden when locked
         AnimatedVisibility(
-            visible = controlsVisible && !uiState.isLocked && swipeSeekTargetSec == null,
+            visible = controlsVisible && !uiState.isLocked,
             enter = fadeIn() + slideInVertically { it },
             exit = fadeOut() + slideOutVertically { it },
             modifier = modifier
