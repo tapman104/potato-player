@@ -169,7 +169,7 @@ fun PlayerBottomControls(
         ) {
             // Auto-Rotation + PiP — bottom-right corner
             Row(
-                modifier              = Modifier.align(Alignment.CenterEnd),
+                modifier              = Modifier.align(Alignment.CenterEnd).padding(end = 8.dp),
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment     = Alignment.CenterVertically
             ) {

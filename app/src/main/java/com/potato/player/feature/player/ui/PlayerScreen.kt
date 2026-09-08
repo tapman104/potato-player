@@ -341,13 +341,14 @@ private fun PlayerBottomContainer(
             exit = fadeOut() + slideOutVertically { it },
             modifier = modifier
                 .systemBarsPadding()
+                .windowInsetsPadding(WindowInsets.displayCutout)
         ) {
             PlayerBottomControls(
                 progressState        = progressState,
                 onSliderDragStart    = viewModel::onSliderDragStart,
                 orientationMode      = uiState.orientationMode,
                 currentFitMode       = uiState.fitMode,
-                contentPadding       = WindowInsets.displayCutout.asPaddingValues(),
+                contentPadding       = PaddingValues(0.dp),
                 onSeekGesture        = onSeekGesture,
                 onSeekCommit         = onSeekCommit,
                 onDragEnd            = { /* already handled inside onSeekCommit path */ },
