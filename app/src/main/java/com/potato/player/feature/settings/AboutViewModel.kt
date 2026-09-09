@@ -1,16 +1,18 @@
 package com.potato.player.feature.settings
 
-import android.content.Context
 import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.potato.player.BuildConfig
+import com.potato.player.data.LogRepository
+import com.potato.player.data.UserPreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -29,11 +31,20 @@ data class AboutUiState(
 
 @HiltViewModel
 class AboutViewModel @Inject constructor(
-    @ApplicationContext private val context: Context
+    private val logRepository: LogRepository,
+    private val prefsRepository: UserPreferencesRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AboutUiState())
     val uiState: StateFlow<AboutUiState> = _uiState.asStateFlow()
+
+    /** Mirrors the verbose-logging pref so dumpLogs() uses the correct logcat args. */
+    private val verboseLoggingEnabled: StateFlow<Boolean> =
+        prefsRepository.verboseLoggingEnabledFlow.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = UserPreferencesRepository.DEFAULT_VERBOSE_LOGGING_ENABLED
+        )
 
     init {
         _uiState.value = AboutUiState(
@@ -48,21 +59,13 @@ class AboutViewModel @Inject constructor(
     }
 
     /**
-     * Capture logcat output filtered to com.potato.player / potato tags,
-     * write to cacheDir/potato_debug_logs.txt, then surface the File via uiState.
+     * Capture logcat output via [LogRepository], respecting the current verbose-logging
+     * preference, then surface the resulting [File] (or any error) via [uiState].
      */
     fun dumpLogs() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val process = Runtime.getRuntime().exec(
-                    arrayOf("logcat", "-d", "-t", "500", "*:V")
-                )
-                val output = process.inputStream.bufferedReader().readText()
-                val filtered = output.lines()
-                    .filter { it.contains("com.potato.player") || it.contains("potato") }
-                    .joinToString("\n")
-                val file = java.io.File(context.cacheDir, "potato_debug_logs.txt")
-                file.writeText(filtered)
+                val file = logRepository.dumpLogs(verboseLoggingEnabled.value)
                 _uiState.update { it.copy(logFile = file, logError = null) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(logFile = null, logError = e.message) }

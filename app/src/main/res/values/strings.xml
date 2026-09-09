@@ -162,11 +162,13 @@
     <string name="section_logging">Logging</string>
     <string name="verbose_logging">Verbose logging</string>
     <string name="verbose_logging_desc">Helps with debugging but may affect performance</string>
+    <string name="verbose_logging_warning">Verbose logging increases battery usage. Only enable for debugging or bug reports.</string>
     <string name="dump_logs">Dump logs</string>
     <string name="dump_logs_desc">Export app logs to share with developers</string>
     <string name="log_dump_error">Failed to capture logs: %1$s</string>
 
     <!-- Common dialog buttons -->
+    <string name="enable">Enable</string>
     <string name="confirm">Confirm</string>
     <string name="cancel">Cancel</string>
     <string name="history_cleared">Playback history cleared</string>

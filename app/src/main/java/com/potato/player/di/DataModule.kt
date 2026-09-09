@@ -1,6 +1,7 @@
-﻿package com.potato.player.di
+package com.potato.player.di
 
 import android.content.Context
+import com.potato.player.data.LogRepository
 import com.potato.player.data.UserPreferencesRepository
 import dagger.Module
 import dagger.Provides
@@ -18,4 +19,10 @@ object DataModule {
     fun provideUserPreferencesRepository(
         @ApplicationContext context: Context
     ): UserPreferencesRepository = UserPreferencesRepository(context)
+
+    @Provides
+    @Singleton
+    fun provideLogRepository(
+        @ApplicationContext context: Context
+    ): LogRepository = LogRepository(context)
 }

@@ -1,7 +1,5 @@
 package com.potato.player.feature.settings
 
-import android.content.ActivityNotFoundException
-import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,7 +8,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,7 +25,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,7 +32,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -49,65 +44,16 @@ fun AdvancedScreen(
     onBack: () -> Unit,
     viewModel: AdvancedViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
-    val logState by viewModel.logState.collectAsState()
     val recentlyPlayedEnabled by viewModel.recentlyPlayedEnabled.collectAsState()
     val verboseLoggingEnabled by viewModel.verboseLoggingEnabled.collectAsState()
 
     var showClearHistoryDialog by remember { mutableStateOf(false) }
+    var showVerboseWarningDialog by remember { mutableStateOf(false) }
 
     val historyClearedMessage = stringResource(R.string.history_cleared)
-    val logDumpErrorPrefix = stringResource(R.string.log_dump_error, "")
-
-    // ── Dump logs: fire email chooser once log file is ready ─────────────────
-    LaunchedEffect(logState.logFile) {
-        val file = logState.logFile ?: return@LaunchedEffect
-        val uri = androidx.core.content.FileProvider.getUriForFile(
-            context,
-            "${context.packageName}.fileprovider",
-            file
-        )
-        val bodyText = context.getString(
-            R.string.bug_report_email_body,
-            android.os.Build.MANUFACTURER.replaceFirstChar { it.uppercase() },
-            android.os.Build.MODEL,
-            android.os.Build.VERSION.RELEASE,
-            android.os.Build.VERSION.SDK_INT,
-            com.potato.player.BuildConfig.VERSION_NAME,
-            com.potato.player.BuildConfig.BUILD_TYPE.replaceFirstChar { it.uppercase() }
-        )
-        val emailIntent = Intent(Intent.ACTION_SEND).apply {
-            type = "message/rfc822"
-            putExtra(Intent.EXTRA_EMAIL, arrayOf("tapman104@proton.me"))
-            putExtra(
-                Intent.EXTRA_SUBJECT,
-                "Potato Player | Bug Report | v${com.potato.player.BuildConfig.VERSION_NAME}"
-            )
-            putExtra(Intent.EXTRA_TEXT, bodyText)
-            putExtra(Intent.EXTRA_STREAM, uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        try {
-            context.startActivity(Intent.createChooser(emailIntent, "Send bug report"))
-        } catch (e: ActivityNotFoundException) {
-            snackbarHostState.showSnackbar(
-                context.getString(R.string.no_app_found_to_open_link)
-            )
-        }
-        viewModel.clearLogFile()
-    }
-
-    // ── Show snackbar on log capture error ───────────────────────────────────
-    LaunchedEffect(logState.logError) {
-        val err = logState.logError ?: return@LaunchedEffect
-        snackbarHostState.showSnackbar(
-            context.getString(R.string.log_dump_error, err)
-        )
-        viewModel.clearLogFile()
-    }
 
     // ── Confirmation dialog: clear playback history ───────────────────────────
     if (showClearHistoryDialog) {
@@ -129,6 +75,28 @@ fun AdvancedScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showClearHistoryDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    // ── Confirmation dialog: enable verbose logging ───────────────────────────
+    if (showVerboseWarningDialog) {
+        AlertDialog(
+            onDismissRequest = { showVerboseWarningDialog = false },
+            title = { Text(stringResource(R.string.verbose_logging)) },
+            text = { Text(stringResource(R.string.verbose_logging_warning)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showVerboseWarningDialog = false
+                    viewModel.setVerboseLoggingEnabled(true)
+                }) {
+                    Text(stringResource(R.string.enable))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showVerboseWarningDialog = false }) {
                     Text(stringResource(R.string.cancel))
                 }
             }
@@ -186,11 +154,11 @@ fun AdvancedScreen(
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                         ListItem(
-                            headlineContent = { 
+                            headlineContent = {
                                 Text(
                                     text = stringResource(R.string.clear_playback_history),
                                     color = MaterialTheme.colorScheme.error
-                                ) 
+                                )
                             },
                             supportingContent = { Text(stringResource(R.string.clear_playback_history_desc)) },
                             modifier = Modifier.clickable {
@@ -248,35 +216,26 @@ fun AdvancedScreen(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                 ) {
-                    Column {
-                        ListItem(
-                            headlineContent = { Text(stringResource(R.string.verbose_logging)) },
-                            supportingContent = { Text(stringResource(R.string.verbose_logging_desc)) },
-                            trailingContent = {
-                                Switch(
-                                    checked = verboseLoggingEnabled,
-                                    onCheckedChange = { viewModel.setVerboseLoggingEnabled(it) }
-                                )
-                            }
-                        )
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                        ListItem(
-                            headlineContent = { Text(stringResource(R.string.dump_logs)) },
-                            supportingContent = { Text(stringResource(R.string.dump_logs_desc)) },
-                            leadingContent = {
-                                Icon(
-                                    imageVector = Icons.Default.BugReport,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            },
-                            modifier = Modifier.clickable {
-                                viewModel.dumpLogs()
-                            }
-                        )
-                    }
+                    ListItem(
+                        headlineContent = { Text(stringResource(R.string.verbose_logging)) },
+                        supportingContent = { Text(stringResource(R.string.verbose_logging_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = verboseLoggingEnabled,
+                                onCheckedChange = { enabled ->
+                                    if (enabled) {
+                                        // Show warning before enabling; the dialog commits the save
+                                        showVerboseWarningDialog = true
+                                    } else {
+                                        viewModel.setVerboseLoggingEnabled(false)
+                                    }
+                                }
+                            )
+                        }
+                    )
                 }
             }
         }
     }
 }
+
