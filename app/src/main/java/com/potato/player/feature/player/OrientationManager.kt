@@ -7,7 +7,13 @@ import com.potato.player.feature.player.state.OrientationMode
 
 class OrientationManager {
 
-    var activity: Activity? = null
+    private var activityRef: java.lang.ref.WeakReference<Activity>? = null
+
+    var activity: Activity?
+        get() = activityRef?.get()
+        set(value) {
+            activityRef = if (value != null) java.lang.ref.WeakReference(value) else null
+        }
 
     private var lastVideoWidth: Int = 0
     private var lastVideoHeight: Int = 0

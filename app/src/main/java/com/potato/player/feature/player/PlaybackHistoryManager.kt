@@ -28,7 +28,15 @@ class PlaybackHistoryManager(
             lastSubtitleTrackId = lastSubtitleTrackId,
             lastPlayedTimestamp = System.currentTimeMillis()
         )
-        scope.launch(Dispatchers.IO) { historyRepository.upsert(entry) }
+        // Use GlobalScope to ensure the save completes even if viewModelScope is cancelled
+        @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
+        kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) { 
+            try {
+                historyRepository.upsert(entry) 
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     suspend fun getByUri(uri: String): VideoHistory? {
