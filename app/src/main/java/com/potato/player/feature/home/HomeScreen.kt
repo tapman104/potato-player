@@ -27,7 +27,6 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import android.content.pm.ActivityInfo
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 
@@ -35,7 +34,6 @@ import com.potato.player.data.library.FolderItem
 import com.potato.player.data.library.MediaLibraryRepository
 import com.potato.player.util.MediaMetadataRepository
 import com.potato.player.util.findActivity
-import com.potato.player.util.lockOrientation
 import kotlinx.coroutines.launch
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -60,7 +58,6 @@ fun HomeScreen(
         val controller = window?.let { WindowInsetsControllerCompat(it, it.decorView) }
         fun applyPortrait() {
             if (activity?.intent?.action == android.content.Intent.ACTION_VIEW) return
-            lockOrientation(activity, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
             controller?.show(WindowInsetsCompat.Type.systemBars())
         }
         applyPortrait()
@@ -72,7 +69,6 @@ fun HomeScreen(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         }
     }
 

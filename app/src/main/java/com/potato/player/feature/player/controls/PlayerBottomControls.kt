@@ -6,8 +6,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PictureInPicture
-import androidx.compose.material.icons.filled.ScreenLockLandscape
-import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.FitScreen
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.AspectRatio
@@ -29,19 +27,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.potato.player.util.TimeFormatter
 
 import com.potato.player.feature.player.state.PlaybackProgressState
-import com.potato.player.feature.player.state.OrientationMode
 import com.potato.player.feature.player.VideoFitMode
 
 @Composable
 fun PlayerBottomControls(
     progressState: PlaybackProgressState,
     onSliderDragStart: (Double) -> Unit = {},
-    orientationMode: OrientationMode = OrientationMode.AUTO,
     currentFitMode: VideoFitMode = VideoFitMode.FIT,
     onSeekGesture: (Long) -> Unit,    // called continuously during drag
     onSeekCommit: (Long) -> Unit = {},
     onDragEnd: () -> Unit = {},
-    onCycleOrientationMode: () -> Unit = {},
     onToggleFitMode: () -> Unit = {},
     onEnterPip: () -> Unit = {},
     isLocked: Boolean = false,
@@ -224,15 +219,6 @@ fun PlayerBottomControls(
                         imageVector        = icon,
                         contentDescription = "Video Fit Mode",
                         tint               = if (currentFitMode != VideoFitMode.FIT) Color(0xFF90CAF9) else Color.White
-                    )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-
-                IconButton(onClick = onCycleOrientationMode, modifier = buttonModifier) {
-                    Icon(
-                        imageVector        = if (orientationMode == OrientationMode.AUTO) Icons.Default.ScreenRotation else Icons.Default.ScreenLockLandscape,
-                        contentDescription = if (orientationMode == OrientationMode.AUTO) "Auto-rotation on" else "Rotation locked",
-                        tint               = if (orientationMode != OrientationMode.AUTO) Color(0xFF90CAF9) else Color.White
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))

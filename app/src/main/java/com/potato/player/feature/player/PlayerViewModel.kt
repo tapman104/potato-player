@@ -35,7 +35,6 @@ class PlayerViewModel(
     val playlistManager = PlaylistManager()
     val trackManager by lazy { TrackManager(prefsRepository, viewModelScope, wrapper) }
     val geometryManager = VideoGeometryManager(wrapper)
-    val orientationManager = OrientationManager()
 
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
@@ -77,7 +76,6 @@ class PlayerViewModel(
             trackManager = trackManager,
             appContext = appContext,
             scope = viewModelScope,
-            orientationManager = orientationManager,
             hasSurface = { surfaceManager.hasSurface() },
             isPlaying = { _uiState.value.isPlaying },
             getProgressState = { _progressState.value },
@@ -89,10 +87,8 @@ class PlayerViewModel(
                         isPlaying = false,
                         fileLoaded = false,
                         error = null,
-                        orientationMode = OrientationMode.AUTO,
                         videoWidth = 0,
-                        videoHeight = 0,
-                        videoRotate = 0L
+                        videoHeight = 0
                     )
                 }
             },
@@ -132,19 +128,10 @@ class PlayerViewModel(
                         hwdecLabel(uiUpdate.hwdecActive) else it.hwdecCurrent,
                     videoWidth = uiUpdate.videoWidth,
                     videoHeight = uiUpdate.videoHeight,
-                    videoRotate = uiUpdate.videoRotate,
                     playbackSpeed = uiUpdate.playbackSpeed,
                     subScale = uiUpdate.subScale,
                     subPos = uiUpdate.subPos
                 ) }
-
-                orientationManager.onDimensionsChanged(
-                    width = uiUpdate.videoWidth,
-                    height = uiUpdate.videoHeight,
-                    rotate = uiUpdate.videoRotate,
-                    orientationMode = _uiState.value.orientationMode,
-                    videoOrientation = _uiState.value.videoOrientation
-                )
 
                 _progressState.update { it.copy(
                     positionSec = progressUpdate.positionSec ?: it.positionSec,
@@ -176,18 +163,11 @@ class PlayerViewModel(
         _uiState.update { it.copy(
             subScale          = prefs.subScale,
             subPos            = prefs.subPos,
-            videoOrientation  = prefs.videoOrientation,
             gesturesEnabled   = prefs.gesturesEnabled,
             lockButtonEnabled = prefs.lockButtonEnabled,
             controlsHideDelay = prefs.controlsHideDelay
         )}
         // default decoder and speed applied on file load, not here
-        // Re-apply orientation — prefs may arrive after first engineState update
-        orientationManager.apply(
-            orientationMode = _uiState.value.orientationMode,
-            videoOrientation = prefs.videoOrientation,
-            videoRotate = _uiState.value.videoRotate
-        )
     }
 
     fun setSurfaceSize(width: Int, height: Int) {
@@ -228,18 +208,14 @@ class PlayerViewModel(
         sessionManager.onPlayerResume()
     }
 
-    fun toggleLock() {
-        _uiState.update { it.copy(isLocked = !it.isLocked) }
-    }
-
-    fun cycleOrientationMode() {
-        val next = when (_uiState.value.orientationMode) {
-            OrientationMode.AUTO -> OrientationMode.LOCK_LANDSCAPE
-            OrientationMode.LOCK_LANDSCAPE -> OrientationMode.LOCK_PORTRAIT
-            OrientationMode.LOCK_PORTRAIT -> OrientationMode.AUTO
+    fun toggleLock(activity: android.app.Activity?) {
+        val locked = !_uiState.value.isLocked
+        _uiState.update { it.copy(isLocked = locked) }
+        if (locked) {
+            activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LOCKED
+        } else {
+            activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
         }
-        _uiState.update { it.copy(orientationMode = next) }
-        orientationManager.apply(next, _uiState.value.videoOrientation, _uiState.value.videoRotate)
     }
 
     fun cycleFitMode() {
@@ -285,8 +261,6 @@ class PlayerViewModel(
 
     override fun onCleared() {
         isActive.set(false)
-        orientationManager.reset()
-        orientationManager.activity = null
         super.onCleared()
         sessionManager.saveHistoryIfNeeded()
         wrapper.stopIfGeneration(myPlaybackGeneration)

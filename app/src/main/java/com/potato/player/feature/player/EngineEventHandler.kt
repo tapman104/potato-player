@@ -14,7 +14,6 @@ import kotlinx.coroutines.launch
 data class PlayerPrefs(
     val subScale: Double,
     val subPos: Int,
-    val videoOrientation: String,
     val gesturesEnabled: Boolean,
     val lockButtonEnabled: Boolean,
     val defaultDecoder: String,
@@ -110,7 +109,6 @@ class EngineEventHandler(
             combine(
                 prefsRepository.subScaleFlow,
                 prefsRepository.subPosFlow,
-                prefsRepository.videoOrientationFlow,
                 prefsRepository.gesturesEnabledFlow,
                 prefsRepository.lockButtonEnabledFlow,
                 prefsRepository.defaultDecoderFlow,
@@ -120,12 +118,11 @@ class EngineEventHandler(
                 PlayerPrefs(
                     subScale          = values[0] as Double,
                     subPos            = values[1] as Int,
-                    videoOrientation  = values[2] as String,
-                    gesturesEnabled   = values[3] as Boolean,
-                    lockButtonEnabled = values[4] as Boolean,
-                    defaultDecoder    = values[5] as String,
-                    defaultSpeed      = values[6] as Double,
-                    controlsHideDelay = values[7] as Int
+                    gesturesEnabled   = values[2] as Boolean,
+                    lockButtonEnabled = values[3] as Boolean,
+                    defaultDecoder    = values[4] as String,
+                    defaultSpeed      = values[5] as Double,
+                    controlsHideDelay = values[6] as Int
                 )
             }.collect { prefs -> onPrefsChanged(prefs) }
         }

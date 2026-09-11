@@ -31,7 +31,6 @@ class PlaybackSessionManager(
     private val trackManager: TrackManager,
     private val appContext: Context,
     private val scope: CoroutineScope,
-    private val orientationManager: OrientationManager,
     /** Returns true when the render surface is currently attached. */
     private val hasSurface: () -> Boolean,
     /** Returns the current isPlaying flag from _uiState. */

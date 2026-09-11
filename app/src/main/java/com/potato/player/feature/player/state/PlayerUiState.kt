@@ -6,8 +6,6 @@ import com.potato.player.data.UserPreferencesRepository
 
 enum class ActiveDialog { None, Audio, Subtitle, Speed, MoreMenu, Decoder }
 
-enum class OrientationMode { AUTO, LOCK_LANDSCAPE, LOCK_PORTRAIT }
-
 data class PlaybackProgressState(
     val positionSec: Double = 0.0,
     val durationSec: Double = 0.0,
@@ -31,9 +29,6 @@ data class PlayerUiState(
     val subPos: Int = 100,
     val videoWidth: Int = 0,
     val videoHeight: Int = 0,
-    val orientationMode: OrientationMode = OrientationMode.AUTO,
-    val videoOrientation: String = "auto",
-    val videoRotate: Long = 0L,
     val isInPipMode: Boolean = false,
     val isLocked: Boolean = false,
     val gesturesEnabled: Boolean = true,

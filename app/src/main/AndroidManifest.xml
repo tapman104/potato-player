@@ -19,7 +19,7 @@
             android:name=".MainActivity"
             android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout|density"
             android:exported="true"
-            android:screenOrientation="user"
+            android:screenOrientation="fullSensor"
             android:supportsPictureInPicture="true"
             android:windowSoftInputMode="adjustNothing">
             <intent-filter>
