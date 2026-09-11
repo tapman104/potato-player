@@ -89,7 +89,10 @@ class PlayerViewModel(
                         isPlaying = false,
                         fileLoaded = false,
                         error = null,
-                        orientationMode = OrientationMode.AUTO
+                        orientationMode = OrientationMode.AUTO,
+                        videoWidth = 0,
+                        videoHeight = 0,
+                        videoRotate = 0L
                     )
                 }
             },

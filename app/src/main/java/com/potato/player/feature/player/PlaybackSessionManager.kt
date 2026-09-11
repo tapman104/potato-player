@@ -144,7 +144,6 @@ class PlaybackSessionManager(
         lastLoadedUri = uri
         currentUri = uri
         currentTitle = title
-        orientationManager.clearDimensions()
         trackManager.resetAutoSubApplied()
 
         val initialName = if (title.isNotBlank()) title else "Video"

@@ -42,8 +42,6 @@ class OrientationManager {
             OrientationMode.AUTO -> Unit
         }
 
-        if (w == 0 || h == 0) return
-
         fun effectiveLandscape(): Boolean {
             val swapped = videoRotate == 90L || videoRotate == 270L
             return if (swapped) h > w else w >= h
@@ -66,9 +64,14 @@ class OrientationManager {
                     else -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
                 }
             }
-            else -> // "auto"
+            else -> { // "auto"
+                if (w == 0 || h == 0) {
+                    activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                    return
+                }
                 if (effectiveLandscape()) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                 else ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+            }
         }
     }
 

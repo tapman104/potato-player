@@ -96,9 +96,6 @@ fun AppNavigation(
     wrapper: MpvWrapper,
     startDestination: PlayerStartDestination = PlayerStartDestination.Home
 ) {
-    val context = LocalContext.current
-    val activity = context.findActivity()
-
     // Map the semantic start destination to a concrete nav route.
     // This mapping runs before the first NavHost composition — HomeScreen is
     // never rendered when startDestination is PlayerStartDestination.Player.

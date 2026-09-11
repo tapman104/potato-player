@@ -32,3 +32,7 @@ log_*.txt
 change log.md
 .version.properties
 
+# Documentation and Vault notes
+Potato_Vault/
+filechain.md
+generate_vault.py

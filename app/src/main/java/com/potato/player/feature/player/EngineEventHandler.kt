@@ -46,7 +46,6 @@ class EngineEventHandler(
                         var found = false
                         repeat(20) { attempt ->
                             if (found) return@repeat
-                            delay(100)
                             val w = wrapper.getVideoWidth()
                             val h = wrapper.getVideoHeight()
                             val r = wrapper.getVideoRotate()
@@ -72,6 +71,8 @@ class EngineEventHandler(
                                 )
                                 onEngineState(uiUpdate, progressUpdate)
                                 found = true
+                            } else {
+                                delay(100)
                             }
                         }
                     }
