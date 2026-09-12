@@ -67,7 +67,7 @@ internal class MpvOptionsConfigurator {
      * setPropertyBoolean only for the two runtime-safe properties that have
      * no option equivalent (keep-open, input-default-bindings).
      */
-    fun initOptions(context: Context, audioLang: String, subLang: String) {
+    fun initOptions(context: Context, audioLang: String, subLang: String, wrapper: MpvWrapper) {
         val filesDir = context.filesDir.path
 
         // ── Core ─────────────────────────────────────────────────────────────
@@ -124,8 +124,8 @@ internal class MpvOptionsConfigurator {
         MPVLib.setOptionString("msg-level", "all=warn")
 
         // ── Runtime-only properties (no setOption equivalent) ─────────────────
-        MPVLib.setPropertyBoolean("keep-open",              true)
-        MPVLib.setPropertyBoolean("input-default-bindings", true)
+        wrapper.setKeepOpen(true)
+        wrapper.setInputDefaultBindings(true)
     }
 
     /**

@@ -83,7 +83,7 @@ class MpvWrapper(
     init {
         MPVLib.create(appContext)
         MPVLib.addObserver(this)
-        configurator.initOptions(appContext, audioLang, subLang)
+        configurator.initOptions(appContext, audioLang, subLang, this)
         MPVLib.init()
         configurator.registerPropertyObservers()
 
@@ -311,6 +311,14 @@ class MpvWrapper(
 
     fun setPanScan(value: String) {
         ifAlive("setPanScan") { MPVLib.setPropertyString(MpvProp.PANSCAN, value) }
+    }
+
+    fun setKeepOpen(keepOpen: Boolean) {
+        ifAlive("setKeepOpen") { MPVLib.setPropertyBoolean("keep-open", keepOpen) }
+    }
+
+    fun setInputDefaultBindings(enable: Boolean) {
+        ifAlive("setInputDefaultBindings") { MPVLib.setPropertyBoolean("input-default-bindings", enable) }
     }
 
     // ── Direct dimension polling (workaround for broken observeProperty) ───────
