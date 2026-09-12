@@ -244,6 +244,30 @@ class MpvWrapper(
         ifAlive("addExternalSubtitle") { MPVLib.command("sub-add", path, "select") }
     }
 
+    fun getTrackList(): List<TrackInfo> {
+        if (destroyed.get()) return emptyList()
+        val count = MPVLib.getPropertyInt(MpvProp.TRACK_LIST_COUNT) ?: 0
+        val list = mutableListOf<TrackInfo>()
+        for (i in 0 until count) {
+            val trackTypeStr = MPVLib.getPropertyString("track-list/$i/${MpvProp.TRACK_KEY_TYPE}")
+            val trackType = when (trackTypeStr) {
+                "audio" -> TrackType.AUDIO
+                "sub"   -> TrackType.SUBTITLE
+                else    -> continue
+            }
+            val id = MPVLib.getPropertyInt("track-list/$i/${MpvProp.TRACK_KEY_ID}") ?: continue
+            val title = MPVLib.getPropertyString("track-list/$i/${MpvProp.TRACK_KEY_TITLE}")
+            val lang = MPVLib.getPropertyString("track-list/$i/${MpvProp.TRACK_KEY_LANG}")
+            val extStr = MPVLib.getPropertyString("track-list/$i/${MpvProp.TRACK_KEY_EXTERNAL}")
+            list.add(TrackInfo(id = id, type = trackType, title = title, lang = lang, isExternal = extStr == "yes" || extStr == "true"))
+        }
+        return list
+    }
+
+    fun getCurrentAudioTrackId(): Int = getPropertyString(MpvProp.AID)?.toIntOrNull() ?: -1
+    fun getCurrentSubtitleTrackId(): Int = getPropertyString(MpvProp.SID)?.toIntOrNull() ?: -1
+    fun getTrackListJson(): String? = getPropertyString(MpvProp.TRACK_LIST)
+
     // ── Video / audio parameters ──────────────────────────────────────────────
 
     fun setSpeed(speed: Double) {
@@ -268,6 +292,25 @@ class MpvWrapper(
 
     fun setRotation(degrees: Int) {
         ifAlive("setRotation") { MPVLib.setPropertyInt(MpvProp.VIDEO_ROTATE, degrees) }
+    }
+
+    fun setVideoZoom(zoom: Double) {
+        ifAlive("setVideoZoom") { MPVLib.setPropertyDouble(MpvProp.VIDEO_ZOOM, zoom) }
+    }
+
+    fun setVideoPan(x: Double, y: Double) {
+        ifAlive("setVideoPan") {
+            MPVLib.setPropertyDouble(MpvProp.VIDEO_PAN_X, x)
+            MPVLib.setPropertyDouble(MpvProp.VIDEO_PAN_Y, y)
+        }
+    }
+
+    fun setAspectOverride(ratio: String) {
+        ifAlive("setAspectOverride") { MPVLib.setPropertyString(MpvProp.VIDEO_ASPECT_OVERRIDE, ratio) }
+    }
+
+    fun setPanScan(value: String) {
+        ifAlive("setPanScan") { MPVLib.setPropertyString(MpvProp.PANSCAN, value) }
     }
 
     // ── Direct dimension polling (workaround for broken observeProperty) ───────

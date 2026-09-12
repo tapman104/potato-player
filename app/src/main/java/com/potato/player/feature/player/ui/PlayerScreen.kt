@@ -93,7 +93,7 @@ fun PlayerScreen(
     val onSelectSubtitleTrack = remember(viewModel) { { viewModel.showDialog(ActiveDialog.Subtitle) } }
     val onSelectDecoder       = remember(viewModel) { { viewModel.showDialog(ActiveDialog.Decoder) } }
     val onTogglePlay          = remember(viewModel) { { viewModel.togglePlay() } }
-    val onToggleLock          = remember(viewModel, activity) { { viewModel.toggleLock(activity) } }
+    val onToggleLock          = remember(viewModel) { { viewModel.toggleLock() } }
     val onToggleFitMode       = remember(viewModel) { { viewModel.cycleFitMode() } }
     val onEnterPip            = remember(viewModel, activity) { { enterPip(activity) } }
     val onPrevious            = remember(viewModel) { { viewModel.playPrevious() } }
@@ -139,15 +139,11 @@ fun PlayerScreen(
         val surfaceCallback = remember(viewModel) {
             object : android.view.SurfaceHolder.Callback {
                 override fun surfaceCreated(holder: android.view.SurfaceHolder) {
-                    viewModel.handleSurfaceReady(holder.surface)
+                    viewModel.attachSurface(holder.surface)
                 }
-                override fun surfaceChanged(holder: android.view.SurfaceHolder, format: Int, width: Int, height: Int) {
-                    if (width > 0 && height > 0) {
-                        viewModel.setSurfaceSize(width, height)
-                    }
-                }
+                override fun surfaceChanged(holder: android.view.SurfaceHolder, format: Int, width: Int, height: Int) = Unit
                 override fun surfaceDestroyed(holder: android.view.SurfaceHolder) {
-                    viewModel.handleSurfaceDestroyed()
+                    viewModel.detachSurface()
                 }
             }
         }

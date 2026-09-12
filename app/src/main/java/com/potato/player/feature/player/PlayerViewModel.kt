@@ -14,9 +14,11 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 enum class VideoFitMode { FIT, FILL, STRETCH }
 
@@ -53,67 +55,115 @@ class PlayerViewModel(
     private val seekController = SeekController(
         wrapper = wrapper,
         isActive = isActive,
-        onDragPositionChanged = { pos -> _progressState.update { it.copy(dragPositionSec = pos) } },
         onFastForwardChanged = { ff -> _uiState.update { it.copy(isFastForwarding = ff) } },
         onSpeedChanged = { spd -> _uiState.update { it.copy(playbackSpeed = spd) } }
     )
 
     private val engineEventHandler by lazy { EngineEventHandler(wrapper, prefsRepository, viewModelScope) }
 
-    private val surfaceManager: SurfaceManager = SurfaceManager(
-        wrapper = wrapper,
-        onReadyToLoad = {
-            val uri = sessionManager.consumePendingUri()
-            if (uri != null) wrapper.loadFile(uri)
-        }
-    )
+    var hasSurface = false
+        private set
 
-    val sessionManager by lazy {
-        PlaybackSessionManager(
-            wrapper = wrapper,
-            prefsRepository = prefsRepository,
-            historyManager = historyManager,
-            trackManager = trackManager,
-            appContext = appContext,
-            scope = viewModelScope,
-            hasSurface = { surfaceManager.hasSurface() },
-            isPlaying = { _uiState.value.isPlaying },
-            getProgressState = { _progressState.value },
-            onFileLoading = { fileName ->
-                _uiState.update {
-                    it.copy(
-                        fileName = fileName,
-                        isLoading = true,
-                        isPlaying = false,
-                        fileLoaded = false,
-                        error = null,
-                        videoWidth = 0,
-                        videoHeight = 0
-                    )
-                }
-            },
-            onFileLoaded = { hwdec, speed ->
-                _uiState.update {
-                    it.copy(
-                        fileLoaded = true,
-                        isLoading = false,
-                        fitMode = VideoFitMode.FIT,
-                        hwdecCurrent = hwdec,
-                        playbackSpeed = speed
-                    )
-                }
-            },
-            onEndFile = { reason ->
-                if (reason == 3) {
-                    _uiState.update { it.copy(isPlaying = false, error = "Playback error") }
-                } else {
-                    _uiState.update { it.copy(isPlaying = false) }
-                }
-                if (reason == 0) {
-                    seekController.resetFastForward()
-                }
+    private var currentUri: String = ""
+    private var currentTitle: String = ""
+    private var pendingUri: String? = null
+    private var pendingSeekPosition: Long = 0L
+    private var lastLoadedUri: String? = null
+    private var wasPlayingBeforePause: Boolean = false
+
+    fun consumePendingUri(): String? {
+        val uri = pendingUri
+        pendingUri = null
+        return uri
+    }
+
+    private fun handleFileLoaded() {
+        if (pendingSeekPosition > 0L) {
+            wrapper.seekAccurate(pendingSeekPosition)
+            pendingSeekPosition = 0L
+        }
+        viewModelScope.launch {
+            val mode = prefsRepository.defaultDecoderFlow.first()
+            wrapper.setDecoder(mode)
+            val speed = prefsRepository.defaultSpeedFlow.first()
+            wrapper.setSpeed(speed)
+            _uiState.update {
+                it.copy(
+                    fileLoaded = true,
+                    isLoading = false,
+                    fitMode = VideoFitMode.FIT,
+                    hwdecCurrent = hwdecLabel(mode),
+                    playbackSpeed = speed
+                )
             }
+        }
+        viewModelScope.launch {
+            trackManager.applyPreferred()
+        }
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(500)
+            trackManager.requestTrackReload(appContext)
+        }
+    }
+
+    private fun handleEndFile(reason: Int) {
+        if (reason == 3) {
+            _uiState.update { it.copy(isPlaying = false, error = "Playback error") }
+        } else {
+            _uiState.update { it.copy(isPlaying = false) }
+        }
+        if (reason == 0) {
+            seekController.resetFastForward()
+            saveHistoryIfNeeded()
+        }
+    }
+
+    fun saveHistoryIfNeeded() {
+        val progress = _progressState.value
+        historyManager.save(
+            uri = currentUri,
+            title = currentTitle,
+            lastPlayedPositionSec = progress.positionSec,
+            durationSec = progress.durationSec,
+            lastAudioTrackId = trackManager.trackState.value.currentAudioTrackId,
+            lastSubtitleTrackId = trackManager.trackState.value.currentSubtitleTrackId
         )
+    }
+
+    private fun executeLoadFile(uri: String, title: String, resumePosition: Long) {
+        trackManager.clearTracks()
+        lastLoadedUri = uri
+        currentUri = uri
+        currentTitle = title
+        trackManager.resetAutoSubApplied()
+
+        val initialName = if (title.isNotBlank()) title else "Video"
+        _uiState.update {
+            it.copy(
+                fileName = initialName,
+                isLoading = true,
+                isPlaying = false,
+                fileLoaded = false,
+                error = null,
+                videoWidth = 0,
+                videoHeight = 0
+            )
+        }
+
+        if (title.isBlank()) {
+            viewModelScope.launch {
+                val resolvedName = com.potato.player.util.MediaMetadataRepository.resolveFileName(appContext, uri)
+                _uiState.update { it.copy(fileName = resolvedName) }
+            }
+        }
+
+        pendingSeekPosition = resumePosition
+
+        if (hasSurface) {
+            wrapper.loadFile(uri)
+        } else {
+            pendingUri = uri
+        }
     }
 
     init {
@@ -150,8 +200,8 @@ class PlayerViewModel(
 
     private fun handleLifecycleEvent(event: MpvEvent.Lifecycle) {
         when (event) {
-            is MpvEvent.Lifecycle.FileLoaded -> sessionManager.onFileLoaded()
-            is MpvEvent.Lifecycle.EndFile -> sessionManager.onEndFile(event.reason)
+            is MpvEvent.Lifecycle.FileLoaded -> handleFileLoaded()
+            is MpvEvent.Lifecycle.EndFile -> handleEndFile(event.reason)
             is MpvEvent.Lifecycle.PlaybackRestart -> handlePlaybackRestart()
             is MpvEvent.Lifecycle.Unknown -> Unit
         }
@@ -170,25 +220,35 @@ class PlayerViewModel(
         // default decoder and speed applied on file load, not here
     }
 
-    fun setSurfaceSize(width: Int, height: Int) {
-        surfaceManager.setSurfaceSize(width, height)
+    fun attachSurface(surface: android.view.Surface) {
+        hasSurface = true
+        wrapper.attachSurface(surface)
+        val uri = consumePendingUri()
+        if (uri != null) wrapper.loadFile(uri)
     }
 
-    fun handleSurfaceReady(surface: android.view.Surface) {
-        surfaceManager.onSurfaceReady(surface)
-    }
-
-    fun handleSurfaceDestroyed() {
-        surfaceManager.onSurfaceDestroyed()
+    fun detachSurface() {
+        hasSurface = false
+        wrapper.detachSurface()
     }
 
     fun prepareUri(defaultUri: String, defaultTitle: String = "") {
-        sessionManager.load(defaultUri, defaultTitle)
+        if (lastLoadedUri == defaultUri) return
+        lastLoadedUri = defaultUri
+
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val history = historyManager.getByUri(defaultUri)
+            val resumePos = if (history != null && history.lastPlayedPositionSec > 0)
+                (history.lastPlayedPositionSec * 1000).toLong() else 0L
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                executeLoadFile(defaultUri, defaultTitle, resumePos)
+            }
+        }
     }
 
     fun loadFile(uri: String, title: String = "", resumePosition: Long = 0L) {
         if (!isActive.get()) return
-        sessionManager.loadDirect(uri, title, resumePosition)
+        executeLoadFile(uri, title, resumePosition)
     }
 
     fun togglePlay() {
@@ -201,21 +261,20 @@ class PlayerViewModel(
     }
 
     fun onPlayerPause() {
-        sessionManager.onPlayerPause()
+        wasPlayingBeforePause = _uiState.value.isPlaying
+        wrapper.pause()
+        saveHistoryIfNeeded()
     }
 
     fun onPlayerResume() {
-        sessionManager.onPlayerResume()
+        if (wasPlayingBeforePause) {
+            wrapper.resume()
+        }
     }
 
-    fun toggleLock(activity: android.app.Activity?) {
+    fun toggleLock() {
         val locked = !_uiState.value.isLocked
         _uiState.update { it.copy(isLocked = locked) }
-        if (locked) {
-            activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LOCKED
-        } else {
-            activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
-        }
     }
 
     fun cycleFitMode() {
@@ -236,15 +295,31 @@ class PlayerViewModel(
         wrapper.setDecoder(mode)
     }
 
-    fun seekExactRelative(offsetSec: Int) = seekController.seekExactRelative(offsetSec)
+    fun seekExactRelative(offsetSec: Int) {
+        if (!isActive.get()) return
+        wrapper.seekRelative(offsetSec.toDouble())
+    }
 
     fun startFastForward() = seekController.startFastForward(_uiState.value.playbackSpeed)
     fun stopFastForward()  = seekController.stopFastForward()
 
-    fun onSliderDragStart(posSec: Double) = seekController.onSliderDragStart(posSec)
-    fun onSliderDragChange(posSec: Double) = seekController.onSliderDragChange(posSec)
-    fun onSliderDragEnd(posSec: Double) = seekController.onSliderDragEnd(posSec)
-    fun seekTo(positionSec: Double) = seekController.seekTo(positionSec)
+    fun onSliderDragStart(posSec: Double) {
+        _progressState.update { it.copy(dragPositionSec = posSec) }
+    }
+    fun onSliderDragChange(posSec: Double) {
+        if (!isActive.get()) return
+    }
+    fun onSliderDragEnd(posSec: Double) {
+        if (!isActive.get()) return
+        val ms = (posSec * 1000).toLong()
+        _progressState.update { it.copy(dragPositionSec = null) }
+        wrapper.seekFast(ms)
+    }
+    fun seekTo(positionSec: Double) {
+        if (!isActive.get()) return
+        val ms = (positionSec * 1000).toLong()
+        wrapper.seekFast(ms)
+    }
 
     fun setPlaybackSpeed(speed: Double) = seekController.setPlaybackSpeed(speed)
 
@@ -262,7 +337,7 @@ class PlayerViewModel(
     override fun onCleared() {
         isActive.set(false)
         super.onCleared()
-        sessionManager.saveHistoryIfNeeded()
+        saveHistoryIfNeeded()
         wrapper.stopIfGeneration(myPlaybackGeneration)
     }
 

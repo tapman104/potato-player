@@ -13,16 +13,16 @@ class VideoGeometryManager(private val wrapper: MpvWrapper) {
         }
         when (next) {
             VideoFitMode.FIT -> {
-                wrapper.setPropertyString(MpvProp.VIDEO_ASPECT_OVERRIDE, "-1")
-                wrapper.setPropertyString(MpvProp.PANSCAN, "0.0")
+                wrapper.setAspectOverride("-1")
+                wrapper.setPanScan("0.0")
             }
             VideoFitMode.FILL -> {
-                wrapper.setPropertyString(MpvProp.PANSCAN, "1.0")
-                wrapper.setPropertyString(MpvProp.VIDEO_ASPECT_OVERRIDE, "-1")
+                wrapper.setPanScan("1.0")
+                wrapper.setAspectOverride("-1")
             }
             VideoFitMode.STRETCH -> {
-                wrapper.setPropertyString(MpvProp.PANSCAN, "0.0")
-                wrapper.setPropertyString(MpvProp.VIDEO_ASPECT_OVERRIDE, "${screenWidth}/${screenHeight}")
+                wrapper.setPanScan("0.0")
+                wrapper.setAspectOverride("${screenWidth}/${screenHeight}")
             }
         }
         return next
@@ -34,9 +34,8 @@ class VideoGeometryManager(private val wrapper: MpvWrapper) {
         val finalPanY = if (clampedZoom == 1.0f) 0f else panY
         
         val mpvZoom = kotlin.math.ln(clampedZoom.toDouble()) / kotlin.math.ln(2.0)
-        wrapper.setPropertyDouble(MpvProp.VIDEO_ZOOM, mpvZoom)
-        wrapper.setPropertyDouble(MpvProp.VIDEO_PAN_X, finalPanX.toDouble())
-        wrapper.setPropertyDouble(MpvProp.VIDEO_PAN_Y, finalPanY.toDouble())
+        wrapper.setVideoZoom(mpvZoom)
+        wrapper.setVideoPan(finalPanX.toDouble(), finalPanY.toDouble())
         
         return Triple(finalPanX, finalPanY, clampedZoom)
     }

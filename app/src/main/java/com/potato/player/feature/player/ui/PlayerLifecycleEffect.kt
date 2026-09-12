@@ -19,6 +19,13 @@ fun PlayerLifecycleEffect(
     val lifecycleOwner = LocalLifecycleOwner.current
 
     val view = androidx.compose.ui.platform.LocalView.current
+    LaunchedEffect(uiState.isLocked, activity) {
+        if (uiState.isLocked) {
+            activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LOCKED
+        } else {
+            activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+        }
+    }
     DisposableEffect(lifecycleOwner, activity) {
         val window = activity?.window
         if (window != null) {

@@ -6,12 +6,10 @@ import java.util.concurrent.atomic.AtomicBoolean
 class SeekController(
     private val wrapper: MpvWrapper,
     private val isActive: AtomicBoolean,
-    private val onDragPositionChanged: (Double?) -> Unit,
     private val onFastForwardChanged: (Boolean) -> Unit,
     private val onSpeedChanged: (Double) -> Unit
 ) {
-    private var isDragging: Boolean = false
-    private var lastDragPositionSec: Double = 0.0
+
 
     private var normalPlaybackSpeed = 1.0
     private var isFastForwarding = false
@@ -54,35 +52,4 @@ class SeekController(
         }
     }
 
-    fun onSliderDragStart(posSec: Double) {
-        isDragging = true
-        lastDragPositionSec = posSec
-        onDragPositionChanged(posSec)
-    }
-
-    fun onSliderDragChange(posSec: Double) {
-        if (!isActive.get()) return
-        lastDragPositionSec = posSec
-        // intentionally does NOT call wrapper or emit state
-    }
-
-    fun onSliderDragEnd(posSec: Double) {
-        if (!isActive.get()) return
-        isDragging = false
-        lastDragPositionSec = posSec
-        val ms = (posSec * 1000).toLong()
-        onDragPositionChanged(null)
-        wrapper.seekFast(ms)
-    }
-
-    fun seekTo(targetSec: Double) {
-        if (!isActive.get()) return
-        val ms = (targetSec * 1000).toLong()
-        wrapper.seekFast(ms)
-    }
-
-    fun seekExactRelative(offsetSec: Int) {
-        if (!isActive.get()) return
-        wrapper.seekRelative(offsetSec.toDouble())
-    }
 }

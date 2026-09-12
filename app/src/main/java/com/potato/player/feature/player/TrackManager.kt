@@ -45,22 +45,9 @@ class TrackManager(
 
     fun loadTracks(context: Context) {
         scope.launch(Dispatchers.IO) {
-            val count = wrapper.getPropertyInt(MpvProp.TRACK_LIST_COUNT) ?: 0
-            val list = mutableListOf<TrackInfo>()
-            for (i in 0 until count) {
-                val trackType = when (wrapper.getPropertyString("track-list/$i/${MpvProp.TRACK_KEY_TYPE}")) {
-                    "audio" -> TrackType.AUDIO
-                    "sub"   -> TrackType.SUBTITLE
-                    else    -> continue
-                }
-                val id = wrapper.getPropertyInt("track-list/$i/${MpvProp.TRACK_KEY_ID}") ?: continue
-                val title = wrapper.getPropertyString("track-list/$i/${MpvProp.TRACK_KEY_TITLE}")
-                val lang = wrapper.getPropertyString("track-list/$i/${MpvProp.TRACK_KEY_LANG}")
-                val extStr = wrapper.getPropertyString("track-list/$i/${MpvProp.TRACK_KEY_EXTERNAL}")
-                list.add(TrackInfo(id = id, type = trackType, title = title, lang = lang, isExternal = extStr == "yes" || extStr == "true"))
-            }
-            val aid = wrapper.getPropertyString(MpvProp.AID)?.toIntOrNull() ?: -1
-            val sid = wrapper.getPropertyString(MpvProp.SID)?.toIntOrNull() ?: -1
+            val list = wrapper.getTrackList()
+            val aid = wrapper.getCurrentAudioTrackId()
+            val sid = wrapper.getCurrentSubtitleTrackId()
             withContext(Dispatchers.Main) {
                 val audioTracks = list.filter { it.type == TrackType.AUDIO }.map { it.toUiModel(context) }
                 val subtitleTracks = list.filter { it.type == TrackType.SUBTITLE }.map { it.toUiModel(context) }
@@ -90,8 +77,8 @@ class TrackManager(
             val result = TrackListParser.parse(json)
             if (result is TrackListParser.Result.Failure) return@launch
             val list = (result as TrackListParser.Result.Success).tracks
-            val aid = wrapper.getPropertyString(MpvProp.AID)?.toIntOrNull() ?: -1
-            val sid = wrapper.getPropertyString(MpvProp.SID)?.toIntOrNull() ?: -1
+            val aid = wrapper.getCurrentAudioTrackId()
+            val sid = wrapper.getCurrentSubtitleTrackId()
             withContext(Dispatchers.Main) {
                 val audioTracks    = list.filter { it.type == TrackType.AUDIO    }.map { it.toUiModel(context) }
                 val subtitleTracks = list.filter { it.type == TrackType.SUBTITLE }.map { it.toUiModel(context) }
@@ -193,7 +180,7 @@ class TrackManager(
      */
     fun requestTrackReload(context: Context) {
         if (_trackState.value.tracksLoaded) return
-        val json = wrapper.getPropertyString(MpvProp.TRACK_LIST) ?: return
+        val json = wrapper.getTrackListJson() ?: return
         if (json.isBlank()) return
         loadTracksFromJson(json, context)
     }
