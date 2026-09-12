@@ -156,7 +156,9 @@ fun PlayerScreen(
                 override fun surfaceCreated(holder: android.view.SurfaceHolder) {
                     viewModel.attachSurface(holder.surface)
                 }
-                override fun surfaceChanged(holder: android.view.SurfaceHolder, format: Int, width: Int, height: Int) = Unit
+                override fun surfaceChanged(holder: android.view.SurfaceHolder, format: Int, width: Int, height: Int) {
+                    viewModel.onSurfaceChanged(width, height)
+                }
                 override fun surfaceDestroyed(holder: android.view.SurfaceHolder) {
                     viewModel.detachSurface()
                 }

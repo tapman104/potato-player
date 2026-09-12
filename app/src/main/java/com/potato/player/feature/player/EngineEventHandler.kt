@@ -18,7 +18,8 @@ data class PlayerPrefs(
     val lockButtonEnabled: Boolean,
     val defaultDecoder: String,
     val defaultSpeed: Double,
-    val controlsHideDelay: Int
+    val controlsHideDelay: Int,
+    val videoOrientation: String
 )
 
 class EngineEventHandler(
@@ -113,7 +114,8 @@ class EngineEventHandler(
                 prefsRepository.lockButtonEnabledFlow,
                 prefsRepository.defaultDecoderFlow,
                 prefsRepository.defaultSpeedFlow,
-                prefsRepository.controlsHideDelayFlow
+                prefsRepository.controlsHideDelayFlow,
+                prefsRepository.videoOrientationFlow
             ) { values ->
                 PlayerPrefs(
                     subScale          = values[0] as Double,
@@ -122,7 +124,8 @@ class EngineEventHandler(
                     lockButtonEnabled = values[3] as Boolean,
                     defaultDecoder    = values[4] as String,
                     defaultSpeed      = values[5] as Double,
-                    controlsHideDelay = values[6] as Int
+                    controlsHideDelay = values[6] as Int,
+                    videoOrientation  = values[7] as String
                 )
             }.collect { prefs -> onPrefsChanged(prefs) }
         }

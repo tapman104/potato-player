@@ -185,6 +185,7 @@ class PlayerViewModel(
                         hwdecLabel(uiUpdate.hwdecActive) else it.hwdecCurrent,
                     videoWidth = uiUpdate.videoWidth,
                     videoHeight = uiUpdate.videoHeight,
+                    videoRotate = uiUpdate.videoRotate.toInt(),
                     playbackSpeed = uiUpdate.playbackSpeed,
                     subScale = uiUpdate.subScale,
                     subPos = uiUpdate.subPos
@@ -222,7 +223,8 @@ class PlayerViewModel(
             subPos            = prefs.subPos,
             gesturesEnabled   = prefs.gesturesEnabled,
             lockButtonEnabled = prefs.lockButtonEnabled,
-            controlsHideDelay = prefs.controlsHideDelay
+            controlsHideDelay = prefs.controlsHideDelay,
+            videoOrientation  = prefs.videoOrientation
         )}
         // default decoder and speed applied on file load, not here
     }
@@ -237,6 +239,10 @@ class PlayerViewModel(
     fun detachSurface() {
         hasSurface = false
         wrapper.detachSurface()
+    }
+
+    fun onSurfaceChanged(width: Int, height: Int) {
+        wrapper.onSurfaceChanged(width, height)
     }
 
     fun prepareUri(defaultUri: String, defaultTitle: String = "") {

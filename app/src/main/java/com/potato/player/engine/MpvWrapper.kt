@@ -141,6 +141,15 @@ class MpvWrapper(
         detachSurfaceInternal()
     }
 
+    fun onSurfaceChanged(width: Int, height: Int) {
+        ifAlive("onSurfaceChanged") {
+            MPVLib.setPropertyString(
+                MpvProp.ANDROID_SURFACE_SIZE,
+                "${width}x${height}"
+            )
+        }
+    }
+
     /**
      * Shared teardown: set VO→null, clear force-window, then detach.
      * Called from both detachSurface() (live) and destroy() (bypasses the

@@ -19,12 +19,43 @@ fun PlayerLifecycleEffect(
     val lifecycleOwner = LocalLifecycleOwner.current
 
     val view = androidx.compose.ui.platform.LocalView.current
-    LaunchedEffect(uiState.isLocked, activity) {
-        if (uiState.isLocked) {
-            activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LOCKED
+    LaunchedEffect(uiState.isLocked, uiState.videoOrientation,
+                   uiState.videoWidth, uiState.videoHeight, uiState.videoRotate,
+                   activity) {
+
+        val orientation = if (uiState.isLocked) {
+            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LOCKED
         } else {
-            activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+            when (uiState.videoOrientation) {
+                "landscape"        -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                "portrait"         -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                "sensor"           -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+                "sensor_landscape" -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                "sensor_portrait"  -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+                "locked"           -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LOCKED
+                "auto"             -> {
+                    val w = uiState.videoWidth
+                    val h = uiState.videoHeight
+                    val rotate = uiState.videoRotate
+                    if (w <= 0 || h <= 0) {
+                        android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                    } else {
+                        val effectiveW = if (rotate == 90 || rotate == 270) h else w
+                        val effectiveH = if (rotate == 90 || rotate == 270) w else h
+                        when {
+                            effectiveW > effectiveH ->
+                                android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                            effectiveH > effectiveW ->
+                                android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+                            else ->
+                                android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+                        }
+                    }
+                }
+                else -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+            }
         }
+        activity?.requestedOrientation = orientation
     }
     DisposableEffect(lifecycleOwner, activity) {
         val window = activity?.window

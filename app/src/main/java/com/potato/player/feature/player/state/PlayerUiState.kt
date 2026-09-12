@@ -29,6 +29,8 @@ data class PlayerUiState(
     val subPos: Int = 100,
     val videoWidth: Int = 0,
     val videoHeight: Int = 0,
+    val videoRotate: Int = 0,
+    val videoOrientation: String = "auto",
     val isInPipMode: Boolean = false,
     val isLocked: Boolean = false,
     val gesturesEnabled: Boolean = true,
