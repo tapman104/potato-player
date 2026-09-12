@@ -24,10 +24,17 @@ enum class VideoFitMode { FIT, FILL, STRETCH }
 
 class PlayerViewModel(
     private val appContext: Context,
-    private val wrapper: MpvWrapper,
     private val historyRepository: VideoHistoryRepository,
     private val prefsRepository: UserPreferencesRepository
 ) : ViewModel() {
+
+    private val wrapper: MpvWrapper
+
+    init {
+        val audioLang = kotlinx.coroutines.runBlocking { prefsRepository.preferredAudioLangFlow.first() }
+        val subLang   = kotlinx.coroutines.runBlocking { prefsRepository.preferredSubLangFlow.first() }
+        wrapper = MpvWrapper(appContext, audioLang, subLang)
+    }
 
     private val historyManager by lazy { PlaybackHistoryManager(historyRepository, viewModelScope) }
 
@@ -336,9 +343,10 @@ class PlayerViewModel(
 
     override fun onCleared() {
         isActive.set(false)
-        super.onCleared()
         saveHistoryIfNeeded()
         wrapper.stopIfGeneration(myPlaybackGeneration)
+        wrapper.destroy()
+        super.onCleared()
     }
 
     fun setVolume(volume: Int) {

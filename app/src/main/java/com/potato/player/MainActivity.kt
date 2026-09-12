@@ -48,20 +48,12 @@ class MainActivity : ComponentActivity() {
     // pendingIntent is ONLY used by the onNewIntent (hot re-open) path.
     // Cold-start routing is handled by resolveStartDestination() before setContent.
     private var pendingIntent by mutableStateOf<Intent?>(null)
-    private val mpvWrapper by lazy {
-        val audioLang = runBlocking { prefsRepository.preferredAudioLangFlow.first() }
-        val subLang   = runBlocking { prefsRepository.preferredSubLangFlow.first() }
-        MpvWrapper(applicationContext, audioLang, subLang)
-    }
 
     @Inject
     lateinit var prefsRepository: UserPreferencesRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // MpvWrapper initializes in its init block, so just by accessing it, it initializes.
-        val wrapper = mpvWrapper
 
         // Install font assets on a background thread before the first subtitle renders.
         // Safe to call concurrently with MPV init; MPV reads sub-fonts-dir lazily.
@@ -131,7 +123,6 @@ class MainActivity : ComponentActivity() {
                 // correct screen without ever rendering HomeScreen first.
                 AppNavigation(
                     navController    = navController,
-                    wrapper          = mpvWrapper,
                     startDestination = startDest
                 )
 
@@ -219,7 +210,6 @@ class MainActivity : ComponentActivity() {
         super.onPause()
         // Don't pause playback when transitioning into PiP mode
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && isInPictureInPictureMode) return
-        mpvWrapper.pause()
     }
 
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
@@ -228,15 +218,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handlePipModeChange(isInPip: Boolean) {
-        if (isInPip) {
-            mpvWrapper.resume()
-        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        if (isFinishing) {
-            mpvWrapper.destroy()
-        }
     }
 }

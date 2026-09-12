@@ -8,7 +8,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
-import com.potato.player.engine.MpvWrapper
 import com.potato.player.feature.home.FolderScreen
 import com.potato.player.feature.home.HomeScreen
 import com.potato.player.feature.player.ui.PlayerScreen
@@ -93,7 +92,6 @@ data object LicensesRoute
 @Composable
 fun AppNavigation(
     navController: NavHostController,
-    wrapper: MpvWrapper,
     startDestination: PlayerStartDestination = PlayerStartDestination.Home
 ) {
     // Map the semantic start destination to a concrete nav route.
@@ -261,7 +259,6 @@ fun AppNavigation(
                         @Suppress("UNCHECKED_CAST")
                         return PlayerViewModel(
                             context.applicationContext, 
-                            wrapper, 
                             historyRepository,
                             prefsRepository
                         ) as T

@@ -45,6 +45,8 @@ class MpvWrapper(
     subLang: String
 ) : MPVLib.EventObserver, PlayerController {
 
+    private val destroyed = AtomicBoolean(false)
+
     private val appContext: Context = context.applicationContext
     private val configurator = MpvOptionsConfigurator()
 
@@ -93,8 +95,6 @@ class MpvWrapper(
             }
         }
     }
-
-    private val destroyed = AtomicBoolean(false)
 
     /**
      * Tear down MPV completely. Safe to call from any thread; idempotent.
